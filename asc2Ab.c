@@ -1,7 +1,8 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 
-//asc2vtk.out [map.asc] [hight] [x koef] [y koef] [z koef]
+//asc2vtk.out [map.asc] [hight] [x koef] [y koef] [z koef] [region_map.asc]
 
 
 int read_asc_and_declare_variables(int argc, char **argv);
@@ -56,13 +57,31 @@ int read_asc_and_declare_variables(int argc, char **argv)
 	fclose(f1);
 	fclose(f);
 
+	f = fopen(argv[6],"r");
+	if (f == NULL) {
+		printf("No such file\n");
+		goto exit_without_massives;
+	}
+
+	f1 = fopen("regions_map.txt", "w");
+	while ((i = getc(f)) != EOF) {
+		if (i == ',') i = '.';
+		putc(i, f1);
+	}
+	fclose(f1);
+	fclose(f);
+
 	f = fopen("map.txt", "r");
+	f1 = fopen("regions_map.txt", "r");
 	int err;
 	char str[20];
 
 	hight = atof(argv[2]);
 	
-	if ((err = fscanf(f, "%s %d", str, &ncols)) == EOF) return 1;
+	if ((err = fscanf(f, "%s %d", str, &ncols)) == EOF) {
+		printf("Error file of map\n");
+		return 1;
+	}
 	if (strcmp(str, "ncols") != 0) return 1;
 
 	if ((err = fscanf(f, "%s %d", str, &nrows)) == EOF) return 1;
@@ -81,6 +100,46 @@ int read_asc_and_declare_variables(int argc, char **argv)
 
 	if ((err = fscanf(f, "%s %f", str, &nodata_value)) == EOF) return 1;
 	if (strcmp(str, "NODATA_value") != 0) return 1;
+
+	int ncols1;
+	if ((err = fscanf(f1, "%s %d", str, &ncols1)) == EOF) return 1;;
+	if (strcmp(str, "ncols") != 0) goto err_file;
+
+	int nrows1;
+	if ((err = fscanf(f1, "%s %d", str, &nrows1)) == EOF) return 1;;
+	if (strcmp(str, "nrows") != 0) goto err_file;
+
+	float xllcorner1;
+	if ((err = fscanf(f1, "%s %f", str, &xllcorner1)) == EOF) return 1;
+	if (strcmp(str, "xllcorner") != 0) goto err_file;
+	
+	float yllcorner1;
+	if ((err = fscanf(f1, "%s %f", str, &yllcorner1)) == EOF) return 1;
+	if (strcmp(str, "yllcorner") != 0) goto err_file;
+	
+	float cellsize1;
+	if ((err = fscanf(f1, "%s %f", str, &cellsize1)) == EOF) return 1;
+	if (strcmp(str, "cellsize") != 0) goto err_file;
+
+	float nodata_value1;
+	if ((err = fscanf(f1, "%s %f", str, &nodata_value1)) == EOF) return 1;
+	if (strcmp(str, "NODATA_value") != 0) goto err_file;
+
+	if (cellsize != cellsize1) {
+		printf("Cellsize in both maps need to be the same\n");
+		return 1;
+	}
+
+	if ((cellsize - (int) cellsize != 0) || (cellsize1 - (int) cellsize1 != 0)) {
+		printf("In this vercion the value cellsize need to be integer\n");
+		return 1;
+	}
+
+	if ((((int) fabs(xllcorner - xllcorner1)) % (int) cellsize) || ((int) fabs(yllcorner - yllcorner1) % (int) cellsize) ||
+		(fabs(xllcorner - xllcorner1) - (int) fabs(xllcorner - xllcorner1) != 0) || (fabs(yllcorner - yllcorner1) - (int) fabs(yllcorner - yllcorner1) != 0)) {
+		printf("Difference between xllcorners of maps and yllcorners need to aligned to cellsize\n");
+		return 1;
+	}
 
 	if ((mass = (float *) malloc(ncols * nrows * sizeof(float))) == NULL) {
 		printf("Memory error\n");
@@ -103,6 +162,7 @@ int read_asc_and_declare_variables(int argc, char **argv)
 			bl_cond[i] = -1;
 	}
 	fclose(f);
+	remove("map.txt");
 
 	int j;
 	n_points = 0;
@@ -377,7 +437,7 @@ int main(int argc, char **argv)
 	extern float interpolation, interpolation_poli;
 	extern float *mass1;
 
-	if (argc != 6) goto error;
+	if (argc != 7) goto error;
 
 	if ((float) atoi(argv[3]) != atof(argv[3])) goto error;
 	if ((float) atoi(argv[4]) != atof(argv[4])) goto error;
