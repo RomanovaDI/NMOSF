@@ -2,19 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
-//asc2vtk.out [map.asc] [hight] [x koef] [y koef] [z koef] [region_map.asc]
+int read_asc_and_declare_variables(void);
+int do_interpolation(void);
+int print_vtk(void);
+int free_massives(void);
+void display_usage(void);
+int create_A(void);
+int set_arrays(void);
 
-
-int read_asc_and_declare_variables();
-int do_interpolation();
-int print_vtk();
-int free_massives();
-
-char map_name[50];
-char region_map_name[50];
+char *map_name;
+char *region_map_name;
 float hight;
 int kx, ky, kz;
+int nx, ny, nz;
+int n_bl_x, n_bl_y, n_bl_z;
 int ncols;
 int nrows;
 float cellsize;
@@ -29,8 +32,12 @@ float interpolation, interpolation_poli;
 float *mass1;
 float nodata_value;
 int *snow_region;
+float depth;
+float density_snow, density_air;
+float *alpha;
+float *rho;
 
-int read_asc_and_declare_variables()
+int read_asc_and_declare_variables(void)
 {
 	FILE *f = fopen(map_name,"r");
 	if (f == NULL) {
@@ -314,30 +321,33 @@ int read_asc_and_declare_variables()
 				(ind[i * ncols + j - 1] != -1) &&
 				(ind[(i - 1) * ncols + j - 1] != -1) &&
 				(ind[(i - 1) * ncols + j] != -1)) {
-					bl_cond[(i - 1) * (ncols - 1) + j - 1] = 1;
+					bl_cond[(i - 1) * (ncols - 1) + j - 1] = n_cells;
 					n_cells++;
 			}
 		}
 	}
+	nx = (nrows - 1) * kx;
+	ny = (ncols - 1) * ky;
+	nz = (int) hight / cellsize * kz;
 	return 0;
 }
 
-int do_interpolation()
+int do_interpolation(void)
 {
 	int i, j, k, l, m, n, o, p, q, a = 0;
 	n_points_multipl = 0;
 	for (i = 0; i < nrows - 1; i++) {
 		for (j = 0; j < ncols - 1; j++) {
-			if (bl_cond[i * (ncols - 1) + j] == 1) {
-				if ((j - 1 < 0) || (bl_cond[i * (ncols - 1) + j - 1] != 1)) {
+			if (bl_cond[i * (ncols - 1) + j] != -1) {
+				if ((j - 1 < 0) || (bl_cond[i * (ncols - 1) + j - 1] == -1)) {
 					n_points_multipl += ky + 1;
-					if ((i - 1 >= 0) && (bl_cond[(i - 1) * (ncols - 1) + j] == 1)) {
+					if ((i - 1 >= 0) && (bl_cond[(i - 1) * (ncols - 1) + j] != -1)) {
 						n_points_multipl -= 1;
 					}
 				}
-				if ((i - 1 < 0) || (bl_cond[(i - 1) * (ncols - 1) + j] != 1)) {
+				if ((i - 1 < 0) || (bl_cond[(i - 1) * (ncols - 1) + j] == -1)) {
 					n_points_multipl += kx;
-					if ((i - 1 >= 0) && (j + 1 < ncols - 1) && (bl_cond[(i - 1) * (ncols - 1) + j + 1] == 1)) {
+					if ((i - 1 >= 0) && (j + 1 < ncols - 1) && (bl_cond[(i - 1) * (ncols - 1) + j + 1] != -1)) {
 						n_points_multipl -= 1;
 					}
 				}
@@ -404,7 +414,7 @@ int do_interpolation()
 	return 0;
 }
 
-int print_vtk()
+int print_vtk(void)
 {
 	FILE *f = fopen("map.vtk", "w");
 	fprintf(f, "# vtk DataFile Version 2.0\n");
@@ -471,7 +481,7 @@ int print_vtk()
 	return 0;
 }
 
-int free_massives()
+int free_massives(void)
 {
 	free(mass);
 	free(bl_cond);
@@ -481,23 +491,92 @@ int free_massives()
 	return 0;
 }
 
-int create_A()
+int create_A(void)
+{}
+
+int set_arrays(void)
 {
+	int i, j, k, l, m, n;
+	if (alpha = (float *) malloc(n_cells * nz * sizeof(float)) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	n = 0;
+	for (k = 0; k < nz; n++) {
+		for (i = 0; i < nrows - 1; i++) {
+			for (l = 0; l < kx; l++) {
+				for (j = 0; j < ncols - 1; j++) {
+					for (m = 0; m < ky; m++) {
+						if ((bl_cond[k * nx * ny + i * ny + j] != -1) &&
+							(snow_region[i * ncols + j] == 1)) {
+								alpha[n] = depth / 
+						}
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+void display_usage(void)
+{
+	printf("Options -m, -r, -H, -D, -x, -y, -z, -s, -a must be declared\n\n");
+	printf("-m\tmap\tfile of map\n");
+	printf("-r\trerion\tfile of region\n");
+	printf("-H\thight\thight of calculation area (float)\n");
+	printf("-D\tdepth\tdepth of snow cover (float)\n");
+	printf("-x\tkx\treduction ratio in x direction (int)\n");
+	printf("-y\tky\treduction ratio in y direction (int)\n");
+	printf("-z\tkz\treduction ratio in z direction (int)\n");
+	printf("-s\tsnow density\tdensity of snow (float)\n");
+	printf("-a\tair density\tdensity of air (float)\n");
+	printf("-h\tdisplay usage\n");
 }
 
 int main(int argc, char **argv)
 {
-	if (argc != 7) goto error;
-
-	map_name = argv[1];
-	region_map_name = argv[6];
-	hight = atof(argv[2]);
-	kx = atoi(argv[3]);
-	ky = atoi(argv[4]);
-	kz = atoi(argv[5]);
-	if ((float) atoi(argv[3]) != atof(argv[3])) goto error;
-	if ((float) atoi(argv[4]) != atof(argv[4])) goto error;
-	if ((float) atoi(argv[5]) != atof(argv[5])) goto error;
+	int opt = 0;
+	static const char *optString = "m:r:H:D:x:y:z:s:a:h?";
+	while ((opt = getopt(argc, argv, optString)) != -1) {
+		switch (opt) {
+			case 'm':
+				map_name = optarg;
+				break;
+			case 'r':
+				region_map_name = optarg;
+				break;
+			case 'H':
+				hight = atof(optarg);
+				break;
+			case 'D':
+				depth = atof(optarg);
+				break;
+			case 'x':
+				kx = atoi(optarg);
+				break;
+			case 'y':
+				ky = atoi(optarg);
+				break;
+			case 'z':
+				kz = atoi(optarg);
+				break;
+			case 's':
+				density_snow = atof(optarg);
+				break;
+			case 'a':
+				density_air = atof(optarg);
+				break;
+			case 'h':
+			case '?':
+				display_usage();
+				return 1;
+		}
+	}
+	if (argc != 19) {
+		printf("Not enouth arguments\n");
+		return 1;
+	}
 
 	if (read_asc_and_declare_variables() == 1) goto error;
 	if (do_interpolation() == 1) goto error;
@@ -507,6 +586,5 @@ int main(int argc, char **argv)
 	return 0;
 error:
 	printf("Error\n");
-	printf("asc2vtk.out [map.asc] [hight] [x koef] [y koef] [z koef] [region_map.asc]\n");
 	return 1;
 }
