@@ -11,6 +11,7 @@ int free_massives(void);
 void display_usage(void);
 int create_A(void);
 int set_arrays(void);
+int annihilate_array(void *a, int size_bites);
 
 char *map_name;
 char *region_map_name;
@@ -336,9 +337,20 @@ int read_asc_and_declare_variables(void)
 	return 0;
 }
 
+int annihilate_array(void *a, int size_bites)
+{
+	char *b;
+	b = (char *) a;
+	int i;
+	for (i = 0; i < size_bites; i++)
+		b[i] = '0';
+}
+
 int do_interpolation(void)
 {
-	int i, j, k, l, m, n, o, p, q, a = 0;
+	int i, j, k, l, m, n, o, p, q = 0;
+	float a, b, d;
+	float *c;
 	n_points_multipl = 0;
 	for (i = 0; i < nrows - 1; i++) {
 		for (j = 0; j < ncols - 1; j++) {
@@ -370,6 +382,59 @@ int do_interpolation(void)
 		printf("Memory error\n");
 		return 1;
 	}
+
+	if ((c = (float *) malloc(ncols * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+
+	float *e, *f;
+	if ((e = (float *) malloc(ncols * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	if ((f = (float *) malloc(ncols * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	for (i = 0; i < nrows; i++) {
+		e[2] = f[2] = 0;
+		for (j = 3; j < ncols - 1; j++) {
+			e[j] = - 1. / (4 * e[j - 1] + 1);
+			f[j] = (6 * (mass[i * ncols + j + 1] - mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j - 1]) / (4 * e[j - 1] + 1);
+		}
+		j = ncols - 2;
+		c[j] = (6 * (mass[i * ncols + j + 1] - mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j]) / (1 + 4 * e[j])
+		for (j = ncols - 3; j > 1; j--) {
+			c[j] = e[j + 1] * c[j + 1] + f[j + 1];
+		}
+		c[1] = c[ncols - 1] = c[0] = 0;
+		for (j = 1; j < ncols; j++) {
+			a = mass[i * ncols + j];
+			d = (c[j] - c[j - 1]) / cellsize;
+			b = (mass[i * ncols + j] - mass[i * ncols + j - 1]) / cellsize + cellsize * (2 * c[j] + c[j - 1]) / 6;
+			if (((bl_cond[i * (ncols - 1) + j - 1] != -1) && (i != ncols - 1)) ||
+				(bl_cond[(i - 1) * (ncols - 1) + j - 1] != -1) && (i == ncols - 1)) {
+					for (k = 0; k < ky; k++) {
+						mass1[i * kx * ncols + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
+							c[j] * pow((float) k * cellsize / (float) ky - cellsize, 2) / 2 +
+							d * pow((float) k * cellsize / (float) ky - cellsize, 3) / 6;
+					}
+			} else {
+				for (k = 0; k < ky; k++) {
+					mass1[i * kx * ncols + (j - 1) * ky + k] = nodata_value;
+				}
+			}
+		}
+		annihilate_array((void *) c, ncols * sizeof(float));
+		annihilate_array((void *) e, ncols * sizeof(float));
+		annihilate_array((void *) f, ncols * sizeof(float));
+	}
+	free(c);
+	for (j = 0; j < ncols; j++) {
+		for ()
+	}
+
 	for (i = 0; i < nrows; i++) {
 		for (k = 0; k < ky; k++) { 
 			for (j = 0; j < ncols; j++) {
