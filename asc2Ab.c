@@ -34,8 +34,12 @@ float nodata_value;
 int *snow_region;
 float depth;
 float density_snow, density_air;
-float *alpha;
-float *rho;
+float *phase_fraction;
+float *density;
+float *velocity;
+float *pressure;
+float pressure_atmosphere;
+float g;
 
 int read_asc_and_declare_variables(void)
 {
@@ -246,25 +250,25 @@ int read_asc_and_declare_variables(void)
 	remove("regions_map.txt");
 
 	int *snow_region = (int *) malloc(ncols * nrows * sizeof(int));
-	float xlucorner = xllcorner;
-	float ylucorner = yllcorner + cellsize * nrows;
-	float xlucorner1 = xllcorner1;
-	float ylucorner1 = yllcorner1 + cellsize1 * nrows1;
+	float xlucorner = xllcorner - cellsize * nrows;
+	float ylucorner = yllcorner;
+	float xlucorner1 = xllcorner1 - cellsize1 * nrows1;
+	float ylucorner1 = yllcorner1;
 	for (i = 0; i < nrows; i++) {
 		for (j = 0; j < ncols; j++) {
 			if ((xlucorner1 - xlucorner >= 0) && (ylucorner -ylucorner1 >= 0) &&
-				(j >= ((int) (xlucorner1 - xlucorner)) / cellsize) &&
-				(i >= ((int) (ylucorner - ylucorner1)) / cellsize) &&
-				(j < ((int) (xlucorner1 - xlucorner)) / cellsize + ncols1) &&
-				(i < ((int) (ylucorner - ylucorner1)) / cellsize + nrows1)) {
-					if (mass_tmp[(i - ((int) (ylucorner - ylucorner1)) /\
+				(j * cellsize + ylucorner >= ylucorner1) &&
+				(i * cellsize + xlucorner >= xlucorner1) &&
+				(j * cellsize + ylucorner <= ylucorner1 + ncols1 * cellsize) &&
+				(i * cellsize + xlucorner <= xlucorner1 + nrows1 * cellsize)) {
+					if (mass_tmp[(i - ((int) (xlucorner1 - xlucorner)) /\
 						(int) cellsize) * ncols1 + j -\
-						((int) (xlucorner1 - xlucorner)) /\
+						((int) (ylucorner1 - ylucorner)) /\
 						(int) cellsize] == 1)
 						snow_region[i * ncols + j] = 1;
-					else if (mass_tmp[(i - ((int) (ylucorner - ylucorner1)) /\
+					else if (mass_tmp[(i - ((int) (xlucorner1 - xlucorner)) /\
 						(int) cellsize) * ncols1 + j -\
-						((int) (xlucorner1 - xlucorner)) / (int) cellsize] == 0)
+						((int) (ylucorner1 - ylucorner)) / (int) cellsize] == 0)
 							snow_region[i * ncols + j] = 0;
 					else
 						snow_region[i * ncols + j] = -1;
@@ -444,6 +448,11 @@ int print_vtk(void)
 					(ind_multipl[(i - 1) * ncols * kx + j] != -1) &&
 					(ind_multipl[i * ncols * kx + j - 1] != -1) &&
 					(ind_multipl[(i - 1) * ncols * kx + j - 1] != -1)) {
+//						fprintf(f, "%d %d %d %d %d %d %d %d %d\n", 8,
+//							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
+//							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
+//							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
+//							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1]);
 						fprintf(f, "%d %d %d %d %d\n", 4,
 							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
 							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
@@ -477,6 +486,7 @@ int print_vtk(void)
 	fprintf(f, "CELL_TYPES %d\n", n_cells * kx * ky * kz * (int) (hight / cellsize) * 5);
 	for (i = 0; i < n_cells * kx * ky * kz * (int) (hight / cellsize) * 5; i++) {
 		fprintf(f, "%d\n", 10);
+//		fprintf(f, "%d\n", 12);
 	}
 	return 0;
 }
@@ -494,10 +504,29 @@ int free_massives(void)
 int create_A(void)
 {}
 
+void print_mass(void)
+{
+	int i;
+	for (i = 0; i < ncols * nrows; i++)
+		printf("%f\n", mass[i]);
+}
+
 int set_arrays(void)
 {
 	int i, j, k, l, m, n;
-	if (alpha = (float *) malloc(n_cells * nz * sizeof(float)) == NULL) {
+	if ((phase_fraction = (float *) malloc(n_cells * nz * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	if ((density = (float *) malloc(n_cells * nz * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	if ((velocity = (float *) malloc(n_cells * nz * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	if ((pressure = (float *) malloc(n_cells * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
@@ -507,9 +536,24 @@ int set_arrays(void)
 			for (l = 0; l < kx; l++) {
 				for (j = 0; j < ncols - 1; j++) {
 					for (m = 0; m < ky; m++) {
-						if ((bl_cond[k * nx * ny + i * ny + j] != -1) &&
+						if ((bl_cond[i * (ncols - 1) + j] != -1) &&
 							(snow_region[i * ncols + j] == 1)) {
-								alpha[n] = depth / 
+								if (((float) (k + 1) * cellsize > depth) && (depth > (float) k * cellsize)) {
+									phase_fraction[n] = (depth - (float) k * cellsize) / (float) cellsize;
+									density[n] = phase_fraction[n] * density_snow + (1 - phase_fraction[n]) * density_air;
+								}
+								else if (depth > (float) (k + 1) * cellsize) {
+									phase_fraction[n] = 1;
+									density[n] = density_snow;
+								}
+								else {
+									phase_fraction[n] = 0;
+									density[n] = density_air;
+								}
+						}
+						if (bl_cond[i * (ncols - 1) + j] != -1) {
+							velocity[n] = 0;
+							n++;
 						}
 					}
 				}
@@ -521,9 +565,9 @@ int set_arrays(void)
 
 void display_usage(void)
 {
-	printf("Options -m, -r, -H, -D, -x, -y, -z, -s, -a must be declared\n\n");
-	printf("-m\tmap\tfile of map\n");
-	printf("-r\trerion\tfile of region\n");
+	printf("Options -m, -r, -H, -D, -x, -y, -z, -s, -a, -p must be declared\n\n");
+	printf("-m\tmap\tASCII file of map\n");
+	printf("-r\trerion\tASCII file of region\n");
 	printf("-H\thight\thight of calculation area (float)\n");
 	printf("-D\tdepth\tdepth of snow cover (float)\n");
 	printf("-x\tkx\treduction ratio in x direction (int)\n");
@@ -531,13 +575,15 @@ void display_usage(void)
 	printf("-z\tkz\treduction ratio in z direction (int)\n");
 	printf("-s\tsnow density\tdensity of snow (float)\n");
 	printf("-a\tair density\tdensity of air (float)\n");
+	printf("-p\tpressure\tatmosphere pressure\n");
 	printf("-h\tdisplay usage\n");
 }
 
 int main(int argc, char **argv)
 {
 	int opt = 0;
-	static const char *optString = "m:r:H:D:x:y:z:s:a:h?";
+	g = 9,81;
+	static const char *optString = "m:r:H:D:x:y:z:s:a:p:h?";
 	while ((opt = getopt(argc, argv, optString)) != -1) {
 		switch (opt) {
 			case 'm':
@@ -567,13 +613,16 @@ int main(int argc, char **argv)
 			case 'a':
 				density_air = atof(optarg);
 				break;
+			case 'p':
+				pressure_atmosphere = atof(optarg);
+				break;
 			case 'h':
 			case '?':
 				display_usage();
 				return 1;
 		}
 	}
-	if (argc != 19) {
+	if (argc != 21) {
 		printf("Not enouth arguments\n");
 		return 1;
 	}
@@ -581,7 +630,9 @@ int main(int argc, char **argv)
 	if (read_asc_and_declare_variables() == 1) goto error;
 	if (do_interpolation() == 1) goto error;
 	if (print_vtk() == 1) goto error;
+	print_mass();
 	if (free_massives() == 1) goto error;
+
 
 	return 0;
 error:
