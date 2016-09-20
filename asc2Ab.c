@@ -28,7 +28,6 @@ int *bl_cond;
 int n_points, n_cells;
 int n_points_multipl;
 int *ind_multipl;
-int count_ind_multipl;
 float interpolation, interpolation_poli;
 float *mass1;
 float nodata_value;
@@ -348,9 +347,11 @@ int annihilate_array(void *a, int size_bites)
 
 int do_interpolation(void)
 {
-	int i, j, k, l, m, n, o, p, q = 0;
+	int i, j, k, l = 0;
 	float a, b, d;
 	float *c;
+	float *e, *f;
+	
 	n_points_multipl = 0;
 	for (i = 0; i < nrows - 1; i++) {
 		for (j = 0; j < ncols - 1; j++) {
@@ -377,52 +378,68 @@ int do_interpolation(void)
 		return 1;
 	}
 
-	count_ind_multipl = 0;
+	int count_ind_multipl = 0;
 	if ((mass1 = (float *) malloc(ncols * kx * nrows * ky * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	annihilate_array(mass1, ncols * kx * nrows * ky * sizeof(float));
+	for (i = 0; i < nrows; i++)
+		for (j = 0; j < ncols; j++)
+			mass1[i * ncols * kx * ky + j * ky] = mass[i * ncols + j];
 
 	if ((c = (float *) malloc(ncols * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 
-	float *e, *f;
 	if ((e = (float *) malloc(ncols * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+
 	if ((f = (float *) malloc(ncols * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+
+	int ind_start, ind_finish, flag;
 	for (i = 0; i < nrows; i++) {
-		e[2] = f[2] = 0;
-		for (j = 3; j < ncols - 1; j++) {
+		flag = 0;
+		for (j = 0; j < ncols; j++) {
+			if ((mass[i * ncols + j] != nodata_value) && (flag == 0)) {
+				ind_start = j;
+				flag = 1;
+			}
+			if ((mass[i * ncols + j] == nodata_value) && (flag == 1)) {
+				ind_finish = j;
+				flag = 2;
+			}
+		}
+		e[ind_start + 2] = f[ind_start + 2] = 0;
+		for (j = ind_start + 3; j < ind_finish - 1; j++) {
 			e[j] = - 1. / (4 * e[j - 1] + 1);
 			f[j] = (6 * (mass[i * ncols + j + 1] - mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j - 1]) / (4 * e[j - 1] + 1);
 		}
-		j = ncols - 2;
-		c[j] = (6 * (mass[i * ncols + j + 1] - mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j]) / (1 + 4 * e[j])
-		for (j = ncols - 3; j > 1; j--) {
+		j = ind_finish - 2;
+		c[j] = (6 * (mass[i * ncols + j + 1] - mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j]) / (1 + 4 * e[j]);
+		for (j = ind_finish - 3; j > ind_start + 1; j--) {
 			c[j] = e[j + 1] * c[j + 1] + f[j + 1];
 		}
-		c[1] = c[ncols - 1] = c[0] = 0;
-		for (j = 1; j < ncols; j++) {
+		c[ind_start + 1] = c[ind_finish - 1] = c[ind_start] = 0;
+		for (j = ind_start + 1; j < ind_finish; j++) {
 			a = mass[i * ncols + j];
 			d = (c[j] - c[j - 1]) / cellsize;
 			b = (mass[i * ncols + j] - mass[i * ncols + j - 1]) / cellsize + cellsize * (2 * c[j] + c[j - 1]) / 6;
-			if (((bl_cond[i * (ncols - 1) + j - 1] != -1) && (i != ncols - 1)) ||
-				(bl_cond[(i - 1) * (ncols - 1) + j - 1] != -1) && (i == ncols - 1)) {
+			if ((mass[i * ncols + j - 1] != nodata_value) && (mass[i * ncols + j] != nodata_value)) {
 					for (k = 0; k < ky; k++) {
-						mass1[i * kx * ncols + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
+						mass1[i * kx * ncols * ky + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
 							c[j] * pow((float) k * cellsize / (float) ky - cellsize, 2) / 2 +
 							d * pow((float) k * cellsize / (float) ky - cellsize, 3) / 6;
 					}
 			} else {
 				for (k = 0; k < ky; k++) {
-					mass1[i * kx * ncols + (j - 1) * ky + k] = nodata_value;
+					mass1[i * kx * ncols * ky + (j - 1) * ky + k] = nodata_value;
 				}
 			}
 		}
@@ -430,56 +447,97 @@ int do_interpolation(void)
 		annihilate_array((void *) e, ncols * sizeof(float));
 		annihilate_array((void *) f, ncols * sizeof(float));
 	}
+	
 	free(c);
-	for (j = 0; j < ncols; j++) {
-		for ()
+	free(e);
+	free(f);
+
+	printf("Interpolation along the y axis have been done\n");
+	
+	if ((c = (float *) malloc(nrows * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
 	}
 
-	for (i = 0; i < nrows; i++) {
-		for (k = 0; k < ky; k++) { 
-			for (j = 0; j < ncols; j++) {
-				for (l = 0; l < kx; l++) {
-					mass1[i * ky * ncols * kx + k * ncols * kx + j * kx + l] = nodata_value;
-					ind_multipl[i * ky * ncols * kx + k * ncols * kx + j * kx + l] = -1;
-					if (ind[i * ncols + j] != -1) {
-						if ((k == 0) && (l == 0)) {
-							mass1[i * kx * ncols * kx + k * ncols * kx + j * kx + l] = mass[i * ncols + j];
-							ind_multipl[i * ky * ncols * kx + k * ncols * kx + j * kx + l] = count_ind_multipl;
-							count_ind_multipl++;
-						} else {
-							if (((k == 0) && (j + 1 < ncols) && (ind[i * ncols + j + 1] != -1)) ||
-								((l == 0) && (i + 1 < nrows) && (ind[(i + 1) * ncols + j] != -1)) ||
-								((i + 1 < nrows) && (j + 1 < ncols) && (ind[(i + 1) * ncols + j] != -1) &&
-								 (ind[i * ncols + j + 1] != -1) && (ind[(i + 1) * ncols + j + 1] != -1))) {
-									interpolation = 0;
-									for (n = 0; n < nrows; n++) {
-										for (m = 0; m < ncols; m++) {
-											if (ind[n * ncols + m] != -1) {
-												interpolation_poli = mass[n * ncols + m];
-												for (o = 0; o < nrows; o++) {
-													if (o != n) {
-														interpolation_poli *= (i + k / (float) ky - o) / (n - o);
-													}
-												}
-												for (p = 0; p < ncols; p ++) {
-													if (p != m) {
-														interpolation_poli *= (j + l / (float) kx - p) / (m - p);
-													}
-												}
-												interpolation += interpolation_poli;
-											}
-										}
-									}
-									mass1[i * ky * ncols * kx + k * ncols * kx + j * kx + l] = interpolation;
-									ind_multipl[i * ky * ncols * kx + k * ncols * kx + j * kx + l] = count_ind_multipl;
-									count_ind_multipl++;
-							}
+	if ((e = (float *) malloc(nrows * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+
+	if ((f = (float *) malloc(nrows * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+
+	for (j = 0; j < ncols; j++) {
+		for (l = 0; l < ky; l++) {
+			flag = 0;
+			for (i = 0; i < nrows; i++) {
+				if ((mass[i * ncols + j] != nodata_value) && (flag == 0)) {
+					ind_start = i;
+					flag = 1;
+				}
+				if ((mass[i * ncols + j] == nodata_value) && (flag == 1)) {
+					ind_finish = i;
+					flag = 2;
+				}
+			}
+			e[ind_start + 2] = f[ind_start + 2] = 0;
+			for (i = ind_start + 3; i < ind_finish - 1; i++) {
+				e[i] = - 1. / (4 * e[i - 1] + 1);
+				f[i] = (6 * (mass1[(i + 1) * ncols * ky * kx + j * ky + l] - mass1[(i - 1) * ncols * ky * kx + j * ky + l]) /
+					(cellsize * cellsize) - 4 * f[i - 1]) / (4 * e[i - 1] + 1);
+			}
+			i = ind_finish - 2;
+			c[i] = (6 * (mass1[(i + 1) * ncols * ky * kx + j * ky + l] - mass1[(i - 1) * ncols * kx * ky + j * ky + l]) /
+				(cellsize * cellsize) - 4 * f[i]) / (1 + 4 * e[i]);
+			for (i = ind_finish - 3; i > ind_start + 1; i--) {
+				c[i] = e[i + 1] * c[i + 1] + f[i + 1];
+			}
+			c[ind_start + 1] = c[ind_finish - 1] = c[ind_start] = 0;
+			for (i = ind_start + 1; i < ind_finish; i++) {
+				a = mass1[i * ncols * ky * kx + j * ky + l];
+				d = (c[i] - c[i - 1]) / cellsize;
+				b = (mass1[i * ncols * kx * ky + j * ky + l] - mass1[(i - 1) * ncols * kx * ky + j * ky + l]) /
+					cellsize + cellsize * (2 * c[i] + c[i - 1]) / 6;
+				if ((mass1[(i - 1) * ncols * kx * ky + j * ky + l] != nodata_value) && (mass1[i * ncols * kx * ky + j * ky + l] != nodata_value)) {
+						for (k = 0; k < kx; k++) {
+							mass1[(i - 1) * kx * ncols * ky + k * ncols * ky + j * ky + l] = a + b * ((float) k * cellsize / (float) kx - cellsize) +
+								c[i] * pow((float) k * cellsize / (float) kx - cellsize, 2) / 2 +
+								d * pow((float) k * cellsize / (float) kx - cellsize, 3) / 6;
 						}
+				} else {
+					for (k = 0; k < kx; k++) {
+						mass1[(i - 1) * kx * ncols * ky + k * ncols * ky + j * ky + l] = nodata_value;
 					}
 				}
 			}
+			annihilate_array((void *) c, nrows * sizeof(float));
+			annihilate_array((void *) e, nrows * sizeof(float));
+			annihilate_array((void *) f, nrows * sizeof(float));
 		}
 	}
+
+	free(c);
+	free(e);
+	free(f);
+
+	printf("Interpolation along the x axes have been done\n");
+
+	count_ind_multipl = 0;
+	for (i = 0; i < nrows * kx; i++) {
+		for (j = 0; j < ncols * ky; j++) {
+			if (mass1[i * ncols * ky + j] != nodata_value) {
+				ind_multipl[i * ncols * ky + j] = count_ind_multipl;
+				count_ind_multipl++;
+			} else {
+				ind_multipl[i * ncols * ky + j] = -1;
+			}
+		}
+	}
+
+	printf("%d - n_points_multipl\n%d - count_ind_multipl\n", n_points_multipl, count_ind_multipl);
+
 	return 0;
 }
 
@@ -494,9 +552,9 @@ int print_vtk(void)
 	int i, j, k, a;
 	fprintf(f, "POINTS %d float\n", n_points_multipl * ((int) (hight / cellsize) * kz + 1));
 	for (k = 0; k <= (int) (hight / cellsize) * kz; k++) {
-		for (i = 0; i < nrows * ky; i ++) {
-			for (j = 0; j < ncols * kx; j++) {
-				if (ind_multipl[i * ncols * kx + j] != -1)
+		for (i = 0; i < nrows * kx; i ++) {
+			for (j = 0; j < ncols * ky; j++) {
+				if (ind_multipl[i * ncols * ky + j] != -1)
 					fprintf(f, "%f %f %f\n", j * cellsize / (float) kx, i * cellsize / (float) ky,
 						mass1[i * ncols * kx + j] + k * cellsize / (float) kz);
 			}
@@ -518,31 +576,31 @@ int print_vtk(void)
 //							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
 //							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
 //							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1]);
-						fprintf(f, "%d %d %d %d %d\n", 4,
-							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
-							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
-							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
-							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1]);
-						fprintf(f, "%d %d %d %d %d\n", 4,
-							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
-							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
-							k * n_points_multipl + ind_multipl[i * ncols * kx + j],
-							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j]);
-						fprintf(f, "%d %d %d %d %d\n", 4,
-							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
-							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
-							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
-							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j]);
-						fprintf(f, "%d %d %d %d %d\n", 4,
-							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
-							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
-							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
-							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j]);
-						fprintf(f, "%d %d %d %d %d\n", 4,
-							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
-							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
-							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
-							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j]);
+//						fprintf(f, "%d %d %d %d %d\n", 4,
+//							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
+//							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
+//							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
+//							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1]);
+//						fprintf(f, "%d %d %d %d %d\n", 4,
+//							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
+//							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
+//							k * n_points_multipl + ind_multipl[i * ncols * kx + j],
+//							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j]);
+//						fprintf(f, "%d %d %d %d %d\n", 4,
+//							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
+//							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
+//							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
+//							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j]);
+//						fprintf(f, "%d %d %d %d %d\n", 4,
+//							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
+//							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
+//							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
+//							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j]);
+//						fprintf(f, "%d %d %d %d %d\n", 4,
+//							k * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j],
+//							k * n_points_multipl + ind_multipl[i * ncols * kx + j - 1],
+//							(k + 1) * n_points_multipl + ind_multipl[(i - 1) * ncols * kx + j - 1],
+//							(k + 1) * n_points_multipl + ind_multipl[i * ncols * kx + j]);
 						a++;
 				}
 			}
@@ -693,8 +751,11 @@ int main(int argc, char **argv)
 	}
 
 	if (read_asc_and_declare_variables() == 1) goto error;
+	printf("Files of map and region have been processed\n");
 	if (do_interpolation() == 1) goto error;
+	printf("The interpolation have been done\n");
 	if (print_vtk() == 1) goto error;
+	printf("Map was printed to VTK format\n");
 	print_mass();
 	if (free_massives() == 1) goto error;
 
