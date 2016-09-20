@@ -328,6 +328,8 @@ int read_asc_and_declare_variables(void)
 					bl_cond[(i - 1) * (ncols - 1) + j - 1] = n_cells;
 					n_cells++;
 			}
+			if (ind[i * ncols + j] == -1)
+				mass[i * ncols + j] = nodata_value;
 		}
 	}
 	nx = (nrows - 1) * kx;
@@ -383,7 +385,8 @@ int do_interpolation(void)
 		printf("Memory error\n");
 		return 1;
 	}
-	annihilate_array(mass1, ncols * kx * nrows * ky * sizeof(float));
+	for (i = 0; i < ncols * nrows * kx * ky; i++)
+		mass1[i] = nodata_value;
 	for (i = 0; i < nrows; i++)
 		for (j = 0; j < ncols; j++)
 			mass1[i * ncols * kx * ky + j * ky] = mass[i * ncols + j];
@@ -406,23 +409,25 @@ int do_interpolation(void)
 	int ind_start, ind_finish, flag;
 	for (i = 0; i < nrows; i++) {
 		flag = 0;
+		ind_start = 0;
+		ind_finish = ncols;
 		for (j = 0; j < ncols; j++) {
 			if ((mass[i * ncols + j] != nodata_value) && (flag == 0)) {
 				ind_start = j;
 				flag = 1;
 			}
 			if ((mass[i * ncols + j] == nodata_value) && (flag == 1)) {
-				ind_finish = j;
+				ind_finish = j + 1;
 				flag = 2;
 			}
 		}
 		e[ind_start + 2] = f[ind_start + 2] = 0;
 		for (j = ind_start + 3; j < ind_finish - 1; j++) {
 			e[j] = - 1. / (4 * e[j - 1] + 1);
-			f[j] = (6 * (mass[i * ncols + j + 1] - mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j - 1]) / (4 * e[j - 1] + 1);
+			f[j] = (6 * (mass[i * ncols + j + 1] - 2 * mass[i * ncols + j] + mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j - 1]) / (4 * e[j - 1] + 1);
 		}
 		j = ind_finish - 2;
-		c[j] = (6 * (mass[i * ncols + j + 1] - mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j]) / (1 + 4 * e[j]);
+		c[j] = (6 * (mass[i * ncols + j + 1] - 2 * mass[i * ncols + j] + mass[i * ncols + j - 1]) / (cellsize * cellsize) - 4 * f[j]) / (1 + 4 * e[j]);
 		for (j = ind_finish - 3; j > ind_start + 1; j--) {
 			c[j] = e[j + 1] * c[j + 1] + f[j + 1];
 		}
@@ -432,14 +437,10 @@ int do_interpolation(void)
 			d = (c[j] - c[j - 1]) / cellsize;
 			b = (mass[i * ncols + j] - mass[i * ncols + j - 1]) / cellsize + cellsize * (2 * c[j] + c[j - 1]) / 6;
 			if ((mass[i * ncols + j - 1] != nodata_value) && (mass[i * ncols + j] != nodata_value)) {
-					for (k = 0; k < ky; k++) {
-						mass1[i * kx * ncols * ky + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
-							c[j] * pow((float) k * cellsize / (float) ky - cellsize, 2) / 2 +
-							d * pow((float) k * cellsize / (float) ky - cellsize, 3) / 6;
-					}
-			} else {
 				for (k = 0; k < ky; k++) {
-					mass1[i * kx * ncols * ky + (j - 1) * ky + k] = nodata_value;
+					mass1[i * kx * ncols * ky + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
+						c[j] * pow((float) k * cellsize / (float) ky - cellsize, 2) / 2 +
+						d * pow((float) k * cellsize / (float) ky - cellsize, 3) / 6;
 				}
 			}
 		}
@@ -448,6 +449,11 @@ int do_interpolation(void)
 		annihilate_array((void *) f, ncols * sizeof(float));
 	}
 	
+	printf("After interpolation along y axis\n");
+	for (i = 0; i < ncols * nrows * kx * ky; i++)
+		printf("%f\n", mass1[i]);
+	printf("After interpolation along both of axis\n");
+
 	free(c);
 	free(e);
 	free(f);
@@ -472,24 +478,26 @@ int do_interpolation(void)
 	for (j = 0; j < ncols; j++) {
 		for (l = 0; l < ky; l++) {
 			flag = 0;
+			ind_start = 0;
+			ind_finish = nrows;
 			for (i = 0; i < nrows; i++) {
 				if ((mass[i * ncols + j] != nodata_value) && (flag == 0)) {
 					ind_start = i;
 					flag = 1;
 				}
 				if ((mass[i * ncols + j] == nodata_value) && (flag == 1)) {
-					ind_finish = i;
+					ind_finish = i + 1;
 					flag = 2;
 				}
 			}
 			e[ind_start + 2] = f[ind_start + 2] = 0;
 			for (i = ind_start + 3; i < ind_finish - 1; i++) {
 				e[i] = - 1. / (4 * e[i - 1] + 1);
-				f[i] = (6 * (mass1[(i + 1) * ncols * ky * kx + j * ky + l] - mass1[(i - 1) * ncols * ky * kx + j * ky + l]) /
+				f[i] = (6 * (mass1[(i + 1) * ncols * ky * kx + j * ky + l] - 2 * mass1[i * ncols * ky * kx + j * ky + l] + mass1[(i - 1) * ncols * ky * kx + j * ky + l]) /
 					(cellsize * cellsize) - 4 * f[i - 1]) / (4 * e[i - 1] + 1);
 			}
 			i = ind_finish - 2;
-			c[i] = (6 * (mass1[(i + 1) * ncols * ky * kx + j * ky + l] - mass1[(i - 1) * ncols * kx * ky + j * ky + l]) /
+			c[i] = (6 * (mass1[(i + 1) * ncols * ky * kx + j * ky + l] - mass1[i * ncols * ky * kx + j * ky + l] + mass1[(i - 1) * ncols * kx * ky + j * ky + l]) /
 				(cellsize * cellsize) - 4 * f[i]) / (1 + 4 * e[i]);
 			for (i = ind_finish - 3; i > ind_start + 1; i--) {
 				c[i] = e[i + 1] * c[i + 1] + f[i + 1];
@@ -506,10 +514,6 @@ int do_interpolation(void)
 								c[i] * pow((float) k * cellsize / (float) kx - cellsize, 2) / 2 +
 								d * pow((float) k * cellsize / (float) kx - cellsize, 3) / 6;
 						}
-				} else {
-					for (k = 0; k < kx; k++) {
-						mass1[(i - 1) * kx * ncols * ky + k * ncols * ky + j * ky + l] = nodata_value;
-					}
 				}
 			}
 			annihilate_array((void *) c, nrows * sizeof(float));
@@ -630,8 +634,14 @@ int create_A(void)
 void print_mass(void)
 {
 	int i;
+	printf("mass\n");
 	for (i = 0; i < ncols * nrows; i++)
 		printf("%f\n", mass[i]);
+	printf("mass1\n");
+	printf("kx = %d\nky = %d\nkz = %d\n", kx, ky, kz);
+	for (i = 0; i < ncols * ky * nrows * kx; i++)
+		printf("%f\n", mass1[i]);
+	return;
 }
 
 int set_arrays(void)
