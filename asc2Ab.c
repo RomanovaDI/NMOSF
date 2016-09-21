@@ -375,21 +375,25 @@ int do_interpolation(void)
 		}
 	}
 
-	if ((ind_multipl = (int *) malloc(ncols * kx * nrows * ky * sizeof(int))) == NULL) {
+	if ((ind_multipl = (int *) malloc(((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 
 	int count_ind_multipl = 0;
-	if ((mass1 = (float *) malloc(ncols * kx * nrows * ky * sizeof(float))) == NULL) {
+	if ((mass1 = (float *) malloc(((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	for (i = 0; i < ncols * nrows * kx * ky; i++)
+	for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
 		mass1[i] = nodata_value;
 	for (i = 0; i < nrows; i++)
 		for (j = 0; j < ncols; j++)
-			mass1[i * ncols * kx * ky + j * ky] = mass[i * ncols + j];
+			mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky] = mass[i * ncols + j];
+
+	printf("mass1 after assignment mass\n");
+	for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
+		printf("%f\n", mass1[i]);
 
 	if ((c = (float *) malloc(ncols * sizeof(float))) == NULL) {
 		printf("Memory error\n");
@@ -438,7 +442,7 @@ int do_interpolation(void)
 			b = (mass[i * ncols + j] - mass[i * ncols + j - 1]) / cellsize + cellsize * (2 * c[j] + c[j - 1]) / 6;
 			if ((mass[i * ncols + j - 1] != nodata_value) && (mass[i * ncols + j] != nodata_value)) {
 				for (k = 0; k < ky; k++) {
-					mass1[i * kx * ncols * ky + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
+					mass1[i * ((ncols - 1) * ky + 1) * kx + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
 						c[j] * pow((float) k * cellsize / (float) ky - cellsize, 2) / 2 +
 						d * pow((float) k * cellsize / (float) ky - cellsize, 3) / 6;
 				}
@@ -450,9 +454,8 @@ int do_interpolation(void)
 	}
 	
 	printf("After interpolation along y axis\n");
-	for (i = 0; i < ncols * nrows * kx * ky; i++)
+	for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
 		printf("%f\n", mass1[i]);
-	printf("After interpolation along both of axis\n");
 
 	free(c);
 	free(e);
@@ -493,24 +496,31 @@ int do_interpolation(void)
 			e[ind_start + 2] = f[ind_start + 2] = 0;
 			for (i = ind_start + 3; i < ind_finish - 1; i++) {
 				e[i] = - 1. / (4 * e[i - 1] + 1);
-				f[i] = (6 * (mass1[(i + 1) * ncols * ky * kx + j * ky + l] - 2 * mass1[i * ncols * ky * kx + j * ky + l] + mass1[(i - 1) * ncols * ky * kx + j * ky + l]) /
+				f[i] = (6 * (mass1[(i + 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l] -
+					2 * mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] +
+					mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l]) /
 					(cellsize * cellsize) - 4 * f[i - 1]) / (4 * e[i - 1] + 1);
 			}
 			i = ind_finish - 2;
-			c[i] = (6 * (mass1[(i + 1) * ncols * ky * kx + j * ky + l] - mass1[i * ncols * ky * kx + j * ky + l] + mass1[(i - 1) * ncols * kx * ky + j * ky + l]) /
+			c[i] = (6 * (mass1[(i + 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l] -
+				mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] +
+				mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l]) /
 				(cellsize * cellsize) - 4 * f[i]) / (1 + 4 * e[i]);
 			for (i = ind_finish - 3; i > ind_start + 1; i--) {
 				c[i] = e[i + 1] * c[i + 1] + f[i + 1];
 			}
 			c[ind_start + 1] = c[ind_finish - 1] = c[ind_start] = 0;
 			for (i = ind_start + 1; i < ind_finish; i++) {
-				a = mass1[i * ncols * ky * kx + j * ky + l];
+				a = mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l];
 				d = (c[i] - c[i - 1]) / cellsize;
-				b = (mass1[i * ncols * kx * ky + j * ky + l] - mass1[(i - 1) * ncols * kx * ky + j * ky + l]) /
+				b = (mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] -
+					mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l]) /
 					cellsize + cellsize * (2 * c[i] + c[i - 1]) / 6;
-				if ((mass1[(i - 1) * ncols * kx * ky + j * ky + l] != nodata_value) && (mass1[i * ncols * kx * ky + j * ky + l] != nodata_value)) {
+				if ((mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l] != nodata_value) &&
+					(mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] != nodata_value)) {
 						for (k = 0; k < kx; k++) {
-							mass1[(i - 1) * kx * ncols * ky + k * ncols * ky + j * ky + l] = a + b * ((float) k * cellsize / (float) kx - cellsize) +
+							mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + k * ((ncols - 1) * ky + 1) + j * ky + l] =
+								a + b * ((float) k * cellsize / (float) kx - cellsize) +
 								c[i] * pow((float) k * cellsize / (float) kx - cellsize, 2) / 2 +
 								d * pow((float) k * cellsize / (float) kx - cellsize, 3) / 6;
 						}
@@ -519,6 +529,7 @@ int do_interpolation(void)
 			annihilate_array((void *) c, nrows * sizeof(float));
 			annihilate_array((void *) e, nrows * sizeof(float));
 			annihilate_array((void *) f, nrows * sizeof(float));
+			if (j == ncols - 1) break;
 		}
 	}
 
@@ -527,6 +538,9 @@ int do_interpolation(void)
 	free(f);
 
 	printf("Interpolation along the x axes have been done\n");
+	printf("After interpolation along both of axis\n");
+	for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
+		printf("%f\n", mass1[i]);
 
 	count_ind_multipl = 0;
 	for (i = 0; i < nrows * kx; i++) {
