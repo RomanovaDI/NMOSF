@@ -26,8 +26,8 @@ float *mass;
 int *ind;
 int *bl_cond;
 int n_points, n_cells;
-int n_points_multipl;
-int *ind_multipl;
+int n_points_multipl, n_cells_multipl;
+int *ind_multipl, *ind_cell_multipl;
 float interpolation, interpolation_poli;
 float *mass1;
 float nodata_value;
@@ -40,6 +40,9 @@ float *velocity;
 float *pressure;
 float pressure_atmosphere;
 float g;
+float viscosity_eff, viscosity_0;
+float shear_rate, shear_stress[9];
+float *normal, *volume, *area;
 
 int read_asc_and_declare_variables(void)
 {
@@ -453,13 +456,6 @@ int do_interpolation(void)
 		annihilate_array((void *) f, ncols * sizeof(float));
 	}
 	
-	printf("After interpolation along y axis\n");
-	for (i = 0; i < (nrows - 1) * kx + 1; i++) {
-		for (j = 0; j < (ncols - 1) * ky + 1; j++)
-			printf("%f\t", mass1[i * ((ncols - 1) * ky + 1) + j]);
-		printf("\n");
-	}
-
 	free(c);
 	free(e);
 	free(f);
@@ -546,12 +542,6 @@ int do_interpolation(void)
 	free(f);
 
 	printf("Interpolation along the x axes have been done\n");
-	printf("After interpolation along both of axis\n");
-	for (i = 0; i < (nrows - 1) * kx + 1; i++) {
-		for (j = 0; j < (ncols - 1) * ky + 1; j++)
-			printf("%f\t", mass1[i * ((ncols - 1) * ky + 1) + j]);
-		printf("\n");
-	}
 
 	count_ind_multipl = 0;
 	for (i = 0; i < (nrows - 1) * kx + 1; i++) {
@@ -565,7 +555,26 @@ int do_interpolation(void)
 		}
 	}
 
-	printf("%d - n_points_multipl\n%d - count_ind_multipl\n", n_points_multipl, count_ind_multipl);
+	if ((ind_cell_multipl = (int *) malloc((nrows - 1) * kx * (ncols - 1) * ky * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+
+	for (i = 0; i < (nrows - 1) * kx * (ncols - 1) * ky; i++) {
+		ind_cell_multipl[i] = -1;
+	}
+
+	for (i = 1; i < (nrows - 1) * kx + 1; i++) {
+		for (j = 1; j < (ncols - 1) * ky + 1; j++) {
+			if ((ind_multipl[i * ((ncols - 1) * ky + 1) + j] != -1) &&
+				(ind_multipl[(i - 1) * ((ncols - 1) * ky + 1) + j] != -1) &&
+				(ind_multipl[i * ((ncols - 1) * ky + 1) + j - 1] != -1) &&
+				(ind_multipl[(i - 1) * ((ncols - 1) * ky + 1) + j - 1] != -1)) {
+					ind_cell_multipl[(i - 1) * (ncols - 1) * ky + j - 1] = n_cells_multipl;
+					n_cells_multipl++;
+			}
+		}
+	}
 
 	return 0;
 }
@@ -627,6 +636,14 @@ int free_massives(void)
 	free(ind);
 	free(ind_multipl);
 	free(mass1);
+	free(ind_cell_multipl);
+	free(phase_fraction);
+	free(density);
+	free(velocity);
+	free(pressure);
+	free(volume);
+	free(area);
+	free(normal);
 	return 0;
 }
 
@@ -648,20 +665,20 @@ void print_mass(void)
 
 int set_arrays(void)
 {
-	int i, j, k, l, m, n;
-	if ((phase_fraction = (float *) malloc(n_cells * nz * sizeof(float))) == NULL) {
+	int i, j, k, l, m;
+	if ((phase_fraction = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((density = (float *) malloc(n_cells * nz * sizeof(float))) == NULL) {
+	if ((density = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((velocity = (float *) malloc(n_cells * nz * sizeof(float))) == NULL) {
+	if ((velocity = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((pressure = (float *) malloc(n_cells * nz * sizeof(float))) == NULL) {
+	if ((pressure = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
@@ -671,30 +688,78 @@ int set_arrays(void)
 			for (l = 0; l < kx; l++) {
 				for (j = 0; j < ncols - 1; j++) {
 					for (m = 0; m < ky; m++) {
-						if ((bl_cond[i * (ncols - 1) + j] != -1) &&
-							(snow_region[i * ncols + j] == 1)) {
+						if (bl_cond[i * (ncols - 1) + j] != -1) {
+							if (snow_region[i * ncols + j] == 1) {
 								if (((float) (k + 1) * cellsize > depth) && (depth > (float) k * cellsize)) {
-									phase_fraction[n] = (depth - (float) k * cellsize) / (float) cellsize;
-									density[n] = phase_fraction[n] * density_snow + (1 - phase_fraction[n]) * density_air;
+									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
+										(depth - (float) k * cellsize) / (float) cellsize;
+									density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
+										phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] *
+										density_snow + (1 - phase_fraction[k * n_cells_multipl +
+										ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]]) * density_air;
+									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
+										pressure_atmosphere + density_snow * g * (depth - (float) k * cellsize);
 								}
 								else if (depth > (float) (k + 1) * cellsize) {
-									phase_fraction[n] = 1;
-									density[n] = density_snow;
+									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 1;
+									density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = density_snow;
+									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
+										pressure_atmosphere + density_snow * g * (depth - (float) k * cellsize);
 								}
 								else {
-									phase_fraction[n] = 0;
-									density[n] = density_air;
+									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
+									density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = density_air;
+									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
+										pressure_atmosphere;
 								}
+							} else {
+								pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
+									pressure_atmosphere;
+							}
 						}
 						if (bl_cond[i * (ncols - 1) + j] != -1) {
-							velocity[n] = 0;
-							n++;
+							velocity[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
 						}
 					}
 				}
 			}
 		}
 	}
+
+	if ((volume = (float *) malloc(n_cells_multipl * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+
+	if ((normal = (float *) malloc(n_cells_multipl * 6 * 3 * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+
+	if ((area = (float *) malloc(n_cells_multipl * 6 * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+
+	float a[3], b[3];
+	k = 0;
+	for (i = 0; i < nx; i++) {
+		for (j = 0; j < ny; j++) {
+			if (ind_cell_multipl[i * ny + j] != -1) {
+				for (l = 0; l < 6; l++) {
+					a[0] = cellsize / (float) kx;
+					a[1] = 0;
+					a[2] = mass1[i * (ny + 1) + j] - mass1[(i + 1) * (ny + 1) + j];
+					b[0] = 0;
+					b[1] = cellsize / (float) ky;
+					b[2] = mass1[i * (ny + 1) + j] - mass1[]
+					normal[k] = 
+				}
+				k++;
+			}
+		}
+	}
+
 	return 0;
 }
 
