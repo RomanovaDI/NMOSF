@@ -8,6 +8,7 @@ int read_asc_and_declare_variables(void);
 int do_interpolation(void);
 int print_vtk(void);
 int free_massives(void);
+void print_mass(void);
 void display_usage(void);
 int create_A(void);
 int set_arrays(void);
@@ -43,6 +44,7 @@ float g;
 float viscosity_eff, viscosity_0;
 float shear_rate, shear_stress[9];
 float *normal, *volume, *area;
+float *A_momentum_eqn;
 
 int read_asc_and_declare_variables(void)
 {
@@ -647,9 +649,6 @@ int free_massives(void)
 	return 0;
 }
 
-int create_A(void)
-{}
-
 void print_mass(void)
 {
 	int i;
@@ -741,26 +740,76 @@ int set_arrays(void)
 		return 1;
 	}
 
-	float a[3], b[3];
+	float a[4], b[4], c[4], p, d;
 	k = 0;
 	for (i = 0; i < nx; i++) {
 		for (j = 0; j < ny; j++) {
 			if (ind_cell_multipl[i * ny + j] != -1) {
-				for (l = 0; l < 6; l++) {
-					a[0] = cellsize / (float) kx;
-					a[1] = 0;
-					a[2] = mass1[i * (ny + 1) + j] - mass1[(i + 1) * (ny + 1) + j];
-					b[0] = 0;
-					b[1] = cellsize / (float) ky;
-					b[2] = mass1[i * (ny + 1) + j] - mass1[]
-					normal[k] = 
-				}
-				k++;
+				a[1] = cellsize / (float) kx;
+				a[2] = 0;
+				a[3] = mass1[(i + 1) * (ny + 1) + j] - mass1[i * (ny + 1) + j];
+				b[1] = 0;
+				b[2] = cellsize / (float) ky;
+				b[3] = mass1[i * (ny + 1) + j + 1] - mass1[i * (ny + 1) + j];
+				c[1] = cellsize / (float) kx;
+				c[2] = - cellsize / (float) ky;
+				c[3] = mass1[(i + 1) * (ny + 1) + j] - mass1[i * (ny + 1) + j + 1];
+				normal[k + 0 + 0] = a[2] * b[3] - a[3] * b[2];
+				normal[k + 0 + 1] = a[3] * b[1] - a[1] * b[3];
+				normal[k + 0 + 2] = a[1] * b[2] - a[2] * b[1];
+				a[0] = sqrt(a[1] * a[1] + a[2] * a[2] + a[3] * a[3]);
+				b[0] = sqrt(b[1] * b[1] + b[2] * b[2] + b[3] * b[3]);
+				c[0] = sqrt(c[1] * c[1] + c[2] * c[2] + c[3] * c[3]);
+				p = (a[0] + b[0] + c[0]) / 2;
+				area[k + 0] = sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
+				a[1] = cellsize / (float) kx;
+				a[2] = 0;
+				a[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[i * (ny + 1) + j + 1];
+				b[1] = 0;
+				b[2] = cellsize / (float) ky;
+				b[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[(i + 1) * (ny + 1) + j];
+				normal[k + 0 + 0] += a[2] * b[3] - a[3] * b[2];
+				normal[k + 0 + 1] += a[3] * b[1] - a[1] * b[3];
+				normal[k + 0 + 2] += a[1] * b[2] - a[2] * b[1];
+				a[0] = sqrt(a[1] * a[1] + a[2] * a[2] + a[3] * a[3]);
+				b[0] = sqrt(b[1] * b[1] + b[2] * b[2] + b[3] * b[3]);
+				p = (a[0] + b[0] + c[0]) / 2;
+				area[k + 0] += sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
+				d = sqrt(pow(normal[k + 0 + 0], 2) + pow(normal[k + 0 + 1], 2) + pow(normal[k + 0 + 2], 2));
+				normal[k + 0 + 0] /= d;
+				normal[k + 0 + 1] /= d;
+				normal[k + 0 + 2] /= d;
+				normal[k + 1 + 0] = - normal[k + 0 + 0];
+				normal[k + 1 + 1] = - normal[k + 0 + 1];
+				normal[k + 1 + 2] = - normal[k + 0 + 2];
+				normal[k + 2 + 0] = 0;
+				normal[k + 2 + 1] = 1;
+				normal[k + 2 + 2] = 0;
+				normal[k + 3 + 0] = 0;
+				normal[k + 3 + 1] = - 1;
+				normal[k + 3 + 2] = 0;
+				normal[k + 4 + 0] = 1;
+				normal[k + 4 + 1] = 0;
+				normal[k + 4 + 2] = 0;
+				normal[k + 5 + 0] = - 1;
+				normal[k + 5 + 1] = 0;
+				normal[k + 5 + 2] = 0;
+				area[k + 1] = area[k + 0];
+				area[k + 2] = cellsize * cellsize / ((float) kx * (float) kz);
+				area[k + 3] = cellsize * cellsize / ((float) kx * (float) kz);
+				area[k + 4] = cellsize * cellsize / ((float) ky * (float) kz);
+				area[k + 5] = cellsize * cellsize / ((float) ky * (float) kz);
+				volume[k] = cellsize * cellsize * cellsize / ((float) kx * (float) ky * (float) kz);
+				k += 6;
 			}
 		}
 	}
 
 	return 0;
+}
+
+int create_A(void)
+{
 }
 
 void display_usage(void)
