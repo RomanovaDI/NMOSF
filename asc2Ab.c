@@ -10,9 +10,9 @@ int print_vtk(void);
 int free_massives(void);
 void print_mass(void);
 void display_usage(void);
-int create_A(void);
+int create_Ab_momentum_eqn(void);
 int set_arrays(void);
-int annihilate_array(void *a, int size_bites);
+void annihilate_array(void *a, int size_bites);
 
 char *map_name;
 char *region_map_name;
@@ -44,7 +44,9 @@ float g;
 float viscosity_eff, viscosity_0;
 float shear_rate, shear_stress[9];
 float *normal, *volume, *area;
-float *A_momentum_eqn;
+float *A_momentum_eqn, *b_momentum_eqn;
+float dt, dx, dy, dz;
+float *shear_rate, *shear_stress;
 
 int read_asc_and_declare_variables(void)
 {
@@ -343,13 +345,14 @@ int read_asc_and_declare_variables(void)
 	return 0;
 }
 
-int annihilate_array(void *a, int size_bites)
+void annihilate_array(void *a, int size_bites)
 {
 	char *b;
 	b = (char *) a;
 	int i;
 	for (i = 0; i < size_bites; i++)
 		b[i] = '0';
+	return;
 }
 
 int do_interpolation(void)
@@ -664,7 +667,7 @@ void print_mass(void)
 
 int set_arrays(void)
 {
-	int i, j, k, l, m;
+	int i, j, k, l, m, n;
 	if ((phase_fraction = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -673,7 +676,7 @@ int set_arrays(void)
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((velocity = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
+	if ((velocity = (float *) malloc(3 * n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
@@ -717,7 +720,9 @@ int set_arrays(void)
 							}
 						}
 						if (bl_cond[i * (ncols - 1) + j] != -1) {
-							velocity[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
+							for (n = 0; n < 3; n++) {
+								velocity[n * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
+							}
 						}
 					}
 				}
@@ -729,17 +734,14 @@ int set_arrays(void)
 		printf("Memory error\n");
 		return 1;
 	}
-
 	if ((normal = (float *) malloc(n_cells_multipl * 6 * 3 * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-
 	if ((area = (float *) malloc(n_cells_multipl * 6 * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-
 	float a[4], b[4], c[4], p, d;
 	k = 0;
 	for (i = 0; i < nx; i++) {
@@ -808,8 +810,84 @@ int set_arrays(void)
 	return 0;
 }
 
-int create_A(void)
+int create_Ab_momentum_eqn(void)
 {
+	int i, j, k;
+	if ((shear_rate = (float *) malloc(6 * n_cells_multipl * nz * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	for (k = 0; k < nz; k++) {
+		for (i = 0; i < nx; i++) {
+			for (j = 0; j < ny; j++) {
+				if (ind_cell_multipl[i * ny + j] != -1) {
+					shear_rate[0 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] =
+						(velocity[0 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[0 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]]) / dx;
+					shear_rate[1 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] =
+						(velocity[0 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[0 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j - 1]]) / (2 * dy) + 
+						(velocity[1 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[1 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]]) / (2 * dx);
+					shear_rate[2 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] =
+						(velocity[0 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[0 * n_cells_multipl * nz + (k - 1) * n_cells_multipl + ind_cell_multipl[i * ny + j]]) / (2 * dz) +
+						(velocity[2 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[2 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]]) / (2 * dx);
+					shear_rate[3 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] =
+						(velocity[1 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[1 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j - 1]]) / dy;
+					shear_rate[4 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] =
+						(velocity[1 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[1 * n_cells_multipl * nz + (k - 1) * n_cells_multipl + ind_cell_multipl[i * ny + j]]) / (2 * dz) +
+						(velocity[2 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[2 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j - 1]]) / (2 * dy);
+					shear_rate[5 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] =
+						(velocity[2 * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] -
+						velocity[2 * n_cells_multipl * nz + (k - 1) * n_cells_multipl + ind_cell_multipl[i * ny + j]]) / dz;
+				}
+			}
+		}
+	}
+
+	if ((A_momentum_eqn = (float *) malloc(n_cells_multipl * nz * n_cells_multipl * nz * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	if ((b_momentum_eqn = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	annihilate_array((void *) A_momentum_eqn, n_cells_multipl * nz * n_cells_multipl * nz * sizeof(float));
+	annihilate_array((void *) b_momentum_eqn, n_cells_multipl * nz * sizeof(float));
+	//later do cicles from 1 and boundary conditions
+	for (k = 0; k < nz; k++) {
+		for (i = 0; i < nx; i++) {
+			for (j = 0; j < ny; j++) {
+				if (ind_cell_multipl[i * ny + j] != -1) {
+					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] / dt;
+					b_momentum_eqn[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
+						- density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] / dt;
+					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dx;
+					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]] +=
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dx;
+					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dy;
+					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j - 1]] +=
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dy;
+					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dz;
+					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + (k - 1) * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dz;
+					b_momentum_eqn[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
+						- (pressure[k * n_cells_multipl + ind_multipl[i * ny + j]] - pressure[k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]]) / dx +
+						;
+				}
+			}
+		}
+	}
 }
 
 void display_usage(void)
@@ -882,7 +960,8 @@ int main(int argc, char **argv)
 	printf("The interpolation have been done\n");
 	if (print_vtk() == 1) goto error;
 	printf("Map was printed to VTK format\n");
-	print_mass();
+	//print_mass();
+	//we need to set dt!!!
 	if (free_massives() == 1) goto error;
 
 
