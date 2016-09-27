@@ -13,6 +13,7 @@ void display_usage(void);
 int create_Ab_momentum_eqn(void);
 int set_arrays(void);
 void annihilate_array(void *a, int size_bites);
+int conformity(int i, int j);
 
 char *map_name;
 char *region_map_name;
@@ -41,12 +42,12 @@ float *velocity;
 float *pressure;
 float pressure_atmosphere;
 float g;
-float viscosity_eff, viscosity_0;
+float k_viscosity_snow, k_viscosity_air;
 float shear_rate, shear_stress[9];
 float *normal, *volume, *area;
 float *A_momentum_eqn, *b_momentum_eqn;
 float dt, dx, dy, dz;
-float *shear_rate, *shear_stress;
+float *shear_rate;
 
 int read_asc_and_declare_variables(void)
 {
@@ -810,9 +811,29 @@ int set_arrays(void)
 	return 0;
 }
 
-int create_Ab_momentum_eqn(void)
+int conformity(int i, int j)
 {
-	int i, j, k;
+	switch (i + j + i * j) {
+		case 0:
+			return 0;
+		case 1:
+			return 1;
+		case 2:
+			return 2;
+		case 3:
+			return 3;
+		case 5:
+			return 4;
+		case 8:
+			return 5;
+	}
+}
+
+int create_Ab_momentum_eqn(int projection)
+{
+	int i, j, k, l;
+	float shear_stress[3];
+	float k_viscosity_eff;
 	if ((shear_rate = (float *) malloc(6 * n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -870,20 +891,23 @@ int create_Ab_momentum_eqn(void)
 					b_momentum_eqn[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
 						- density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] / dt;
 					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
-						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dx;
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[projection * n_cells_multipl * nz + k * n_cells_multipl + i * ny + j] / dx;
 					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]] +=
-						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dx;
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[projection * n_cells_multipl * nz + k * n_cells_multipl + i * ny + j] / dx;
 					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
-						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dy;
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[projection * n_cells_multipl * nz + k * n_cells_multipl + i * ny + j] / dy;
 					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j - 1]] +=
-						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dy;
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[projection * n_cells_multipl * nz + k * n_cells_multipl + i * ny + j] / dy;
 					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
-						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dz;
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[projection * n_cells_multipl * nz + k * n_cells_multipl + i * ny + j] / dz;
 					A_momentum_eqn[(k * n_cells_multipl + ind_cell_multipl[i * ny + j]) * n_cells_multipl * nz + (k - 1) * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
-						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[k * n_cells_multipl + i * ny + j] / dz;
+						density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * velocity[projection * n_cells_multipl * nz + k * n_cells_multipl + i * ny + j] / dz;
 					b_momentum_eqn[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] +=
-						- (pressure[k * n_cells_multipl + ind_multipl[i * ny + j]] - pressure[k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]]) / dx +
-						;
+						- (pressure[k * n_cells_multipl + ind_multipl[i * ny + j]] - pressure[k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]]) / dx;
+					for (l = 0; l < 3; l++) {
+						shear_stress[l] = 2 * density[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] * k_viscosity_eff *
+							shear_rate[conformity(projection, l) * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * ny + j]];
+					}
 				}
 			}
 		}
@@ -892,7 +916,7 @@ int create_Ab_momentum_eqn(void)
 
 void display_usage(void)
 {
-	printf("Options -m, -r, -H, -D, -x, -y, -z, -s, -a, -p must be declared\n\n");
+	printf("Options -m, -r, -H, -D, -x, -y, -z, -d, -p, -v must be declared\n\n");
 	printf("-m\tmap\tASCII file of map\n");
 	printf("-r\trerion\tASCII file of region\n");
 	printf("-H\thight\thight of calculation area (float)\n");
@@ -900,9 +924,9 @@ void display_usage(void)
 	printf("-x\tkx\treduction ratio in x direction (int)\n");
 	printf("-y\tky\treduction ratio in y direction (int)\n");
 	printf("-z\tkz\treduction ratio in z direction (int)\n");
-	printf("-s\tsnow density\tdensity of snow (float)\n");
-	printf("-a\tair density\tdensity of air (float)\n");
+	printf("-d\tsnow density air density\tdensity of snow and air (float)\n");
 	printf("-p\tpressure\tatmosphere pressure\n");
+	printf("-v\tsnow kinematic viscosity air kinematic viscosity\tkinematic viscisity of snow and air (float)\n");
 	printf("-h\tdisplay usage\n");
 }
 
@@ -910,7 +934,7 @@ int main(int argc, char **argv)
 {
 	int opt = 0;
 	g = 9,81;
-	static const char *optString = "m:r:H:D:x:y:z:s:a:p:h?";
+	static const char *optString = "m:r:H:D:x:y:z:d::p:v::h?";
 	while ((opt = getopt(argc, argv, optString)) != -1) {
 		switch (opt) {
 			case 'm':
@@ -934,14 +958,16 @@ int main(int argc, char **argv)
 			case 'z':
 				kz = atoi(optarg);
 				break;
-			case 's':
+			case 'd':
 				density_snow = atof(optarg);
-				break;
-			case 'a':
 				density_air = atof(optarg);
 				break;
 			case 'p':
 				pressure_atmosphere = atof(optarg);
+				break;
+			case 'v':
+				k_viscosity_snow = atof(optarg);
+				k_viscosity_air = atof(optarg);
 				break;
 			case 'h':
 			case '?':
@@ -949,7 +975,7 @@ int main(int argc, char **argv)
 				return 1;
 		}
 	}
-	if (argc != 21) {
+	if (argc != 22) {
 		printf("Not enouth arguments\n");
 		return 1;
 	}
