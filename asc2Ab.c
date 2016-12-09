@@ -48,6 +48,7 @@ float *normal, *volume, *area;
 float *A_momentum_eqn, *b_momentum_eqn;
 float dt, dx, dy, dz;
 float *shear_rate;
+float *A, *b;
 
 int read_asc_and_declare_variables(void)
 {
@@ -826,6 +827,36 @@ int conformity(int i, int j)
 			return 4;
 		case 8:
 			return 5;
+	}
+}
+
+#define VELOCITY_DENSITY(p, i, j, k)  (velocity[])
+
+int ddt(int i, int j, int k, ...)
+{
+	A
+}
+
+int create_Ab()
+{
+	int system_dimension = n_cells_multipl * nz * 5; //5 = 3 components of velocity + 1 phase fraction + 1 pressure
+	if ((A = (float *) malloc(system_dimension * system_dimension * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	if ((b = (float *) malloc(system_dimension * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	int i, j, k;
+	for (k = 0; k < nz; k++) {
+		for (i = 0; i < nx; i++) {
+			for (j = 0; j < ny; j++) {
+				if (ind_cell_multipl[i * ny + j] != -1) {
+					ddt(A, b, i, j, k, VELOCITY_DENSITY);
+				}
+			}
+		}
 	}
 }
 
