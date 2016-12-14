@@ -49,6 +49,7 @@ float *A_momentum_eqn, *b_momentum_eqn;
 float dt, dx, dy, dz;
 float *shear_rate;
 float *A, *b;
+int num_parameters;
 
 int read_asc_and_declare_variables(void)
 {
@@ -837,9 +838,24 @@ int ddt(int i, int j, int k, ...)
 	A
 }
 
+#define A_IND(p, i, j, k) \
+	(num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) * \
+	n_cells_multipl * nz * num_parameters + \
+	num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p
+
+#define DEN_IND(i, j, k) \
+	k * n_cells_multipl + ind_cell_multipl[i * ny + j]
+
+#define VEL_IND(p, i , j, k) \
+	p * DEN_IND(i, j, k) + p
+
+#define DDT(p, i, j, k, mode) \
+	A[A_IND(p, i, j, k)] += density[DEN_IND(i, j, k)] * velocity[VEL_IND(p, i, j, k)] / dt;
+
 int create_Ab()
 {
-	int system_dimension = n_cells_multipl * nz * 5; //5 = 3 components of velocity + 1 phase fraction + 1 pressure
+	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
+	int system_dimension = n_cells_multipl * nz * num_parameters;
 	if ((A = (float *) malloc(system_dimension * system_dimension * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
