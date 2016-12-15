@@ -48,7 +48,7 @@ float *normal, *volume, *area;
 float *A_momentum_eqn, *b_momentum_eqn;
 float dt, dx, dy, dz;
 float *shear_rate;
-float *A, *b;
+float *A, *B;
 int num_parameters;
 
 int read_asc_and_declare_variables(void)
@@ -831,26 +831,46 @@ int conformity(int i, int j)
 	}
 }
 
-#define VELOCITY_DENSITY(p, i, j, k)  (velocity[])
-
-int ddt(int i, int j, int k, ...)
+int A_IND(p, i, j, k)
 {
-	A
+	return (num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) *
+	n_cells_multipl * nz * num_parameters +
+	num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p;
 }
 
-#define A_IND(p, i, j, k) \
-	(num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) * \
-	n_cells_multipl * nz * num_parameters + \
-	num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p
+int B_IND(p, i, j, k)
+{
+	return num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p;
+}
 
-#define DEN_IND(i, j, k) \
-	k * n_cells_multipl + ind_cell_multipl[i * ny + j]
+int DEN_IND(i, j, k)
+{
+	return k * n_cells_multipl + ind_cell_multipl[i * ny + j];
+}
 
-#define VEL_IND(p, i , j, k) \
-	p * DEN_IND(i, j, k) + p
+int VEL_IND(p, i , j, k)
+{
+	return p * DEN_IND(i, j, k) + p;
+}
 
-#define DDT(p, i, j, k, mode) \
-	A[A_IND(p, i, j, k)] += density[DEN_IND(i, j, k)] * velocity[VEL_IND(p, i, j, k)] / dt;
+#define DDT(p, i, j, k, mode) DDT_##mode##(p, i, j, k);
+
+void DDT_density_velocity(p, i, j, k)
+{
+	A[A_IND(p, i, j, k)] += density[DEN_IND(i, j, k)] / dt;
+	B[B_IND(p, i, j, k)] += density[DEN_IND(i, j, k)] * velocity[VEL_IND(p, i, j, k)] / dt;
+}
+
+#define DIV(p, i, j, k, mode) DIV_##mode##(p, i, j, k);
+
+void DIV_density_velocity_velocity(p, i, j, k)
+{
+	int s_ind;
+	for (s_ind = 0; s_ind < 6; s_ind++) {
+		if ()
+		A[A_IND(p, i, j, k)] += 
+	}
+}
 
 int create_Ab()
 {
@@ -860,7 +880,7 @@ int create_Ab()
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((b = (float *) malloc(system_dimension * sizeof(float))) == NULL) {
+	if ((B = (float *) malloc(system_dimension * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
