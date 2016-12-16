@@ -759,53 +759,53 @@ int set_arrays(void)
 				c[1] = cellsize / (float) kx;
 				c[2] = - cellsize / (float) ky;
 				c[3] = mass1[(i + 1) * (ny + 1) + j] - mass1[i * (ny + 1) + j + 1];
-				normal[k + 0 + 0] = a[2] * b[3] - a[3] * b[2];
-				normal[k + 0 + 1] = a[3] * b[1] - a[1] * b[3];
-				normal[k + 0 + 2] = a[1] * b[2] - a[2] * b[1];
+				normal[k * 9 + 0 + 0] = a[2] * b[3] - a[3] * b[2];
+				normal[k * 9 + 0 + 1] = a[3] * b[1] - a[1] * b[3];
+				normal[k * 9 + 0 + 2] = a[1] * b[2] - a[2] * b[1];
 				a[0] = sqrt(a[1] * a[1] + a[2] * a[2] + a[3] * a[3]);
 				b[0] = sqrt(b[1] * b[1] + b[2] * b[2] + b[3] * b[3]);
 				c[0] = sqrt(c[1] * c[1] + c[2] * c[2] + c[3] * c[3]);
 				p = (a[0] + b[0] + c[0]) / 2;
-				area[k + 0] = sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
+				area[k * 6 + 0] = sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
 				a[1] = cellsize / (float) kx;
 				a[2] = 0;
 				a[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[i * (ny + 1) + j + 1];
 				b[1] = 0;
 				b[2] = cellsize / (float) ky;
 				b[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[(i + 1) * (ny + 1) + j];
-				normal[k + 0 + 0] += a[2] * b[3] - a[3] * b[2];
-				normal[k + 0 + 1] += a[3] * b[1] - a[1] * b[3];
-				normal[k + 0 + 2] += a[1] * b[2] - a[2] * b[1];
+				normal[k * 9 + 0 + 0] += a[2] * b[3] - a[3] * b[2];
+				normal[k * 9 + 0 + 1] += a[3] * b[1] - a[1] * b[3];
+				normal[k * 9 + 0 + 2] += a[1] * b[2] - a[2] * b[1];
 				a[0] = sqrt(a[1] * a[1] + a[2] * a[2] + a[3] * a[3]);
 				b[0] = sqrt(b[1] * b[1] + b[2] * b[2] + b[3] * b[3]);
 				p = (a[0] + b[0] + c[0]) / 2;
-				area[k + 0] += sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
-				d = sqrt(pow(normal[k + 0 + 0], 2) + pow(normal[k + 0 + 1], 2) + pow(normal[k + 0 + 2], 2));
-				normal[k + 0 + 0] /= d;
-				normal[k + 0 + 1] /= d;
-				normal[k + 0 + 2] /= d;
-				normal[k + 1 + 0] = - normal[k + 0 + 0];
-				normal[k + 1 + 1] = - normal[k + 0 + 1];
-				normal[k + 1 + 2] = - normal[k + 0 + 2];
-				normal[k + 2 + 0] = 0;
-				normal[k + 2 + 1] = 1;
-				normal[k + 2 + 2] = 0;
-				normal[k + 3 + 0] = 0;
-				normal[k + 3 + 1] = - 1;
-				normal[k + 3 + 2] = 0;
-				normal[k + 4 + 0] = 1;
-				normal[k + 4 + 1] = 0;
-				normal[k + 4 + 2] = 0;
-				normal[k + 5 + 0] = - 1;
-				normal[k + 5 + 1] = 0;
-				normal[k + 5 + 2] = 0;
-				area[k + 1] = area[k + 0];
-				area[k + 2] = cellsize * cellsize / ((float) kx * (float) kz);
-				area[k + 3] = cellsize * cellsize / ((float) kx * (float) kz);
-				area[k + 4] = cellsize * cellsize / ((float) ky * (float) kz);
-				area[k + 5] = cellsize * cellsize / ((float) ky * (float) kz);
+				area[k * 6 + 0] += sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
+				d = sqrt(pow(normal[k * 9 + 0 + 0], 2) + pow(normal[k * 9 + 0 + 1], 2) + pow(normal[k * 9 + 0 + 2], 2));
+				normal[k * 9 + 0 + 0] /= d;
+				normal[k * 9 + 0 + 1] /= d;
+				normal[k * 9 + 0 + 2] /= d;
+				normal[k * 9 + 1 + 0] = - normal[k * 9 + 0 + 0];
+				normal[k * 9 + 1 + 1] = - normal[k * 9 + 0 + 1];
+				normal[k * 9 + 1 + 2] = - normal[k * 9 + 0 + 2];
+				normal[k * 9 + 2 + 0] = 0;
+				normal[k * 9 + 2 + 1] = 1;
+				normal[k * 9 + 2 + 2] = 0;
+				normal[k * 9 + 3 + 0] = 0;
+				normal[k * 9 + 3 + 1] = - 1;
+				normal[k * 9 + 3 + 2] = 0;
+				normal[k * 9 + 4 + 0] = 1;
+				normal[k * 9 + 4 + 1] = 0;
+				normal[k * 9 + 4 + 2] = 0;
+				normal[k * 9 + 5 + 0] = - 1;
+				normal[k * 9 + 5 + 1] = 0;
+				normal[k * 9 + 5 + 2] = 0;
+				area[k * 6 + 1] = area[k * 6 + 0];
+				area[k * 6 + 2] = cellsize * cellsize / ((float) kx * (float) kz);
+				area[k * 6 + 3] = cellsize * cellsize / ((float) kx * (float) kz);
+				area[k * 6 + 4] = cellsize * cellsize / ((float) ky * (float) kz);
+				area[k * 6 + 5] = cellsize * cellsize / ((float) ky * (float) kz);
 				volume[k] = cellsize * cellsize * cellsize / ((float) kx * (float) ky * (float) kz);
-				k += 6;
+				k++;
 			}
 		}
 	}
@@ -863,12 +863,93 @@ void DDT_density_velocity(p, i, j, k)
 
 #define DIV(p, i, j, k, mode) DIV_##mode##(p, i, j, k);
 
+float velocity_on_adge(p, i, j, k, s)
+{
+	switch (s) {
+		case 0:
+			if ((ind_cell_multipl((i + 1) * ny + j) == -1) || (i + 1 >= nx))
+				return velocity(VEL_IND(p, i, j, k));
+			else
+				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i + 1, j, k))) / 2;
+		case 1:
+			if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0))
+				return velocity(VEL_IND(p, i, j, k));
+			else
+				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i - 1, j, k))) / 2;
+		case 2:
+			if ((ind_cell_multipl(i * ny + j + 1) == -1) || (j + 1 >= ny))
+				return velocity(VEL_IND(p, i, j, k));
+			else
+				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i, j + 1, k))) / 2;
+		case 3:
+			if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0))
+				return velocity(VEL_IND(p, i, j, k));
+			else
+				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i, j - 1, k))) / 2;
+		case 4:
+			if (k >= nz)
+				return velocity(VEL_IND(p, i, j, k));
+			else
+				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i, j, k + 1))) / 2;
+		case 5:
+			if (k < 0)
+				return 0;
+			else
+				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i, j, k - 1))) / 2;
+	}
+}
+
+#define BOUNDARY_CONDITION(mode) BOUNDARY_CONDITION_##mode##
+
+void BOUNDARY_CONDITION_zero_gradient(void)
+{
+	return;
+}
+
 void DIV_density_velocity_velocity(p, i, j, k)
 {
 	int s_ind;
 	for (s_ind = 0; s_ind < 6; s_ind++) {
-		if ()
-		A[A_IND(p, i, j, k)] += 
+		if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
+			A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) / dx;
+			A[A_IND(p, i - 1, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) / dx;
+			B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) *
+				(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i - 1, j, k, s_ind)) / dx;
+		} else {
+			BOUNDARY_CONDITION(zero_gradient);
+		}
+		if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
+			A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) / dy;
+			A[A_IND(p, i, j - 1, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) / dy;
+			B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) *
+				(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j - 1, k, s_ind)) / dy;
+		} else {
+			BOUNDARY_CONDITION(zero_gradient);
+		}
+		if (k - 1 < 0) {
+			A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) / dz;
+			A[A_IND(p, i, j, k - 1)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) / dz;
+			B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+				velocity_on_adge(p, i, j, k, s_ind) *
+				(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j, k - 1, s_ind)) / dz;
+		} else {}
 	}
 }
 
