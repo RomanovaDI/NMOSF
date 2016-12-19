@@ -831,6 +831,20 @@ int conformity(int i, int j)
 	}
 }
 
+/*
+matrix A and vector B structure:
+velocity_x, velocity_y, velocity_z, alpha, pressure in cell [0, 0, 0]
+velocity_x, velocity_y, velocity_z, alpha, pressure in cell [0, 1, 0]
+.....................................................................
+velocity_x, velocity_y, velocity_z, alpha, pressure in cell [0, ny - 1, 0]
+velocity_x, velocity_y, velocity_z, alpha, pressure in cell [1, ny - 1, 0]
+.....................................................................
+velocity_x, velocity_y, velocity_z, alpha, pressure in cell [nx - 1, ny - 1, 0]
+velocity_x, velocity_y, velocity_z, alpha, pressure in cell [nx - 1, ny - 1, 1]
+.....................................................................
+velocity_x, velocity_y, velocity_z, alpha, pressure in cell [nx - 1, ny - 1, nz - 1]
+*/
+
 int A_IND(int p, int i, int j, int k)
 {
 	return (num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) *
@@ -853,10 +867,16 @@ int VEL_IND(int p, int i , int j, int k)
 	return p * DEN_IND(i, j, k) + p;
 }
 
+int PRESS_IND(int i, int j, int k)
+{
+	return DEN_IND(i, j, k);
+}
+
 /*
 list of objects
    density_velocity
    density_velocity_velocity
+   pressure
 */
 
 /*
@@ -989,7 +1009,7 @@ void DDZ_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, in
 	return;
 }
 
-void DIV_density_velocity_velocity_crank_nicolson(int p, int i, int j, int k)
+void DIV_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k)
 {
 	int s_ind;
 	for (s_ind = 0; s_ind < 6; s_ind++) {
@@ -1009,6 +1029,13 @@ void DIV_density_velocity_velocity_crank_nicolson(int p, int i, int j, int k)
 			DDZ(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
 		}
 	}
+}
+
+void DDX_pressure_crank_nikolson(int p, int i, int, j, int k)
+{
+	A[A_IND(p, i, j, k)] -= 1 / (2 * dx);
+	A[A_IND(p, i - 1, j, k)] += 1 / (2 * dx);
+	B[B_IND(p, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
 }
 
 int create_Ab()
@@ -1032,6 +1059,7 @@ int create_Ab()
 					DIV(0, i, j, k, density_velocity_velocity, crank_nikolson);
 					DIV(1, i, j, k, density_velocity_velocity, crank_nikolson);
 					DIV(2, i, j, k, density_velocity_velocity, crank_nikolson);
+					DDX(5, i, j, k, pressure, crank_nikolson);
 				}
 			}
 		}
