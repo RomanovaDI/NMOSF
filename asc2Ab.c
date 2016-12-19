@@ -831,58 +831,81 @@ int conformity(int i, int j)
 	}
 }
 
-int A_IND(p, i, j, k)
+int A_IND(int p, int i, int j, int k)
 {
 	return (num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) *
 	n_cells_multipl * nz * num_parameters +
 	num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p;
 }
 
-int B_IND(p, i, j, k)
+int B_IND(int p, int i, int j, int k)
 {
 	return num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p;
 }
 
-int DEN_IND(i, j, k)
+int DEN_IND(int i, int j, int k)
 {
 	return k * n_cells_multipl + ind_cell_multipl[i * ny + j];
 }
 
-int VEL_IND(p, i , j, k)
+int VEL_IND(int p, int i , int j, int k)
 {
 	return p * DEN_IND(i, j, k) + p;
 }
 
-#define DDT(p, i, j, k, mode) DDT_##mode##(p, i, j, k);
+/*
+list of objects
+   density_velocity
+   density_velocity_velocity
+*/
 
-void DDT_density_velocity(p, i, j, k)
+/*
+list of numerical_schemes
+	crank_nikolson
+*/
+
+/*
+list of boundary condition modes
+	zero_gradient
+	no_slip
+*/
+
+
+#define DDT(p, i, j, k, object) DDT_##object##(p, i, j, k);
+
+void DDT_density_velocity(int p, int i, int j, int k)
 {
 	A[A_IND(p, i, j, k)] += density[DEN_IND(i, j, k)] / dt;
 	B[B_IND(p, i, j, k)] += density[DEN_IND(i, j, k)] * velocity[VEL_IND(p, i, j, k)] / dt;
 }
 
-#define DIV(p, i, j, k, mode) DIV_##mode##(p, i, j, k);
+#define DIV(p, i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme##(p, i, j, k);
 
-float velocity_on_adge(p, i, j, k, s)
+float velocity_on_adge(int p, int i, int j, int k, int s)
 {
+	if ((ind_cell_multipl[i * ny + j] == -1) ||
+		(i >= nx) || (i < 0) ||
+		(j >= ny) || (j < 0) ||
+		(k >= nz) || (k < 0))
+			return 0;
 	switch (s) {
 		case 0:
-			if ((ind_cell_multipl((i + 1) * ny + j) == -1) || (i + 1 >= nx))
+			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
 				return velocity(VEL_IND(p, i, j, k));
 			else
 				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i + 1, j, k))) / 2;
 		case 1:
-			if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0))
+			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
 				return velocity(VEL_IND(p, i, j, k));
 			else
 				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i - 1, j, k))) / 2;
 		case 2:
-			if ((ind_cell_multipl(i * ny + j + 1) == -1) || (j + 1 >= ny))
+			if ((ind_cell_multipl[i * ny + j + 1] == -1) || (j + 1 >= ny))
 				return velocity(VEL_IND(p, i, j, k));
 			else
 				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i, j + 1, k))) / 2;
 		case 3:
-			if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0))
+			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
 				return velocity(VEL_IND(p, i, j, k));
 			else
 				return (velocity(VEL_IND(p, i, j, k)) + velocity(VEL_IND(p, i, j - 1, k))) / 2;
@@ -899,57 +922,92 @@ float velocity_on_adge(p, i, j, k, s)
 	}
 }
 
-#define BOUNDARY_CONDITION(mode) BOUNDARY_CONDITION_##mode##
+#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme##(p, i, j, k, s)
 
-void BOUNDARY_CONDITION_zero_gradient(void)
+void BOUNDARY_CONDITION_density_velocity_velocity_zero_gradient_crank_nicolson(int p, int i, int j, int k, int s_ind)
 {
 	return;
 }
 
-void DIV_density_velocity_velocity(p, i, j, k)
+void BOUNDARY_CONDITION_density_velocity_velocity_no_slip_crank_nicolson(int p, int i, int, j, int k, int s_ind)
+{
+	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) / dz;
+	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) *
+		velocity_on_adge(p, i, j, k, s_ind) / dz;
+	return;
+}
+
+#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
+
+void DDX_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
+	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) / dx;
+	A[A_IND(p, i - 1, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) / dx;
+	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) *
+		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i - 1, j, k, s_ind)) / dx;
+	return;
+}
+
+#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme##(p, i, j, k, s)
+
+void DDY_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
+	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) / dy;
+	A[A_IND(p, i, j - 1, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) / dy;
+	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) *
+		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j - 1, k, s_ind)) / dy;
+	return;
+}
+
+#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme##(p, i, j, k, s)
+
+void DDZ_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
+	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) / dz;
+	A[A_IND(p, i, j, k - 1)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) / dz;
+	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		velocity_on_adge(p, i, j, k, s_ind) *
+		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j, k - 1, s_ind)) / dz;
+	return;
+}
+
+void DIV_density_velocity_velocity_crank_nicolson(int p, int i, int j, int k)
 {
 	int s_ind;
 	for (s_ind = 0; s_ind < 6; s_ind++) {
 		if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
-			A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) / dx;
-			A[A_IND(p, i - 1, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) / dx;
-			B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) *
-				(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i - 1, j, k, s_ind)) / dx;
+			BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
 		} else {
-			BOUNDARY_CONDITION(zero_gradient);
+			DDX(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
 		}
 		if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
-			A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) / dy;
-			A[A_IND(p, i, j - 1, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) / dy;
-			B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) *
-				(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j - 1, k, s_ind)) / dy;
+			BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
 		} else {
-			BOUNDARY_CONDITION(zero_gradient);
+			DDY(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
 		}
 		if (k - 1 < 0) {
-			A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) / dz;
-			A[A_IND(p, i, j, k - 1)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) / dz;
-			B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-				area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
-				velocity_on_adge(p, i, j, k, s_ind) *
-				(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j, k - 1, s_ind)) / dz;
-		} else {}
+			BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, no_slip, crank_nikolson);
+		} else {
+			DDZ(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+		}
 	}
 }
 
@@ -970,7 +1028,10 @@ int create_Ab()
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
 				if (ind_cell_multipl[i * ny + j] != -1) {
-					ddt(A, b, i, j, k, VELOCITY_DENSITY);
+					DDT(i, j, k, velocity_density);
+					DIV(0, i, j, k, density_velocity_velocity, crank_nikolson);
+					DIV(1, i, j, k, density_velocity_velocity, crank_nikolson);
+					DIV(2, i, j, k, density_velocity_velocity, crank_nikolson);
 				}
 			}
 		}
