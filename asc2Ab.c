@@ -37,7 +37,7 @@ int *snow_region;
 float depth;
 float density_snow, density_air;
 float *phase_fraction;
-float *density;
+//float *density;
 float *velocity;
 float *pressure;
 float pressure_atmosphere;
@@ -646,13 +646,20 @@ int free_massives(void)
 	free(mass1);
 	free(ind_cell_multipl);
 	free(phase_fraction);
-	free(density);
+	//free(density);
 	free(velocity);
 	free(pressure);
 	free(volume);
 	free(area);
 	free(normal);
 	return 0;
+}
+
+float density(int i, int j, int k)
+{
+	return (phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] *
+		density_snow + (1 - phase_fraction[k * n_cells_multipl +
+		ind_cell_multipl[i * ny + j]]) * density_air);
 }
 
 void print_mass(void)
@@ -675,10 +682,10 @@ int set_arrays(void)
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((density = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
-		printf("Memory error\n");
-		return 1;
-	}
+//	if ((density = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
+//		printf("Memory error\n");
+//		return 1;
+//	}
 	if ((velocity = (float *) malloc(3 * n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -698,22 +705,22 @@ int set_arrays(void)
 								if (((float) (k + 1) * cellsize > depth) && (depth > (float) k * cellsize)) {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										(depth - (float) k * cellsize) / (float) cellsize;
-									density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] *
-										density_snow + (1 - phase_fraction[k * n_cells_multipl +
-										ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]]) * density_air;
+									//density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
+									//	phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] *
+									//	density_snow + (1 - phase_fraction[k * n_cells_multipl +
+									//	ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]]) * density_air;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										pressure_atmosphere + density_snow * g * (depth - (float) k * cellsize);
 								}
 								else if (depth > (float) (k + 1) * cellsize) {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 1;
-									density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = density_snow;
+									//density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = density_snow;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										pressure_atmosphere + density_snow * g * (depth - (float) k * cellsize);
 								}
 								else {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
-									density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = density_air;
+									//density[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = density_air;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										pressure_atmosphere;
 								}
@@ -857,26 +864,27 @@ int B_IND(int p, int i, int j, int k)
 	return num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p;
 }
 
-int DEN_IND(int i, int j, int k)
+int PRESS_IND(int i, int j, int k)
 {
 	return k * n_cells_multipl + ind_cell_multipl[i * ny + j];
 }
 
 int VEL_IND(int p, int i , int j, int k)
 {
-	return p * DEN_IND(i, j, k) + p;
+	return p * PRESS_IND(i, j, k) + p;
 }
 
-int PRESS_IND(int i, int j, int k)
-{
-	return DEN_IND(i, j, k);
-}
+//int PRESS_IND(int i, int j, int k)
+//{
+//	return DEN_IND(i, j, k);
+//}
 
 /*
 list of objects
    density_velocity
    density_velocity_velocity
    pressure
+   shear_stress
 */
 
 /*
@@ -895,11 +903,11 @@ list of boundary condition modes
 
 void DDT_density_velocity(int p, int i, int j, int k)
 {
-	A[A_IND(p, i, j, k)] += density[DEN_IND(i, j, k)] / dt;
-	B[B_IND(p, i, j, k)] += density[DEN_IND(i, j, k)] * velocity[VEL_IND(p, i, j, k)] / dt;
+	A[A_IND(p, i, j, k)] += density(i, j, k) / dt;
+	B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
 }
 
-#define DIV(p, i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme##(p, i, j, k);
+#define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme##(i, j, k);
 
 float velocity_on_adge(int p, int i, int j, int k, int s)
 {
@@ -952,10 +960,10 @@ void BOUNDARY_CONDITION_density_velocity_velocity_zero_gradient_crank_nicolson(i
 void BOUNDARY_CONDITION_density_velocity_velocity_no_slip_crank_nicolson(int p, int i, int, j, int k, int s_ind)
 {
 	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) / dz;
 	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) *
 		velocity_on_adge(p, i, j, k, s_ind) / dz;
 	return;
@@ -965,13 +973,13 @@ void BOUNDARY_CONDITION_density_velocity_velocity_no_slip_crank_nicolson(int p, 
 
 void DDX_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
 	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) / dx;
 	A[A_IND(p, i - 1, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) / dx;
 	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) *
 		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i - 1, j, k, s_ind)) / dx;
 	return;
@@ -981,13 +989,13 @@ void DDX_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, in
 
 void DDY_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
 	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) / dy;
 	A[A_IND(p, i, j - 1, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) / dy;
 	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) *
 		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j - 1, k, s_ind)) / dy;
 	return;
@@ -997,38 +1005,42 @@ void DDY_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, in
 
 void DDZ_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
 	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) / dz;
 	A[A_IND(p, i, j, k - 1)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) / dz;
 	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density[DEN_IND(i, j, k)] *
+		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
 		velocity_on_adge(p, i, j, k, s_ind) *
 		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j, k - 1, s_ind)) / dz;
 	return;
 }
 
-void DIV_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k)
+void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 {
+	int p;
 	int s_ind;
-	for (s_ind = 0; s_ind < 6; s_ind++) {
-		if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
-			BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
-		} else {
-			DDX(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
-		}
-		if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
-			BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
-		} else {
-			DDY(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
-		}
-		if (k - 1 < 0) {
-			BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, no_slip, crank_nikolson);
-		} else {
-			DDZ(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+	for (p = 0; p < 3; p++) {
+		for (s_ind = 0; s_ind < 6; s_ind++) {
+			if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
+				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
+			} else {
+				DDX(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+			}
+			if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
+				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
+			} else {
+				DDY(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+			}
+			if (k - 1 < 0) {
+				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, no_slip, crank_nikolson);
+			} else {
+				DDZ(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+			}
 		}
 	}
+	return;
 }
 
 void DDX_pressure_crank_nikolson(int p, int i, int, j, int k)
@@ -1036,6 +1048,35 @@ void DDX_pressure_crank_nikolson(int p, int i, int, j, int k)
 	A[A_IND(p, i, j, k)] -= 1 / (2 * dx);
 	A[A_IND(p, i - 1, j, k)] += 1 / (2 * dx);
 	B[B_IND(p, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
+	return;
+}
+
+void DDX_shear_stress_crank_nikolson(int p, int i, int j, int k)
+{
+}
+
+void DIV_shear_stress_crank_nikolson(int i, int j, int k)
+{
+	int p, s_ind;
+	for (p = 0; p < 3; p++) {
+		for (s_ind = 0; s_ind < 6; s_ind++) {
+			if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
+				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, zero_gradient, crank_nikolson);
+			} else {
+				DDX(p, i, j, k, s_ind, shear_stress, crank_nikolson);
+			}
+			if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
+				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, zero_gradient, crank_nikolson);
+			} else {
+				DDY(p, i, j, k, s_ind, shear_stress, crank_nikolson);
+			}
+			if (k - 1 < 0) {
+				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, no_slip, crank_nikolson);
+			} else {
+				DDZ(p, i, j, k, s_ind, shear_stress, crank_nikolson);
+			}
+		}
+	}
 }
 
 int create_Ab()
@@ -1056,10 +1097,9 @@ int create_Ab()
 			for (j = 0; j < ny; j++) {
 				if (ind_cell_multipl[i * ny + j] != -1) {
 					DDT(i, j, k, velocity_density);
-					DIV(0, i, j, k, density_velocity_velocity, crank_nikolson);
-					DIV(1, i, j, k, density_velocity_velocity, crank_nikolson);
-					DIV(2, i, j, k, density_velocity_velocity, crank_nikolson);
+					DIV(i, j, k, density_velocity_velocity, crank_nikolson);
 					DDX(5, i, j, k, pressure, crank_nikolson);
+					DIV(i, j, k, shear_stress);
 				}
 			}
 		}
