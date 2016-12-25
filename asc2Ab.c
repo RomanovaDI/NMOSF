@@ -675,6 +675,16 @@ void print_mass(void)
 	return;
 }
 
+/*
+numbering faces of cells is so
+0 face - from end of x-axis
+1 face - from beginning of x-axis
+2 face - from end of y-axis
+3 face - from beginning of y-axis
+4 face - from end of z-axis
+5 face - from beginning of z-axis
+*/
+
 int set_arrays(void)
 {
 	int i, j, k, l, m, n;
@@ -766,51 +776,51 @@ int set_arrays(void)
 				c[1] = cellsize / (float) kx;
 				c[2] = - cellsize / (float) ky;
 				c[3] = mass1[(i + 1) * (ny + 1) + j] - mass1[i * (ny + 1) + j + 1];
-				normal[k * 9 + 0 + 0] = a[2] * b[3] - a[3] * b[2];
-				normal[k * 9 + 0 + 1] = a[3] * b[1] - a[1] * b[3];
-				normal[k * 9 + 0 + 2] = a[1] * b[2] - a[2] * b[1];
+				normal[k * 18 + 4 * 3 + 0] = a[2] * b[3] - a[3] * b[2];
+				normal[k * 18 + 4 * 3 + 1] = a[3] * b[1] - a[1] * b[3];
+				normal[k * 18 + 4 * 3 + 2] = a[1] * b[2] - a[2] * b[1];
 				a[0] = sqrt(a[1] * a[1] + a[2] * a[2] + a[3] * a[3]);
 				b[0] = sqrt(b[1] * b[1] + b[2] * b[2] + b[3] * b[3]);
 				c[0] = sqrt(c[1] * c[1] + c[2] * c[2] + c[3] * c[3]);
 				p = (a[0] + b[0] + c[0]) / 2;
-				area[k * 6 + 0] = sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
+				area[k * 6 + 4] = sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
 				a[1] = cellsize / (float) kx;
 				a[2] = 0;
 				a[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[i * (ny + 1) + j + 1];
 				b[1] = 0;
 				b[2] = cellsize / (float) ky;
 				b[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[(i + 1) * (ny + 1) + j];
-				normal[k * 9 + 0 + 0] += a[2] * b[3] - a[3] * b[2];
-				normal[k * 9 + 0 + 1] += a[3] * b[1] - a[1] * b[3];
-				normal[k * 9 + 0 + 2] += a[1] * b[2] - a[2] * b[1];
+				normal[k * 18 + 4 * 3 + 0] += a[2] * b[3] - a[3] * b[2];
+				normal[k * 18 + 4 * 3 + 1] += a[3] * b[1] - a[1] * b[3];
+				normal[k * 18 + 4 * 3 + 2] += a[1] * b[2] - a[2] * b[1];
 				a[0] = sqrt(a[1] * a[1] + a[2] * a[2] + a[3] * a[3]);
 				b[0] = sqrt(b[1] * b[1] + b[2] * b[2] + b[3] * b[3]);
 				p = (a[0] + b[0] + c[0]) / 2;
-				area[k * 6 + 0] += sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
-				d = sqrt(pow(normal[k * 9 + 0 + 0], 2) + pow(normal[k * 9 + 0 + 1], 2) + pow(normal[k * 9 + 0 + 2], 2));
-				normal[k * 9 + 0 + 0] /= d;
-				normal[k * 9 + 0 + 1] /= d;
-				normal[k * 9 + 0 + 2] /= d;
-				normal[k * 9 + 1 + 0] = - normal[k * 9 + 0 + 0];
-				normal[k * 9 + 1 + 1] = - normal[k * 9 + 0 + 1];
-				normal[k * 9 + 1 + 2] = - normal[k * 9 + 0 + 2];
-				normal[k * 9 + 2 + 0] = 0;
-				normal[k * 9 + 2 + 1] = 1;
-				normal[k * 9 + 2 + 2] = 0;
-				normal[k * 9 + 3 + 0] = 0;
-				normal[k * 9 + 3 + 1] = - 1;
-				normal[k * 9 + 3 + 2] = 0;
-				normal[k * 9 + 4 + 0] = 1;
-				normal[k * 9 + 4 + 1] = 0;
-				normal[k * 9 + 4 + 2] = 0;
-				normal[k * 9 + 5 + 0] = - 1;
-				normal[k * 9 + 5 + 1] = 0;
-				normal[k * 9 + 5 + 2] = 0;
-				area[k * 6 + 1] = area[k * 6 + 0];
+				area[k * 6 + 4] += sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
+				d = sqrt(pow(normal[k * 18 + 4 * 3 + 0], 2) + pow(normal[k * 18 + 4 * 3 + 1], 2) + pow(normal[k * 18 + 4 * 3 + 2], 2));
+				normal[k * 18 + 4 * 3 + 0] /= d;
+				normal[k * 18 + 4 * 3 + 1] /= d;
+				normal[k * 18 + 4 * 3 + 2] /= d;
+				normal[k * 18 + 5 * 3 + 0] = - normal[k * 18 + 0 * 3 + 0];
+				normal[k * 18 + 5 * 3 + 1] = - normal[k * 18 + 0 * 3 + 1];
+				normal[k * 18 + 5 * 3 + 2] = - normal[k * 18 + 0 * 3 + 2];
+				normal[k * 18 + 2 * 3 + 0] = 0;
+				normal[k * 18 + 2 * 3 + 1] = 1;
+				normal[k * 18 + 2 * 3 + 2] = 0;
+				normal[k * 18 + 3 * 3 + 0] = 0;
+				normal[k * 18 + 3 * 3 + 1] = - 1;
+				normal[k * 18 + 3 * 3 + 2] = 0;
+				normal[k * 18 + 0 * 3 + 0] = 1;
+				normal[k * 18 + 0 * 3 + 1] = 0;
+				normal[k * 18 + 0 * 3 + 2] = 0;
+				normal[k * 18 + 1 * 3 + 0] = - 1;
+				normal[k * 18 + 1 * 3 + 1] = 0;
+				normal[k * 18 + 1 * 3 + 2] = 0;
+				area[k * 6 + 5] = area[k * 6 + 0];
 				area[k * 6 + 2] = cellsize * cellsize / ((float) kx * (float) kz);
 				area[k * 6 + 3] = cellsize * cellsize / ((float) kx * (float) kz);
-				area[k * 6 + 4] = cellsize * cellsize / ((float) ky * (float) kz);
-				area[k * 6 + 5] = cellsize * cellsize / ((float) ky * (float) kz);
+				area[k * 6 + 0] = cellsize * cellsize / ((float) ky * (float) kz);
+				area[k * 6 + 1] = cellsize * cellsize / ((float) ky * (float) kz);
 				volume[k] = cellsize * cellsize * cellsize / ((float) kx * (float) ky * (float) kz);
 				k++;
 			}
@@ -874,6 +884,21 @@ int VEL_IND(int p, int i , int j, int k)
 	return p * PRESS_IND(i, j, k) + p;
 }
 
+int AREA_IND(int i, int j, int k, int s)
+{
+	return 6 * ind_cell_multipl[i * ny + j] + s;
+}
+
+int NORMAL_IND(int p, int i, int j, int k, int s)
+{
+	return 18 * ind_cell_multipl[i * ny + j] + s * 3 + p;
+}
+
+int VOLUME_IND(int i, int j, int k)
+{
+	return ind_cell_multipl[i * ny + j];
+}
+
 //int PRESS_IND(int i, int j, int k)
 //{
 //	return DEN_IND(i, j, k);
@@ -900,6 +925,15 @@ list of boundary condition modes
 
 
 #define DDT(p, i, j, k, object) DDT_##object##(p, i, j, k);
+#define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme##(i, j, k);
+#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme##(p, i, j, k, s)
+#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
+#define GRAD(i, j, k, s, mode, numerical_scheme) GRAD_##mode##_##numerical_scheme##(i, j, k, s)
+//#define X_AXIS(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
+//#define Y_AXIS(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
+//#define X_AXIS(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
+#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme##(p, i, j, k, s)
+#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme##(p, i, j, k, s)
 
 void DDT_density_velocity(int p, int i, int j, int k)
 {
@@ -907,9 +941,7 @@ void DDT_density_velocity(int p, int i, int j, int k)
 	B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
 }
 
-#define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme##(i, j, k);
-
-float velocity_on_adge(int p, int i, int j, int k, int s)
+float velocity_on_face(int p, int i, int j, int k, int s)
 {
 	if ((ind_cell_multipl[i * ny + j] == -1) ||
 		(i >= nx) || (i < 0) ||
@@ -950,104 +982,178 @@ float velocity_on_adge(int p, int i, int j, int k, int s)
 	}
 }
 
-#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme##(p, i, j, k, s)
-
-void BOUNDARY_CONDITION_density_velocity_velocity_zero_gradient_crank_nicolson(int p, int i, int j, int k, int s_ind)
+float density_on_face(int i, int j, int k, int s)
 {
-	return;
+	if ((ind_cell_multipl[i * ny + j] == -1) ||
+		(i >= nx) || (i < 0) ||
+		(j >= ny) || (j < 0) ||
+		(k >= nz) || (k < 0))
+			return 0;
+	switch (s) {
+		case 0:
+			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
+				return density(i, j, k);
+			else
+				return (density(i, j, k) + density(i + 1, j, k)) / 2;
+		case 1:
+			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+				return density(i, j, k);
+			else
+				return (density(i, j, k) + density(i - 1, j, k)) / 2;
+		case 2:
+			if ((ind_cell_multipl[i * ny + j + 1] == -1) || (j + 1 >= ny))
+				return density(i, j, k);
+			else
+				return (density(i, j, k) + density(i, j + 1, k)) / 2;
+		case 3:
+			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+				return density(i, j, k);
+			else
+				return (density(i, j, k) + density(i, j - 1, k)) / 2;
+		case 4:
+			if (k >= nz)
+				return density(i, j, k);
+			else
+				return (density(i, j, k) + density(i, j, k + 1)) / 2;
+		case 5:
+			if (k < 0)
+				return 0;
+			else
+				return (density(i, j, k) + density(i, j, k - 1)) / 2;
+	}
 }
 
-void BOUNDARY_CONDITION_density_velocity_velocity_no_slip_crank_nicolson(int p, int i, int, j, int k, int s_ind)
+//void BOUNDARY_CONDITION_density_velocity_velocity_zero_gradient_crank_nicolson(int p, int i, int j, int k, int s_ind)
+//{
+//	return;
+//}
+//
+//void BOUNDARY_CONDITION_density_velocity_velocity_no_slip_crank_nicolson(int p, int i, int, j, int k, int s_ind)
+//{
+//	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) / dz;
+//	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) *
+//		velocity_on_adge(p, i, j, k, s_ind) / dz;
+//	return;
+//}
+//
+//void DDX_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
+//	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) / dx;
+//	A[A_IND(p, i - 1, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) / dx;
+//	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) *
+//		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i - 1, j, k, s_ind)) / dx;
+//	return;
+//}
+//
+//void DDY_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
+//	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) / dy;
+//	A[A_IND(p, i, j - 1, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) / dy;
+//	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) *
+//		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j - 1, k, s_ind)) / dy;
+//	return;
+//}
+//
+//void DDZ_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
+//	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) / dz;
+//	A[A_IND(p, i, j, k - 1)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) / dz;
+//	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
+//		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
+//		velocity_on_adge(p, i, j, k, s_ind) *
+//		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j, k - 1, s_ind)) / dz;
+//	return;
+//}
+//
+//void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
+//{
+//	int p;
+//	int s_ind;
+//	for (p = 0; p < 3; p++) {
+//		for (s_ind = 0; s_ind < 6; s_ind++) {
+//			if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
+//				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
+//			} else {
+//				X_AXIS(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+//			}
+//			if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
+//				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
+//			} else {
+//				Y_AXIS(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+//			}
+//			if (k - 1 < 0) {
+//				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, no_slip, crank_nikolson);
+//			} else {
+//				Z_AXIS(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+//			}
+//		}
+//	}
+//	return;
+//}
+
+void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 {
-	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) / dz;
-	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) *
-		velocity_on_adge(p, i, j, k, s_ind) / dz;
-	return;
-}
-
-#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
-
-void DDX_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
-	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) / dx;
-	A[A_IND(p, i - 1, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) / dx;
-	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) *
-		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i - 1, j, k, s_ind)) / dx;
-	return;
-}
-
-#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme##(p, i, j, k, s)
-
-void DDY_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
-	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) / dy;
-	A[A_IND(p, i, j - 1, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) / dy;
-	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) *
-		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j - 1, k, s_ind)) / dy;
-	return;
-}
-
-#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme##(p, i, j, k, s)
-
-void DDZ_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k, int s_ind) {
-	A[A_IND(p, i, j, k)] += 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) / dz;
-	A[A_IND(p, i, j, k - 1)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) / dz;
-	B[B_IND(p, i, j, k)] -= 0.5 * (1 / volume[ind_cell_multipl[i * ny + j]]) *
-		area[ind_cell_multipl[i* ny + j] * 6 + s_ind] * density(i, j, k) *
-		velocity_on_adge(p, i, j, k, s_ind) *
-		(velocity_on_adge(p, i, j, k, s_ind) - velocity_on_adge(p, i, j, k - 1, s_ind)) / dz;
-	return;
-}
-
-void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
-{
-	int p;
-	int s_ind;
-	for (p = 0; p < 3; p++) {
-		for (s_ind = 0; s_ind < 6; s_ind++) {
-			if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
-				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
-			} else {
-				DDX(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
-			}
-			if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
-				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, zero_gradient, crank_nikolson);
-			} else {
-				DDY(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
-			}
-			if (k - 1 < 0) {
-				BOUNDARY_CONDITION(p, i, j, k, s_ind, density_velocity_velocity, no_slip, crank_nikolson);
-			} else {
-				DDZ(p, i, j, k, s_ind, density_velocity_velocity, crank_nikolson);
+	int s, p, pr;
+	for (pr = 0; pr < 3; pr++) {
+		for (s = 0; s < 6; s++) {
+			for (p = 0; p < 3; p++) {
+				B[B_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s_ind)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+					velocity_on_face(p, i, j, k, s) * normal[NORMAL_IND(p, i, j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)]);
 			}
 		}
 	}
 	return;
 }
 
-void DDX_pressure_crank_nikolson(int p, int i, int, j, int k)
+void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 {
-	A[A_IND(p, i, j, k)] -= 1 / (2 * dx);
-	A[A_IND(p, i - 1, j, k)] += 1 / (2 * dx);
-	B[B_IND(p, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
+	int s, p, pr;
+	for (pr = 0; pr < 3; pr++) {
+		for (s = 0; s < 6; s++) {
+			for (p = 0; p < 3; p++) {
+				A[A_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s_ind)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+					normal[NORMAL_IND(p, i, j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)]);
+			}
+		}
+	}
+	return;
+}
+
+void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
+{
+	DIV(i, j, k, density_velocity_velocity, half_forward_euler);
+	DIV(i, j, k, density_velocity_velocity, half_backward_euler);
+	return;
+}
+
+void GRAD_pressure_crank_nikolson(int i, int, j, int k)
+{
+	A[A_IND(0, i, j, k)] -= 1 / (2 * dx);
+	A[A_IND(0, i - 1, j, k)] += 1 / (2 * dx);
+	B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
+	A[A_IND(1, i, j, k)] -= 1 / (2 * dy);
+	A[A_IND(1, i - 1, j, k)] += 1 / (2 * dy);
+	B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dy);
+	A[A_IND(2, i, j, k)] -= 1 / (2 * dz);
+	A[A_IND(2, i - 1, j, k)] += 1 / (2 * dz);
+	B[B_IND(2, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dz);
 	return;
 }
 
@@ -1079,7 +1185,7 @@ void DIV_shear_stress_crank_nikolson(int i, int j, int k)
 	}
 }
 
-int create_Ab()
+int create_Ab(void)
 {
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	int system_dimension = n_cells_multipl * nz * num_parameters;
@@ -1098,12 +1204,13 @@ int create_Ab()
 				if (ind_cell_multipl[i * ny + j] != -1) {
 					DDT(i, j, k, velocity_density);
 					DIV(i, j, k, density_velocity_velocity, crank_nikolson);
-					DDX(5, i, j, k, pressure, crank_nikolson);
+					GRAD(i, j, k, pressure, crank_nikolson);
 					DIV(i, j, k, shear_stress);
 				}
 			}
 		}
 	}
+	return 0;
 }
 
 int create_Ab_momentum_eqn(int projection)
