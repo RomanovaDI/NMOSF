@@ -41,7 +41,7 @@ float *phase_fraction;
 float *velocity;
 float *pressure;
 float pressure_atmosphere;
-float g;
+float g[3];
 float k_viscosity_snow, k_viscosity_air;
 float shear_rate, shear_stress[9];
 float *normal, *volume, *area;
@@ -850,16 +850,16 @@ int conformity(int i, int j)
 
 /*
 matrix A and vector B structure:
-velocity_x, velocity_y, velocity_z, alpha, pressure in cell [0, 0, 0]
-velocity_x, velocity_y, velocity_z, alpha, pressure in cell [0, 1, 0]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, 0, 0]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, 1, 0]
 .....................................................................
-velocity_x, velocity_y, velocity_z, alpha, pressure in cell [0, ny - 1, 0]
-velocity_x, velocity_y, velocity_z, alpha, pressure in cell [1, ny - 1, 0]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, ny - 1, 0]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [1, ny - 1, 0]
 .....................................................................
-velocity_x, velocity_y, velocity_z, alpha, pressure in cell [nx - 1, ny - 1, 0]
-velocity_x, velocity_y, velocity_z, alpha, pressure in cell [nx - 1, ny - 1, 1]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, 0]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, 1]
 .....................................................................
-velocity_x, velocity_y, velocity_z, alpha, pressure in cell [nx - 1, ny - 1, nz - 1]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, nz - 1]
 */
 
 int A_IND(int p, int i, int j, int k)
@@ -899,6 +899,11 @@ int VOLUME_IND(int i, int j, int k)
 	return ind_cell_multipl[i * ny + j];
 }
 
+int PHASE_IND(int i, int j, int k)
+{
+	return k * n_cells_multipl + ind_cell_multipl[i * ny + j];
+}
+
 //int PRESS_IND(int i, int j, int k)
 //{
 //	return DEN_IND(i, j, k);
@@ -910,11 +915,14 @@ list of objects
    density_velocity_velocity
    pressure
    shear_stress
+   gravity_force
 */
 
 /*
 list of numerical_schemes
 	crank_nikolson
+	half_forward_euler
+	half_backward_euler
 */
 
 /*
@@ -929,6 +937,7 @@ list of boundary condition modes
 #define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme##(p, i, j, k, s)
 #define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
 #define GRAD(i, j, k, s, mode, numerical_scheme) GRAD_##mode##_##numerical_scheme##(i, j, k, s)
+#define VECT(i, j, k, s, mode, numerical_scheme) VECT_##mode##_##numerical_scheme##(i, j, k, s)
 //#define X_AXIS(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
 //#define Y_AXIS(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
 //#define X_AXIS(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
@@ -1122,6 +1131,52 @@ void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 	return;
 }
 
+int A_IND_S(int p, int i, int j, int k, int s)
+{
+	switch (s) {
+		case 0:
+			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
+				return A_IND(i, j, k);
+			else
+				return A_IND(i + 1, j, k);
+		case 1:
+			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+				return A_IND(i, j, k);
+			else
+				return A_IND(i - 1, j, k);
+		case 2:
+			if ((ind_cell_multipl[i * ny + j + 1] == -1) || (j + 1 >= ny))
+				return A_IND(i, j, k);
+			else
+				return A_IND(i, j + 1, k);
+		case 3:
+			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+				return A_IND(i, j, k);
+			else
+				return A_IND(i, j - 1, k);
+		case 4:
+			if (k >= nz)
+				return A_IND(i, j, k);
+			else
+				return A_IND(i, j, k + 1);
+		case 5:
+			if (k < 0)
+				return A_IND(i, j, k);
+			else
+				return A_IND(i, j, k - 1);
+	}
+}
+
+int A_IND_S_SWITCH(i, j, k)
+{
+	if ((ind_cell_multipl[i * ny + j] == -1) ||
+		(i >= nx) || (i < 0) ||
+		(j >= ny) || (j < 0) ||
+		(k >= nz) || (k < 0))
+			return 0;
+	return 1;
+}
+
 void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 {
 	int s, p, pr;
@@ -1129,7 +1184,10 @@ void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 		for (s = 0; s < 6; s++) {
 			for (p = 0; p < 3; p++) {
 				A[A_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s_ind)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
-					normal[NORMAL_IND(p, i, j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)]);
+					normal[NORMAL_IND(p, i, j, k, s)] / ( 2 * 2 * volume[VOLUME_IND(i, j, k)]);
+				if (A_IND_S_SWITCH(i, j, k))
+					A[A_IND_S(p, i, j, k, s)] -= area[AREA_IND(i, j, k, s_ind)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
 			}
 		}
 	}
@@ -1145,45 +1203,88 @@ void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 
 void GRAD_pressure_crank_nikolson(int i, int, j, int k)
 {
-	A[A_IND(0, i, j, k)] -= 1 / (2 * dx);
-	A[A_IND(0, i - 1, j, k)] += 1 / (2 * dx);
-	B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
-	A[A_IND(1, i, j, k)] -= 1 / (2 * dy);
-	A[A_IND(1, i - 1, j, k)] += 1 / (2 * dy);
-	B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dy);
-	A[A_IND(2, i, j, k)] -= 1 / (2 * dz);
-	A[A_IND(2, i - 1, j, k)] += 1 / (2 * dz);
-	B[B_IND(2, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dz);
+	if (i - 1 >= 0) {
+		A[A_IND(0, i, j, k)] -= 1 / (2 * dx);
+		A[A_IND(0, i - 1, j, k)] += 1 / (2 * dx);
+		B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
+	}
+	if (j - 1 >= 0) {
+		A[A_IND(1, i, j, k)] -= 1 / (2 * dy);
+		A[A_IND(1, i, j - 1, k)] += 1 / (2 * dy);
+		B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j - 1, k)]) / (2 * dy);
+	}
+	if (k - 1 >= 0) {
+		A[A_IND(2, i, j, k)] -= 1 / (2 * dz);
+		A[A_IND(2, i, j, k - 1)] += 1 / (2 * dz);
+		B[B_IND(2, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j, k - 1)]) / (2 * dz);
+	}
 	return;
 }
 
-void DDX_shear_stress_crank_nikolson(int p, int i, int j, int k)
+void VECT_gravity_force_half_forward_euler(int i, int j, int k)
 {
+	int p;
+	for (p = 0; p < 3; p++) {
+		B[B_IND(p, i, j, k)] -= density_snow * g[p] * phase_fraction[PHASE_IND(i, j, k)] / 2 + density_air * g[p] * (1 - phase_fraction[PHASE_IND(i, j, k)]) / 2;
+	}
+	return;
+}
+
+void VECT_gravity_force_half_backward_euler(int i, int j, int k)
+{
+	int p;
+	for (p = 0; p < 3; p++) {
+		A[A_IND(3, i, j, k)] += density_snow * g[p] / 2 - density_air * g[p] / 2;
+		B[B_IND(p, i, j, k)] -= density_air * g[p] / 2;
+	}
+	return;
+}
+
+void VECT_gravity_force_crank_nikolson(int i, int j, int k)
+{
+	VECT(i, j, k, gravity_force, half_forward_euler);
+	VECT(i, j, k, gravity_force, half_backward_euler);
+	return;
 }
 
 void DIV_shear_stress_crank_nikolson(int i, int j, int k)
 {
-	int p, s_ind;
-	for (p = 0; p < 3; p++) {
-		for (s_ind = 0; s_ind < 6; s_ind++) {
-			if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
-				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, zero_gradient, crank_nikolson);
-			} else {
-				DDX(p, i, j, k, s_ind, shear_stress, crank_nikolson);
-			}
-			if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
-				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, zero_gradient, crank_nikolson);
-			} else {
-				DDY(p, i, j, k, s_ind, shear_stress, crank_nikolson);
-			}
-			if (k - 1 < 0) {
-				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, no_slip, crank_nikolson);
-			} else {
-				DDZ(p, i, j, k, s_ind, shear_stress, crank_nikolson);
-			}
-		}
-	}
+	DIV(i, j, k, shear_stress, half_forward_euler);
+	DIV(i, j, k, shear_stress, half_backward_euler);
+	return;
 }
+
+void DIV_shear_stress_half_forward_euler(int i, int j, int k)
+{
+}
+
+//void DDX_shear_stress_crank_nikolson(int p, int i, int j, int k)
+//{
+//}
+//
+//void DIV_shear_stress_crank_nikolson(int i, int j, int k)
+//{
+//	int p, s_ind;
+//	for (p = 0; p < 3; p++) {
+//		for (s_ind = 0; s_ind < 6; s_ind++) {
+//			if ((ind_cell_multipl((i - 1) * ny + j) == -1) || (i - 1 < 0)) {
+//				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, zero_gradient, crank_nikolson);
+//			} else {
+//				DDX(p, i, j, k, s_ind, shear_stress, crank_nikolson);
+//			}
+//			if ((ind_cell_multipl(i * ny + j - 1) == -1) || (j - 1 < 0)) {
+//				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, zero_gradient, crank_nikolson);
+//			} else {
+//				DDY(p, i, j, k, s_ind, shear_stress, crank_nikolson);
+//			}
+//			if (k - 1 < 0) {
+//				BOUNDARY_CONDITION(p, i, j, k, s_ind, shear_stress, no_slip, crank_nikolson);
+//			} else {
+//				DDZ(p, i, j, k, s_ind, shear_stress, crank_nikolson);
+//			}
+//		}
+//	}
+//}
 
 int create_Ab(void)
 {
@@ -1204,6 +1305,7 @@ int create_Ab(void)
 				if (ind_cell_multipl[i * ny + j] != -1) {
 					DDT(i, j, k, velocity_density);
 					DIV(i, j, k, density_velocity_velocity, crank_nikolson);
+					VECT(i, j, k, gravity_force, crank_nikolson);
 					GRAD(i, j, k, pressure, crank_nikolson);
 					DIV(i, j, k, shear_stress);
 				}
@@ -1317,7 +1419,8 @@ void display_usage(void)
 int main(int argc, char **argv)
 {
 	int opt = 0;
-	g = 9,81;
+	g[0] = g[1] = 0;
+	g[2] = 9,81;
 	static const char *optString = "m:r:H:D:x:y:z:d::p:v::h?";
 	while ((opt = getopt(argc, argv, optString)) != -1) {
 		switch (opt) {
