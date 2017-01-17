@@ -43,10 +43,10 @@ float pressure_atmosphere;
 float g[3];
 float k_viscosity_snow, k_viscosity_air;
 float *normal, *volume, *area;
-float *A_momentum_eqn, *b_momentum_eqn;
 float dt, dx, dy, dz;
 float *A, *B;
 int num_parameters;
+float shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
 
 int read_asc_and_declare_variables(void)
 {
@@ -648,6 +648,8 @@ int free_massives(void)
 	free(volume);
 	free(area);
 	free(normal);
+	free(A);
+	free(B);
 	return 0;
 }
 
@@ -848,6 +850,7 @@ velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny
 velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, nz - 1]
 */
 
+/*
 int A_IND(int p, int i, int j, int k)
 {
 	return (num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) *
@@ -889,6 +892,33 @@ int PHASE_IND(int i, int j, int k)
 {
 	return k * n_cells_multipl + ind_cell_multipl[i * ny + j];
 }
+*/
+
+#define A_IND(p, i, j, k) \
+	((num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) * \
+	n_cells_multipl * nz * num_parameters + \
+	num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p)
+
+#define B_IND(p, i, j, k) \
+	(num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p)
+
+#define PRESS_IND(i, j, k) \
+	(k * n_cells_multipl + ind_cell_multipl[i * ny + j])
+
+#define VEL_IND(p, i , j, k) \
+	(p * PRESS_IND(i, j, k) + p)
+
+#define AREA_IND(i, j, k, s) \
+	(6 * ind_cell_multipl[i * ny + j] + s)
+
+#define NORMAL_IND(p, i, j, k, s) \
+	(18 * ind_cell_multipl[i * ny + j] + s * 3 + p)
+
+#define VOLUME_IND(i, j, k) \
+	(ind_cell_multipl[i * ny + j])
+
+#define PHASE_IND(i, j, k) \
+	(k * n_cells_multipl + ind_cell_multipl[i * ny + j])
 
 /*
 list of objects
@@ -1244,10 +1274,10 @@ float effective_viscosity_on_face(int i, int j, int k, int s)
 	float phase_fraction_on_face_tmp = phase_fraction_on_face(i, j, k, s);
 	float shear_rate_on_face_tmp = shear_rate_on_face(i, j, k, s);
 	float x = k_viscosity_air * (1 - phase_fraction_on_face_tmp);
-	if (shear_rate_on_face_tmp <= shear_rate_0) {//shear_rate_0 we need to include to input parameters
-		x += limiting_viscosity_snow * phase_fraction_on_face_tmp; //limiting_viscosity_snow need to be include to input parameters
+	if (shear_rate_on_face_tmp <= shear_rate_0) {
+		x += limiting_viscosity_snow * phase_fraction_on_face_tmp;
 	} else {
-		x += (k_viscosity_snow * pow(shear_rate_on_face_tmp, flow_index - 1) + yield_stress / shear_rate_on_face_tmp) * phase_fraction_on_face_tmp; //flow_indexand yield_stress need to be included to input parameters
+		x += (k_viscosity_snow * pow(shear_rate_on_face_tmp, flow_index - 1) + yield_stress / shear_rate_on_face_tmp) * phase_fraction_on_face_tmp;
 	}
 	return x;
 }
@@ -1296,7 +1326,7 @@ int create_Ab(void)
 
 void display_usage(void)
 {
-	printf("Options -m, -r, -H, -D, -x, -y, -z, -d, -p, -v must be declared\n\n");
+	printf("Options -m, -r, -H, -D, -x, -y, -z, -d, -p, -v, -k, -i, -l, -s must be declared\n\n");
 	printf("-m\tmap\tASCII file of map\n");
 	printf("-r\trerion\tASCII file of region\n");
 	printf("-H\thight\thight of calculation area (float)\n");
@@ -1306,7 +1336,13 @@ void display_usage(void)
 	printf("-z\tkz\treduction ratio in z direction (int)\n");
 	printf("-d\tsnow density air density\tdensity of snow and air (float)\n");
 	printf("-p\tpressure\tatmosphere pressure\n");
-	printf("-v\tsnow kinematic viscosity air kinematic viscosity\tkinematic viscisity of snow and air (float)\n");
+	//printf("-v\tsnow kinematic viscosity air kinematic viscosity\tkinematic viscisity of snow and air (float)\n");
+	//printf("-v\tsnow viscosity air viscosity\tviscisity of snow and air (float)\n");
+	printf("-v\tair viscosity\tshear viscosity of the air for Newtonian model (float)\n");
+	printf("-k\tsnow consistency index\tconsistency index for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
+	printf("-i\tflow index\tflow index for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
+	printf("-l\tyield stress\tyield stress for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
+	printf("-s\tlimiting shear rate\tlimiting shear rate for the effective viscosity to use Herschel-Bulkley model as a generalized Newtonian fluid model (float)\n");
 	printf("-h\tdisplay usage\n");
 }
 
@@ -1315,7 +1351,7 @@ int main(int argc, char **argv)
 	int opt = 0;
 	g[0] = g[1] = 0;
 	g[2] = 9,81;
-	static const char *optString = "m:r:H:D:x:y:z:d::p:v::h?";
+	static const char *optString = "m:r:H:D:x:y:z:d::p:v:k:i:l:s:h?";
 	while ((opt = getopt(argc, argv, optString)) != -1) {
 		switch (opt) {
 			case 'm':
@@ -1347,8 +1383,20 @@ int main(int argc, char **argv)
 				pressure_atmosphere = atof(optarg);
 				break;
 			case 'v':
-				k_viscosity_snow = atof(optarg);
 				k_viscosity_air = atof(optarg);
+				break;
+			case 'k':
+				k_viscosity_snow = atof(optarg);
+				break;
+			case 'i':
+				flow_index = atof(optarg);
+				break;
+			case 'l':
+				yield_stress = atof(optarg);
+				break;
+			case 's':
+				shear_rate_0 = atof(optarg);
+				limiting_viscosity_snow = k_viscosity_snow * pow(shear_rate_0, flow_index - 1) + yield_stress / shear_rate_0;
 				break;
 			case 'h':
 			case '?':
@@ -1356,7 +1404,7 @@ int main(int argc, char **argv)
 				return 1;
 		}
 	}
-	if (argc != 22) {
+	if (argc != 29) {
 		printf("Not enouth arguments\n");
 		return 1;
 	}
