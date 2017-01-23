@@ -1295,6 +1295,23 @@ void DIV_shear_stress_forward_euler(int i, int j, int k)
 	return;
 }
 
+void DIV_grad_pressure_crank_nikolson(int i, int j, int k)
+{
+	DIV(i, j, k, grad_pressure, half_forward_euler);
+	DIV(i, j, k, grad_pressure, half_backward_euler);
+	return;
+}
+
+void DIV_grad_pressure_half_forward_euler(int i, int j, int k)
+{
+	int p, s;
+	for (p = 0; p < 3; p++) {
+		for (s = 0; s < 6; s++) {
+			B[B_IND(4, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)])
+		}
+	}
+}
+
 int create_Ab(void)
 {
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
@@ -1312,11 +1329,14 @@ int create_Ab(void)
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
 				if (ind_cell_multipl[i * ny + j] != -1) {
+					/*momentum equation*/
 					DDT(i, j, k, velocity_density);
 					DIV(i, j, k, density_velocity_velocity, crank_nikolson);
 					VECT(i, j, k, gravity_force, crank_nikolson);
 					GRAD(i, j, k, pressure, crank_nikolson);
 					DIV(i, j, k, shear_stress, forward_euler);
+					/*pressure equation*/
+					DIV(i, j, k, grad_pressure, crank_nikolson);
 				}
 			}
 		}
