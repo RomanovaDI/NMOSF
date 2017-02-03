@@ -1380,15 +1380,15 @@ void DIV_grad_pressure_half_forward_euler(int i, int j, int k)
 		if (!((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)))
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j - 1, k, s)) / dy;
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
 		if (k <= 0)
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(0, i, j, k, s) / dy;
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(2, i, j, k, s) / dz;
 		else	
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j, k - 1, s)) / dz;
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
 	}
 	return;
 }
@@ -1398,38 +1398,146 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 	int s;
 	for (s = 0; s < 6; s++) {
 		if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)) {
-			A[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (A_IND_S_SWITCH(i, j, k))
+			A[A_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			if (A_IND_S_SWITCH(i, j, k, s))
+				A[A_IND_S(4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			else
+				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 		} else {
-			A[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			A[A_IND(4, i - 1, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			A[A_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			A[A_IND(4, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 			if (A_IND_S_SWITCH(i, j, k, s) == 1)
-				A[A_IND_S(4, i, j, k, s)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+				A[A_IND_S(4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			else
+				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1)
-				A[A_IND_S(4, i - 1, j, k, s)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+				A[A_IND_S(4, i - 1, j, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			else
+				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 		}
-		if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_atmosphere) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-		else
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-		if (k > 0)
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-		if (!((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)))
+		if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)) {
+			A[A_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			if (A_IND_S_SWITCH(i, j, k, s))
+				A[A_IND_S(4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			else
+				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		} else {
+			A[A_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			A[A_IND(4, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+				A[A_IND_S(4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			else
+				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1)
+				A[A_IND_S(4, i - 1, j, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			else
+				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		}
+		if (k > 0) {
+			A[A_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			A[A_IND(4, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+				A[A_IND_S(4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			else
+				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1)
+				A[A_IND_S(4, i - 1, j, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			else
+				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		}
+		if (!((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))) {
+			A[A_IND(0, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+			A[A_IND(0, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+				A[A_IND_S(0, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+			else
+				A[A_IND(0, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1)
+				A[A_IND_S(0, i - 1, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+			else
+				A[A_IND(0, i - 1, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+		}
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
-		if (!((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)))
+		if (!((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))) {
+			A[A_IND(1, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+			A[A_IND(1, i, j - 1, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+				A[A_IND_S(1, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+			else
+				A[A_IND(1, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1)
+				A[A_IND_S(1, i, j - 1, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+			else
+				A[A_IND(1, i, j - 1, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+		}
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j - 1, k, s)) / dy;
-		if (k <= 0)
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+		if (k == 0) {
+			A[A_IND(2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(0, i, j, k, s) / dy;
-		else	
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+				A[A_IND_S(2, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			else
+				A[A_IND(2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+		}
+		if (k > 0) {
+			A[A_IND(2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j, k - 1, s)) / dz;
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			A[A_IND(2, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+				A[A_IND_S(2, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			else
+				A[A_IND(2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1)
+				A[A_IND_S(2, i, j, k - 1, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			else
+				A[A_IND(2, i, j, k - 1)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+		}
 	}
 	return;
 }
