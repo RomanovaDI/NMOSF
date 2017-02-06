@@ -927,6 +927,10 @@ list of objects
    pressure
    shear_stress
    gravity_force
+   grad_pressure
+   div_density_velocity_velocity
+   density_snow_volume_fraction
+   density_snow_volume_fraction_velocity
 */
 
 /*
@@ -1373,22 +1377,6 @@ void DIV_grad_pressure_half_forward_euler(int i, int j, int k)
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 		if (k > 0)
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-		if (!((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)))
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
-		if (!((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)))
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
-		if (k <= 0)
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(2, i, j, k, s) / dz;
-		else	
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
 	}
 	return;
 }
@@ -1447,6 +1435,45 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 			else
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
 		}
+	}
+	return;
+}
+
+void DIV_div_density_velocity_velocity_crank_nikolson(int i, int j, int k)
+{
+	DIV(i, j, k, div_density_velocity_velocity, half_forward_euler);
+	DIV(i, j, k, div_density_velocity_velocity, half_backward_euler);
+	return;
+}
+
+void DIV_div_density_velocity_velocity_half_forward_euler(int i, int j, int k)
+{
+	int s;
+	for (s = 0; s < 6; s++) {
+		if (!((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)))
+			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
+		if (!((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)))
+			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
+		if (k <= 0)
+			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(2, i, j, k, s) / dz;
+		else	
+			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
+				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
+	}
+	return;
+}
+
+void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
+{
+	int s;
+	for (s = 0; s < 6; s++) {
 		if (!((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))) {
 			A[A_IND(0, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
@@ -1471,9 +1498,6 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dx;
 		}
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
 		if (!((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))) {
 			A[A_IND(1, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
@@ -1498,9 +1522,6 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 					(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) / dy;
 		}
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j - 1, k, s)) / dy;
 		if (k == 0) {
 			A[A_IND(2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) normal[NORMAL_IND(1, i, j, k, s)] +
@@ -1542,6 +1563,48 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 	return;
 }
 
+void DDT_density_snow_volume_fraction(int i, int j, int k)
+{
+	A[A_IND(3, i, j, k)] += density(i, j, k) / dt;
+	B[B_IND(3, i, j, k)] += density(i, j, k) * phase_fraction[PHASE_IND(i, j, k)] / dt;
+}
+
+void DIV_density_snow_volume_fraction_velocity_crank_nikolson(int i, int j, int k)
+{
+	DIV(i, j, k, density_snow_volume_fraction_velocity, half_forward_euler);
+	DIV(i, j, k, density_snow_volume_fraction_velocity, half_backward_euler);
+}
+
+void DIV_density_snow_volume_fraction_velocity_half_forward_euler(int i, int j, int k)
+{
+	int s;
+	for (s = 0; s < 6; s++) {
+		B[B_IND(3, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2) * phase_fraction_on_face(i, j, k, s);
+	}
+	return;
+}
+
+void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j, int k)
+{
+	int s;
+	for (s = 0; s < 6; s++) {
+		A[A_IND(3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);
+		if (A_IND_S_SWITCH(i, j, k, s) == 1)
+			A[A_IND_S(3, i, j, k, s)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);
+		if (A_IND_S_SWITCH(i, j, k, s) == 0)
+			A[A_IND(3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);
+	}
+	return;
+}
+
 int create_Ab(void)
 {
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
@@ -1567,6 +1630,10 @@ int create_Ab(void)
 					DIV(i, j, k, shear_stress, forward_euler);
 					/*pressure equation*/
 					DIV(i, j, k, grad_pressure, crank_nikolson);
+					DIV(i, j, k, div_density_velocity_velocity, crank_nikolson);
+					/*snow volume fraction equation*/
+					DDT(i, j, k, density_snow_volume_fraction);
+					DIV(i, j, k, density_snow_volume_fraction_velocity, crank_nikolson);
 				}
 			}
 		}
