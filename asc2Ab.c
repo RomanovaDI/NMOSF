@@ -5,15 +5,44 @@
 #include <unistd.h>
 
 int read_asc_and_declare_variables(void);
+void annihilate_array(void *a, int size_bites);
 int do_interpolation(void);
 int print_vtk(void);
 int free_massives(void);
+float density(int i, int j, int k);
 void print_mass(void);
-void display_usage(void);
-int create_Ab_momentum_eqn(void);
 int set_arrays(void);
-void annihilate_array(void *a, int size_bites);
 int conformity(int i, int j);
+void DDT_density_velocity(int i, int j, int k);
+float velocity_on_face(int p, int i, int j, int k, int s);
+float density_on_face(int i, int j, int k, int s);
+void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k);
+int A_IND_S(int p, int i, int j, int k, int s);
+int A_IND_S_SWITCH(int i, int j, int k, int s);
+void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k);
+void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k);
+void GRAD_pressure_crank_nikolson(int i, int j, int k);
+void VECT_gravity_force_half_forward_euler(int i, int j, int k);
+void VECT_gravity_force_half_backward_euler(int i, int j, int k);
+void VECT_gravity_force_crank_nikolson(int i, int j, int k);
+float strain_rate_on_face(int i, int j, int k, int s, int m, int n);
+float shear_rate_on_face(int i, int j, int k, int s);
+float phase_fraction_on_face(int i, int j, int k, int s);
+float effective_viscosity_on_face(int i, int j, int k, int s);
+void DIV_shear_stress_forward_euler(int i, int j, int k);
+float pressure_on_face(int i, int j, int k, int s);
+void DIV_grad_pressure_crank_nikolson(int i, int j, int k);
+void DIV_grad_pressure_half_forward_euler(int i, int j, int k);
+void DIV_grad_pressure_half_backward_euler(int i, int j, int k);
+void DIV_div_density_velocity_velocity_crank_nikolson(int i, int j, int k);
+void DIV_div_density_velocity_velocity_half_forward_euler(int i, int j, int k);
+void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k);
+void DDT_density_snow_volume_fraction(int i, int j, int k);
+void DIV_density_snow_volume_fraction_velocity_crank_nikolson(int i, int j, int k);
+void DIV_density_snow_volume_fraction_velocity_half_forward_euler(int i, int j, int k);
+void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j, int k);
+int create_Ab(void);
+void display_usage(void);
 
 char *map_name;
 char *region_map_name;
@@ -50,6 +79,7 @@ float shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
 
 int read_asc_and_declare_variables(void)
 {
+	printf("Reading maps.\n");
 	FILE *f = fopen(map_name,"r");
 	if (f == NULL) {
 		printf("No such file of map\n");
@@ -342,6 +372,7 @@ int read_asc_and_declare_variables(void)
 	nx = (nrows - 1) * kx;
 	ny = (ncols - 1) * ky;
 	nz = (int) hight / cellsize * kz;
+	printf("Maps entered correctly.\n");
 	return 0;
 }
 
@@ -357,6 +388,7 @@ void annihilate_array(void *a, int size_bites)
 
 int do_interpolation(void)
 {
+	printf("Interpolating mesh.\n");
 	int i, j, k, l = 0;
 	float a, b, d;
 	float *c;
@@ -948,19 +980,22 @@ list of boundary condition modes
 */
 
 
-#define DDT(p, i, j, k, object) DDT_##object##(p, i, j, k);
-#define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme##(i, j, k);
-#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme##(p, i, j, k, s)
-#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme##(p, i, j, k, s)
-#define GRAD(i, j, k, s, mode, numerical_scheme) GRAD_##mode##_##numerical_scheme##(i, j, k, s)
-#define VECT(i, j, k, mode, numerical_scheme) VECT_##mode##_##numerical_scheme##(i, j, k)
-#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme##(p, i, j, k, s)
-#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme##(p, i, j, k, s)
+#define DDT(i, j, k, object) DDT_##object(i, j, k);
+#define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(i, j, k);
+#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme(p, i, j, k, s)
+#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme(p, i, j, k, s)
+#define GRAD(i, j, k, mode, numerical_scheme) GRAD_##mode##_##numerical_scheme(i, j, k)
+#define VECT(i, j, k, mode, numerical_scheme) VECT_##mode##_##numerical_scheme(i, j, k)
+#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme(p, i, j, k, s)
+#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme(p, i, j, k, s)
 
-void DDT_density_velocity(int p, int i, int j, int k)
+void DDT_density_velocity(int i, int j, int k)
 {
-	A[A_IND(p, i, j, k)] += density(i, j, k) / dt;
-	B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
+	int p;
+	for (p = 0; p < 3; p++) {
+		A[A_IND(p, i, j, k)] += density(i, j, k) / dt;
+		B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
+	}
 }
 
 float velocity_on_face(int p, int i, int j, int k, int s)
@@ -1622,8 +1657,9 @@ int create_Ab(void)
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
 				if (ind_cell_multipl[i * ny + j] != -1) {
+					printf("i = %d,\t\tj = %d,\t\tk = %d\n", i, j, k);
 					/*momentum equation*/
-					DDT(i, j, k, velocity_density);
+					DDT(i, j, k, density_velocity);
 					DIV(i, j, k, density_velocity_velocity, crank_nikolson);
 					VECT(i, j, k, gravity_force, crank_nikolson);
 					GRAD(i, j, k, pressure, crank_nikolson);
@@ -1639,22 +1675,19 @@ int create_Ab(void)
 		}
 	}
 	FILE *f = fopen("A.txt","w");
-	if (f == NULL) {
-		printf("No such file of map\n");
-		return 1;
-	}
 	for (i = 0; i < system_dimension; i++) {
 		for (j = 0; j < system_dimension; j++) {
 			fprintf(f, "%10lf\t", A[i * system_dimension + j]);
 		}
 		fprintf(f, "\n");
 	}
+	fclose(f);
 	return 0;
 }
 
 void display_usage(void)
 {
-	printf("Options -m, -r, -H, -D, -x, -y, -z, -d, -p, -v, -k, -i, -l, -s must be declared\n\n");
+	printf("Options -m, -r, -H, -D, -x, -y, -z, -a, -s, -p, -v, -k, -i, -l, -S must be declared\n\n");
 	printf("-m\tmap\tASCII file of map\n");
 	printf("-r\trerion\tASCII file of region\n");
 	printf("-H\thight\thight of calculation area (float)\n");
@@ -1662,7 +1695,8 @@ void display_usage(void)
 	printf("-x\tkx\treduction ratio in x direction (int)\n");
 	printf("-y\tky\treduction ratio in y direction (int)\n");
 	printf("-z\tkz\treduction ratio in z direction (int)\n");
-	printf("-d\tsnow density air density\tdensity of snow and air (float)\n");
+	printf("-a\tsnow density air density\tdensity of snow and air (float)\n");
+	printf("-s\tsnow density air density\tdensity of snow and air (float)\n");
 	printf("-p\tpressure\tatmosphere pressure\n");
 	//printf("-v\tsnow kinematic viscosity air kinematic viscosity\tkinematic viscisity of snow and air (float)\n");
 	//printf("-v\tsnow viscosity air viscosity\tviscisity of snow and air (float)\n");
@@ -1670,7 +1704,7 @@ void display_usage(void)
 	printf("-k\tsnow consistency index\tconsistency index for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
 	printf("-i\tflow index\tflow index for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
 	printf("-l\tyield stress\tyield stress for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
-	printf("-s\tlimiting shear rate\tlimiting shear rate for the effective viscosity to use Herschel-Bulkley model as a generalized Newtonian fluid model (float)\n");
+	printf("-S\tlimiting shear rate\tlimiting shear rate for the effective viscosity to use Herschel-Bulkley model as a generalized Newtonian fluid model (float)\n");
 	printf("-h\tdisplay usage\n");
 }
 
@@ -1679,7 +1713,7 @@ int main(int argc, char **argv)
 	int opt = 0;
 	g[0] = g[1] = 0;
 	g[2] = 9,81;
-	static const char *optString = "m:r:H:D:x:y:z:d::p:v:k:i:l:s:h?";
+	static const char *optString = "m:r:H:D:x:y:z:a:s:p:v:k:i:l:S:h?";
 	while ((opt = getopt(argc, argv, optString)) != -1) {
 		switch (opt) {
 			case 'm':
@@ -1703,8 +1737,10 @@ int main(int argc, char **argv)
 			case 'z':
 				kz = atoi(optarg);
 				break;
-			case 'd':
+			case 'a':
 				density_snow = atof(optarg);
+				break;
+			case 's':
 				density_air = atof(optarg);
 				break;
 			case 'p':
@@ -1722,7 +1758,7 @@ int main(int argc, char **argv)
 			case 'l':
 				yield_stress = atof(optarg);
 				break;
-			case 's':
+			case 'S':
 				shear_rate_0 = atof(optarg);
 				limiting_viscosity_snow = k_viscosity_snow * pow(shear_rate_0, flow_index - 1) + yield_stress / shear_rate_0;
 				break;
@@ -1732,10 +1768,11 @@ int main(int argc, char **argv)
 				return 1;
 		}
 	}
-	if (argc != 29) {
+	if (argc != 31) {
 		printf("Not enouth arguments\n");
 		return 1;
 	}
+	printf("Parameters entered correctly.\n");
 
 	if (read_asc_and_declare_variables() == 1) goto error;
 	printf("Files of map and region have been processed\n");
@@ -1745,6 +1782,7 @@ int main(int argc, char **argv)
 	printf("Map was printed to VTK format\n");
 	//print_mass();
 	//we need to set dt!!!
+	if (create_Ab() == 1) goto error;
 	if (free_massives() == 1) goto error;
 
 
