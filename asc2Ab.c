@@ -4,6 +4,39 @@
 #include <math.h>
 #include <unistd.h>
 
+char *map_name;
+char *region_map_name;
+float hight;
+int kx, ky, kz;
+int nx, ny, nz;
+int n_bl_x, n_bl_y, n_bl_z;
+int ncols;
+int nrows;
+float cellsize;
+float *mass;
+int *ind;
+int *bl_cond;
+int n_points, n_cells;
+int n_points_multipl, n_cells_multipl;
+int *ind_multipl, *ind_cell_multipl;
+float interpolation, interpolation_poli;
+float *mass1;
+float nodata_value;
+int *snow_region;
+float depth;
+float density_snow, density_air;
+float *phase_fraction;
+float *velocity;
+float *pressure;
+float pressure_atmosphere;
+float g[3];
+float k_viscosity_snow, k_viscosity_air;
+float *normal, *volume, *area;
+float dt, dx, dy, dz;
+float *A, *B;
+int num_parameters;
+float shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
+
 int read_asc_and_declare_variables(void);
 void annihilate_array(void *a, int size_bites);
 int do_interpolation(void);
@@ -44,38 +77,40 @@ void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j,
 int create_Ab(void);
 void display_usage(void);
 
-char *map_name;
-char *region_map_name;
-float hight;
-int kx, ky, kz;
-int nx, ny, nz;
-int n_bl_x, n_bl_y, n_bl_z;
-int ncols;
-int nrows;
-float cellsize;
-float *mass;
-int *ind;
-int *bl_cond;
-int n_points, n_cells;
-int n_points_multipl, n_cells_multipl;
-int *ind_multipl, *ind_cell_multipl;
-float interpolation, interpolation_poli;
-float *mass1;
-float nodata_value;
-int *snow_region;
-float depth;
-float density_snow, density_air;
-float *phase_fraction;
-float *velocity;
-float *pressure;
-float pressure_atmosphere;
-float g[3];
-float k_viscosity_snow, k_viscosity_air;
-float *normal, *volume, *area;
-float dt, dx, dy, dz;
-float *A, *B;
-int num_parameters;
-float shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
+#define A_IND(p, i, j, k) \
+	((num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) * \
+	n_cells_multipl * nz * num_parameters + \
+	num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p)
+
+#define B_IND(p, i, j, k) \
+	(num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p)
+
+#define PRESS_IND(i, j, k) \
+	(k * n_cells_multipl + ind_cell_multipl[i * ny + j])
+
+#define VEL_IND(p, i , j, k) \
+	(p * PRESS_IND(i, j, k) + p)
+
+#define AREA_IND(i, j, k, s) \
+	(6 * ind_cell_multipl[i * ny + j] + s)
+
+#define NORMAL_IND(p, i, j, k, s) \
+	(18 * ind_cell_multipl[i * ny + j] + s * 3 + p)
+
+#define VOLUME_IND(i, j, k) \
+	(ind_cell_multipl[i * ny + j])
+
+#define PHASE_IND(i, j, k) \
+	(k * n_cells_multipl + ind_cell_multipl[i * ny + j])
+
+#define DDT(i, j, k, object) DDT_##object(i, j, k);
+#define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(i, j, k);
+#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme(p, i, j, k, s)
+#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme(p, i, j, k, s)
+#define GRAD(i, j, k, mode, numerical_scheme) GRAD_##mode##_##numerical_scheme(i, j, k)
+#define VECT(i, j, k, mode, numerical_scheme) VECT_##mode##_##numerical_scheme(i, j, k)
+#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme(p, i, j, k, s)
+#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme(p, i, j, k, s)
 
 int read_asc_and_declare_variables(void)
 {
@@ -286,7 +321,10 @@ int read_asc_and_declare_variables(void)
 	}
 	remove("regions_map.txt");
 
-	int *snow_region = (int *) malloc(ncols * nrows * sizeof(int));
+	if ((snow_region = (int *) malloc(ncols * nrows * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
 	float xlucorner = xllcorner - cellsize * nrows;
 	float ylucorner = yllcorner;
 	float xlucorner1 = xllcorner1 - cellsize1 * nrows1;
@@ -312,6 +350,7 @@ int read_asc_and_declare_variables(void)
 			} else {
 					snow_region[i * ncols + j] = -1;
 			}
+			//printf("snow_region[i * ncols + j] = %d\n", snow_region[i * ncols + j]);
 		}
 	}
 	free(mass_tmp);
@@ -432,8 +471,8 @@ int do_interpolation(void)
 			mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky] = mass[i * ncols + j];
 
 	printf("mass1 after assignment mass\n");
-	for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
-		printf("%f\n", mass1[i]);
+	//for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
+	//	printf("%f\n", mass1[i]);
 
 	if ((c = (float *) malloc(ncols * sizeof(float))) == NULL) {
 		printf("Memory error\n");
@@ -556,7 +595,7 @@ int do_interpolation(void)
 				b = (mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] -
 					mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l]) /
 					cellsize + cellsize * (2 * c[i] + c[i - 1]) / 6;
-				printf("j = %d, l = %d, i = %d, a = %f, b = %f, c = %f, d = %f\n", j, l, i, a, b, c[i], d);
+				//printf("j = %d, l = %d, i = %d, a = %f, b = %f, c = %f, d = %f\n", j, l, i, a, b, c[i], d);
 				if ((mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l] != nodata_value) &&
 					(mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] != nodata_value)) {
 						for (k = 0; k < kx; k++) {
@@ -687,9 +726,13 @@ int free_massives(void)
 
 float density(int i, int j, int k)
 {
-	return (phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * ny + j]] *
-		density_snow + (1 - phase_fraction[k * n_cells_multipl +
-		ind_cell_multipl[i * ny + j]]) * density_air);
+	float x;
+	//printf("Calculating density\n");
+	//printf("i = %d, j = %d, k = %d\n", i, j, k);
+	//printf("phase_fraction[PHASE_IND(i, j, k)] = %f\n", phase_fraction[PHASE_IND(i, j, k)]);
+	x = (phase_fraction[PHASE_IND(i, j, k)] * density_snow + (1 - phase_fraction[PHASE_IND(i, j, k)]) * density_air);
+	//printf("End\n");
+	return x;
 }
 
 void print_mass(void)
@@ -726,17 +769,22 @@ int set_arrays(void)
 		printf("Memory error\n");
 		return 1;
 	}
+	annihilate_array(velocity, 3 * n_cells_multipl * nz * sizeof(float));
 	if ((pressure = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	n = 0;
-	for (k = 0; k < nz; n++) {
+	printf("Setting arrays\n");
+	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nrows - 1; i++) {
 			for (l = 0; l < kx; l++) {
 				for (j = 0; j < ncols - 1; j++) {
 					for (m = 0; m < ky; m++) {
 						if (bl_cond[i * (ncols - 1) + j] != -1) {
+							//printf("k = %d, i = %d, l = %d, j = %d, m = %d\n", k, i, l, j, m);
+							//printf("snow_region[0] = %d", snow_region[0]);
+							//printf("snow_region[i * ncols + j] = %d", snow_region[i * ncols + j]);
 							if (snow_region[i * ncols + j] == 1) {
 								if (((float) (k + 1) * cellsize > depth) && (depth > (float) k * cellsize)) {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
@@ -759,17 +807,12 @@ int set_arrays(void)
 									pressure_atmosphere;
 							}
 						}
-						if (bl_cond[i * (ncols - 1) + j] != -1) {
-							for (n = 0; n < 3; n++) {
-								velocity[n * n_cells_multipl * nz + k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
-							}
-						}
 					}
 				}
 			}
 		}
 	}
-
+	printf("Set phase_fraction array\n");
 	if ((volume = (float *) malloc(n_cells_multipl * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -883,76 +926,6 @@ velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny
 */
 
 /*
-int A_IND(int p, int i, int j, int k)
-{
-	return (num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) *
-	n_cells_multipl * nz * num_parameters +
-	num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p;
-}
-
-int B_IND(int p, int i, int j, int k)
-{
-	return num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p;
-}
-
-int PRESS_IND(int i, int j, int k)
-{
-	return k * n_cells_multipl + ind_cell_multipl[i * ny + j];
-}
-
-int VEL_IND(int p, int i , int j, int k)
-{
-	return p * PRESS_IND(i, j, k) + p;
-}
-
-int AREA_IND(int i, int j, int k, int s)
-{
-	return 6 * ind_cell_multipl[i * ny + j] + s;
-}
-
-int NORMAL_IND(int p, int i, int j, int k, int s)
-{
-	return 18 * ind_cell_multipl[i * ny + j] + s * 3 + p;
-}
-
-int VOLUME_IND(int i, int j, int k)
-{
-	return ind_cell_multipl[i * ny + j];
-}
-
-int PHASE_IND(int i, int j, int k)
-{
-	return k * n_cells_multipl + ind_cell_multipl[i * ny + j];
-}
-*/
-
-#define A_IND(p, i, j, k) \
-	((num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) * \
-	n_cells_multipl * nz * num_parameters + \
-	num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p)
-
-#define B_IND(p, i, j, k) \
-	(num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p)
-
-#define PRESS_IND(i, j, k) \
-	(k * n_cells_multipl + ind_cell_multipl[i * ny + j])
-
-#define VEL_IND(p, i , j, k) \
-	(p * PRESS_IND(i, j, k) + p)
-
-#define AREA_IND(i, j, k, s) \
-	(6 * ind_cell_multipl[i * ny + j] + s)
-
-#define NORMAL_IND(p, i, j, k, s) \
-	(18 * ind_cell_multipl[i * ny + j] + s * 3 + p)
-
-#define VOLUME_IND(i, j, k) \
-	(ind_cell_multipl[i * ny + j])
-
-#define PHASE_IND(i, j, k) \
-	(k * n_cells_multipl + ind_cell_multipl[i * ny + j])
-
-/*
 list of objects
    density_velocity
    density_velocity_velocity
@@ -979,22 +952,17 @@ list of boundary condition modes
 	no_slip
 */
 
-
-#define DDT(i, j, k, object) DDT_##object(i, j, k);
-#define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(i, j, k);
-#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme(p, i, j, k, s)
-#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme(p, i, j, k, s)
-#define GRAD(i, j, k, mode, numerical_scheme) GRAD_##mode##_##numerical_scheme(i, j, k)
-#define VECT(i, j, k, mode, numerical_scheme) VECT_##mode##_##numerical_scheme(i, j, k)
-#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme(p, i, j, k, s)
-#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme(p, i, j, k, s)
-
 void DDT_density_velocity(int i, int j, int k)
 {
 	int p;
 	for (p = 0; p < 3; p++) {
+		//printf("p = %d\n", p);
+		//printf("A_IND(p, i, j, k) = %d\n", A_IND(p, i, j, k));
+		//printf("density(i, j, k) = %f\n", density(i, j, k));
 		A[A_IND(p, i, j, k)] += density(i, j, k) / dt;
+		//printf("A[A_IND(p, i, j, k)] += density(i, j, k) / dt;");
 		B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
+		//printf("B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;");
 	}
 }
 
@@ -1653,21 +1621,25 @@ int create_Ab(void)
 		return 1;
 	}
 	int i, j, k;
+	set_arrays();
 	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
 				if (ind_cell_multipl[i * ny + j] != -1) {
 					printf("i = %d,\t\tj = %d,\t\tk = %d\n", i, j, k);
 					/*momentum equation*/
+					printf("Adding the momentum equation\n");
 					DDT(i, j, k, density_velocity);
 					DIV(i, j, k, density_velocity_velocity, crank_nikolson);
 					VECT(i, j, k, gravity_force, crank_nikolson);
 					GRAD(i, j, k, pressure, crank_nikolson);
 					DIV(i, j, k, shear_stress, forward_euler);
 					/*pressure equation*/
+					printf("Adding the pressure equation\n");
 					DIV(i, j, k, grad_pressure, crank_nikolson);
 					DIV(i, j, k, div_density_velocity_velocity, crank_nikolson);
 					/*snow volume fraction equation*/
+					printf("Adding the snow volume fraction equation\n");
 					DDT(i, j, k, density_snow_volume_fraction);
 					DIV(i, j, k, density_snow_volume_fraction_velocity, crank_nikolson);
 				}
@@ -1778,10 +1750,11 @@ int main(int argc, char **argv)
 	printf("Files of map and region have been processed\n");
 	if (do_interpolation() == 1) goto error;
 	printf("The interpolation have been done\n");
+	//printf("snow_region[0] = %d\n", snow_region[0]);
 	if (print_vtk() == 1) goto error;
 	printf("Map was printed to VTK format\n");
 	//print_mass();
-	//we need to set dt!!!
+	dt = 0.01;//we need to set dt!!!
 	if (create_Ab() == 1) goto error;
 	if (free_massives() == 1) goto error;
 
