@@ -78,7 +78,16 @@ void DIV_density_snow_volume_fraction_velocity_half_forward_euler(int i, int j, 
 void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j, int k);
 int create_Ab(void);
 void display_usage(void);
+int A_IND(int p, int i, int j, int k);
+int B_IND(int p, int i, int j, int k);
+int PRESS_IND(int i, int j, int k);
+int VEL_IND(int p, int i, int j, int k);
+int AREA_IND(int i, int j, int k, int s);
+int NORMAL_IND(int p, int i, int j, int k, int s);
+int VOLUME_IND(int i, int j, int k);
+int PHASE_IND(int i, int j, int k);
 
+/*
 #define A_IND(p, i, j, k) \
 	((num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) * \
 	n_cells_multipl * nz * num_parameters + \
@@ -104,6 +113,7 @@ void display_usage(void);
 
 #define PHASE_IND(i, j, k) \
 	(k * n_cells_multipl + ind_cell_multipl[i * ny + j])
+*/
 
 #define DDT(i, j, k, object) DDT_##object(i, j, k);
 #define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(i, j, k);
@@ -113,6 +123,48 @@ void display_usage(void);
 #define VECT(i, j, k, mode, numerical_scheme) VECT_##mode##_##numerical_scheme(i, j, k)
 #define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme(p, i, j, k, s)
 #define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme(p, i, j, k, s)
+
+int A_IND(int p, int i, int j, int k)
+{
+	printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
+	return ((num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p) *
+		n_cells_multipl * nz * num_parameters + num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p);
+}
+
+int B_IND(int p, int i, int j, int k)
+{
+	return (num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p);
+}
+
+int PRESS_IND(int i, int j, int k)
+{
+	return (k * n_cells_multipl + ind_cell_multipl[i * ny + j]);
+}
+
+int VEL_IND(int p, int i, int j, int k)
+{
+	return (3 * PRESS_IND(i, j, k) + p);
+}
+
+int AREA_IND(int i, int j, int k, int s)
+{
+	return (6 * ind_cell_multipl[i * ny + j] + s);
+}
+
+int NORMAL_IND(int p, int i, int j, int k, int s)
+{
+	return (18 * ind_cell_multipl[i * ny + j] + s * 3 + p);
+}
+
+int VOLUME_IND(int i, int j, int k)
+{
+	return (ind_cell_multipl[i * ny + j]);
+}
+
+int PHASE_IND(int i, int j, int k)
+{
+	return (k * n_cells_multipl + ind_cell_multipl[i * ny + j]);
+}
 
 int read_asc_and_declare_variables(void)
 {
@@ -979,6 +1031,8 @@ float velocity_on_face(int p, int i, int j, int k, int s)
 		(j >= ny) || (j < 0) ||
 		(k >= nz) || (k < 0))
 			return 0;
+	int a, b;
+	printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
 	switch (s) {
 		case 0:
 			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
@@ -988,15 +1042,28 @@ float velocity_on_face(int p, int i, int j, int k, int s)
 		case 1:
 			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
 			{
-				printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
-				printf("velocity[VEL_IND(p, i, j, k)] = %f\n", velocity[VEL_IND(p, i, j, k)]);
+				//printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
+				//printf("velocity[VEL_IND(p, i, j, k)] = %f\nend\n", velocity[VEL_IND(p, i, j, k)]);
 				return velocity[VEL_IND(p, i, j, k)];
 			}
 			else
 			{
-				printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
-				printf("velocity[VEL_IND(p, i, j, k)] = %f\n", velocity[VEL_IND(p, i, j, k)]);
-				printf("velocity[VEL_IND(p, i - 1, j, k)] = %f\n", velocity[VEL_IND(p, i - 1, j, k)]);
+				//printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
+				//printf("velocity[VEL_IND(p, i, j, k)] = %f\n", velocity[VEL_IND(p, i, j, k)]);
+				//printf("VEL_IND(p, i, j, k) = %d\n", VEL_IND(p, i, j, k));
+				//printf("VEL_IND(p, i - 1, j, k) = %d\n", VEL_IND(p, i - 1, j, k));
+				//printf("PRESS_IND(i, j, k) = %d\n", PRESS_IND(i, j, k));
+				//printf("PRESS_IND(i, j + 1, k) = %d\n", PRESS_IND(i, j + 1, k));
+				//printf("PRESS_IND(i - 1, j, k) = %d\n", PRESS_IND((i - 1), j, k));
+				//printf("PRESS_IND(i - 1, j, k) = %d\n", PRESS_IND(0, 8, 0));
+				//printf("(k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]) = %d\n", (k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]));
+				//printf("ind_cell_multipl[i * ny + j] = %d\n", ind_cell_multipl[i * ny + j]);
+				//printf("ind_cell_multipl[i * ny + j - 1] = %d\n", ind_cell_multipl[i * ny + j - 1]);
+				//printf("n_cells_multipl = %d\nind_cell_multipl[(i - 1) * ny + j] = %d\nnx = %d\nny = %d\nnz = %d\n", n_cells_multipl, ind_cell_multipl[(i - 1) * ny + j], nx, ny, nz);
+				//for (a = 0; a < nx; a++)
+				//	for (b = 0; b < ny; b++)
+				//		printf("ind_cell_multipl[%d * ny + %d] = %d\n", a, b, ind_cell_multipl[a * ny + b]);
+				//printf("velocity[VEL_IND(p, i - 1, j, k)] = %f\nend\n", velocity[VEL_IND(p, i - 1, j, k)]);
 				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i - 1, j, k)]) / 2;
 			}
 		case 2:
@@ -1144,14 +1211,25 @@ void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 	for (pr = 0; pr < 3; pr++) {
 		for (s = 0; s < 6; s++) {
 			for (p = 0; p < 3; p++) {
+				printf("1div\n");
 				A[A_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 					normal[NORMAL_IND(p, i, j, k, s)] / ( 2 * 2 * volume[VOLUME_IND(i, j, k)]);
+				printf("2div\n");
 				if (A_IND_S_SWITCH(i, j, k, s) == 1)
+				{
+					printf("3div\n");
 					A[A_IND_S(p, i, j, k, s)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
+					printf("3div\n");
+				}
 				if (A_IND_S_SWITCH(i, j, k, s) == 0)
+				{
+					printf("4div\n");
 					A[A_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
+					printf("4div\n");
+				}
+				printf("5div\n");
 			}
 		}
 	}
@@ -1489,15 +1567,30 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 		printf("z\n");
 		if (k > 0) {
 			A[A_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			A[A_IND(4, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			printf("1\n");
+			printf("A_IND(4, i - 1, j, k) = %d\n", A_IND(4, i - 1, j, k));
+			A[A_IND(4, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			printf("2\n");
 			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+			{
 				A[A_IND_S(4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+				printf("3\n");
+			}
 			else
+			{
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+				printf("4\n");
+			}
 			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1)
+			{
 				A[A_IND_S(4, i, j, k - 1, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+				printf("5\n");
+			}
 			else
+			{
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+				printf("6\n");
+			}
 		}
 	}
 	return;
