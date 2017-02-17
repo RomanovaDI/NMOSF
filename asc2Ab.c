@@ -1218,6 +1218,7 @@ void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 				if (A_IND_S_SWITCH(i, j, k, s) == 1)
 				{
 					printf("3div\n");
+					printf("A_IND_S(p, i, j, k, s) = %d\n", A_IND_S(p, i, j, k, s));
 					A[A_IND_S(p, i, j, k, s)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
 					printf("3div\n");
