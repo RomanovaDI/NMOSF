@@ -475,7 +475,7 @@ void annihilate_array(void *a, int size_bites)
 	b = (char *) a;
 	int i;
 	for (i = 0; i < size_bites; i++)
-		b[i] = '0';
+		b[i] = 0;
 	return;
 }
 
@@ -549,11 +549,11 @@ int do_interpolation(void)
 		ind_start = 0;
 		ind_finish = ncols;
 		for (j = 0; j < ncols; j++) {
-			if ((mass[i * ncols + j] != nodata_value) && (flag == 0)) {
+			if ((ind[i * ncols + j] != -1) && (flag == 0)) {
 				ind_start = j;
 				flag = 1;
 			}
-			if ((mass[i * ncols + j] == nodata_value) && (flag == 1)) {
+			if ((ind[i * ncols + j] == -1) && (flag == 1)) {
 				ind_finish = j;
 				flag = 2;
 			}
@@ -573,7 +573,7 @@ int do_interpolation(void)
 			a = mass[i * ncols + j];
 			d = (c[j] - c[j - 1]) / cellsize;
 			b = (mass[i * ncols + j] - mass[i * ncols + j - 1]) / cellsize + cellsize * (2 * c[j] + c[j - 1]) / 6;
-			if ((mass[i * ncols + j - 1] != nodata_value) && (mass[i * ncols + j] != nodata_value)) {
+			if ((ind[i * ncols + j - 1] != -1) && (ind[i * ncols + j] != -1)) {
 				for (k = 0; k < ky; k++) {
 					mass1[i * ((ncols - 1) * ky + 1) * kx + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
 						c[j] * pow((float) k * cellsize / (float) ky - cellsize, 2) / 2 +
@@ -586,7 +586,7 @@ int do_interpolation(void)
 		annihilate_array((void *) f, ncols * sizeof(float));
 	}
 
-	//printf("Interpolation along the y axis have been done\n");
+	printf("Interpolation along the y axis have been done\n");
 	
 	if ((c = (float *) realloc(c, nrows * sizeof(float))) == NULL) {
 		printf("Memory error\n");
@@ -609,14 +609,14 @@ int do_interpolation(void)
 			ind_start = 0;
 			ind_finish = nrows;
 			for (i = 0; i < nrows; i++) {
-				if (((mass[i * ncols + j] != nodata_value) && (flag == 0) && (l == 0)) ||
-					(((mass[i * ncols + j] != nodata_value) && (mass[i * ncols + j + 1] != nodata_value)) &&
+				if (((ind[i * ncols + j] != -1) && (flag == 0) && (l == 0)) ||
+					(((ind[i * ncols + j] != -1) && (ind[i * ncols + j + 1] != -1)) &&
 					 	(flag == 0) && (l != 0))) {
 							ind_start = i;
 							flag = 1;
 				}
-				if (((mass[i * ncols + j] == nodata_value) && (flag == 1) && (l == 0)) ||
-					(((mass[i * ncols + j] == nodata_value) || (mass[i * ncols + j + 1] == nodata_value)) &&
+				if (((ind[i * ncols + j] == -1) && (flag == 1) && (l == 0)) ||
+					(((ind[i * ncols + j] == -1) || (ind[i * ncols + j + 1] == -1)) &&
 					 	(flag == 1) && (l != 0))) {
 							ind_finish = i;
 							flag = 2;
@@ -632,7 +632,7 @@ int do_interpolation(void)
 			}
 			i = ind_finish - 2;
 			c[i] = (6 * (mass1[(i + 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l] -
-				mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] +
+				2 * mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] +
 				mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + j * ky + l]) /
 				(cellsize * cellsize) - 4 * f[i]) / (1 + 4 * e[i]);
 			for (i = ind_finish - 3; i > ind_start + 1; i--) {
@@ -667,7 +667,7 @@ int do_interpolation(void)
 	free(e);
 	free(f);
 
-	//printf("Interpolation along the x axes have been done\n");
+	printf("Interpolation along the x axes have been done\n");
 
 	count_ind_multipl = 0;
 	for (i = 0; i < (nrows - 1) * kx + 1; i++) {
@@ -952,11 +952,11 @@ int set_arrays(void)
 				normal[k * 18 + 1 * 3 + 0] = - 1;
 				normal[k * 18 + 1 * 3 + 1] = 0;
 				normal[k * 18 + 1 * 3 + 2] = 0;
-				area[k * 6 + 5] = area[k * 6 + 0];
 				area[k * 6 + 2] = cellsize * cellsize / ((float) kx * (float) kz);
 				area[k * 6 + 3] = cellsize * cellsize / ((float) kx * (float) kz);
 				area[k * 6 + 0] = cellsize * cellsize / ((float) ky * (float) kz);
 				area[k * 6 + 1] = cellsize * cellsize / ((float) ky * (float) kz);
+				area[k * 6 + 5] = area[k * 6 + 0];
 				volume[k] = cellsize * cellsize * cellsize / ((float) kx * (float) ky * (float) kz);
 				k++;
 			}
@@ -1958,7 +1958,7 @@ int main(int argc, char **argv)
 	}
 	if (argc != 31) {
 		printf("Not enouth arguments\n");
-		return 1;
+		goto error;
 	}
 	printf("Parameters entered correctly.\n");
 
@@ -1981,5 +1981,6 @@ int main(int argc, char **argv)
 	return 0;
 error:
 	printf("Error\n");
+	display_usage();
 	return 1;
 }
