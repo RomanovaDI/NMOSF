@@ -1154,7 +1154,7 @@ void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 		for (s = 0; s < 6; s++) {
 			for (p = 0; p < 3; p++) {
 				//printf("pr = %d, s = %d, p = %d\n", pr, s, p);
-				B[B_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+				B[B_IND(pr, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 					velocity_on_face(p, i, j, k, s) * normal[NORMAL_IND(p, i, j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)]);
 			}
 		}
@@ -1228,21 +1228,21 @@ void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 		for (s = 0; s < 6; s++) {
 			for (p = 0; p < 3; p++) {
 				//printf("1div\n");
-				A[A_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+				A[A_IND(p, i, j, k)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 					normal[NORMAL_IND(p, i, j, k, s)] / ( 2 * 2 * volume[VOLUME_IND(i, j, k)]);
 				//printf("2div\n");
 				if (A_IND_S_SWITCH(i, j, k, s) == 1)
 				{
 					//printf("3div\n");
 					//printf("A_IND_S(p, i, j, k, s) = %d\n", A_IND_S(p, i, j, k, s));
-					A[A_IND_S(p, i, j, k, s)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+					A[A_IND_S(p, i, j, k, s)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
 					//printf("3div\n");
 				}
 				if (A_IND_S_SWITCH(i, j, k, s) == 0)
 				{
 					//printf("4div\n");
-					A[A_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+					A[A_IND(p, i, j, k)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
 					//printf("4div\n");
 				}
@@ -1290,22 +1290,22 @@ void GRAD_pressure_half_forward_euler(int i, int j, int k)
 void GRAD_pressure_half_backward_euler(int i, int j, int k)
 {
 	if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)) {
-		A[A_IND(0, i, j, k)] -= 1 / (2 * dx);
+		A[A_IND(0, i, j, k)] += 1 / (2 * dx);
 		B[B_IND(0, i, j, k)] += pressure_atmosphere / (2 * dx);
 	} else {
-		A[A_IND(0, i, j, k)] -= 1 / (2 * dx);
-		A[A_IND(0, i - 1, j, k)] += 1 / (2 * dx);
+		A[A_IND(0, i, j, k)] += 1 / (2 * dx);
+		A[A_IND(0, i - 1, j, k)] -= 1 / (2 * dx);
 	}
 	if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)) {
-		A[A_IND(1, i, j, k)] -= 1 / (2 * dy);
+		A[A_IND(1, i, j, k)] += 1 / (2 * dy);
 		B[B_IND(1, i, j, k)] += pressure_atmosphere / (2 * dy);
 	} else {
-		A[A_IND(1, i, j, k)] -= 1 / (2 * dy);
-		A[A_IND(1, i, j - 1, k)] += 1 / (2 * dy);
+		A[A_IND(1, i, j, k)] += 1 / (2 * dy);
+		A[A_IND(1, i, j - 1, k)] -= 1 / (2 * dy);
 	}
 	if (k - 1 >= 0) {
-		A[A_IND(2, i, j, k)] -= 1 / (2 * dz);
-		A[A_IND(2, i, j, k - 1)] += 1 / (2 * dz);
+		A[A_IND(2, i, j, k)] += 1 / (2 * dz);
+		A[A_IND(2, i, j, k - 1)] -= 1 / (2 * dz);
 	}
 	return;
 }
@@ -1314,7 +1314,7 @@ void VECT_gravity_force_half_forward_euler(int i, int j, int k)
 {
 	int p;
 	for (p = 0; p < 3; p++) {
-		B[B_IND(p, i, j, k)] -= density_snow * g[p] * phase_fraction[PHASE_IND(i, j, k)] / 2 + density_air * g[p] * (1 - phase_fraction[PHASE_IND(i, j, k)]) / 2;
+		B[B_IND(p, i, j, k)] += density_snow * g[p] * phase_fraction[PHASE_IND(i, j, k)] / 2 + density_air * g[p] * (1 - phase_fraction[PHASE_IND(i, j, k)]) / 2;
 	}
 	return;
 }
@@ -1323,8 +1323,8 @@ void VECT_gravity_force_half_backward_euler(int i, int j, int k)
 {
 	int p;
 	for (p = 0; p < 3; p++) {
-		A[A_IND(3, i, j, k)] += density_snow * g[p] / 2 - density_air * g[p] / 2;
-		B[B_IND(p, i, j, k)] -= density_air * g[p] / 2;
+		A[A_IND(3, i, j, k)] -= density_snow * g[p] / 2 - density_air * g[p] / 2;
+		B[B_IND(p, i, j, k)] += density_air * g[p] / 2;
 	}
 	return;
 }
