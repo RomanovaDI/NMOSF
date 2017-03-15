@@ -38,7 +38,6 @@ int num_parameters;
 float shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
 
 int read_asc_and_declare_variables(void);
-void annihilate_array(void *a, int size_bites);
 int do_interpolation(void);
 int print_vtk(void);
 int free_massives(void);
@@ -341,14 +340,17 @@ int read_asc_and_declare_variables(void)
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) mass, 0, ncols * nrows * sizeof(float));
 	if ((ind = (int *) malloc(ncols * nrows * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) ind, 0, ncols * nrows * sizeof(int));
 	if ((bl_cond = (int *) malloc((ncols - 1) * (nrows - 1) * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) bl_cond, 0, (ncols - 1) * (nrows - 1) * sizeof(int));
 
 	for (i = 0; i < ncols * nrows; i++) {
 		if (err = fscanf(f, "%f", &mass[i]) == EOF) {
@@ -367,6 +369,7 @@ int read_asc_and_declare_variables(void)
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) mass_tmp, 0, ncols1 * nrows1 * sizeof(float));
 	for (i = 0; i < ncols1 * nrows1; i++) {
 		if (err = fscanf(f1, "%f", &mass_tmp[i]) == EOF) {
 			printf("Error file of region\n");
@@ -379,6 +382,7 @@ int read_asc_and_declare_variables(void)
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) snow_region, 0, ncols * nrows * sizeof(int));
 	float xlucorner = xllcorner - cellsize * nrows;
 	float ylucorner = yllcorner;
 	float xlucorner1 = xllcorner1 - cellsize1 * nrows1;
@@ -469,23 +473,14 @@ int read_asc_and_declare_variables(void)
 	return 0;
 }
 
-void annihilate_array(void *a, int size_bites)
-{
-	char *b;
-	b = (char *) a;
-	int i;
-	for (i = 0; i < size_bites; i++)
-		b[i] = 0;
-	return;
-}
-
 int do_interpolation(void)
 {
 	//printf("Interpolating mesh.\n");
 	int i, j, k, l = 0;
 	float a, b, d;
 	float *c;
-	float *e, *f;
+	float *e;
+	float *f;
 	
 	n_points_multipl = 0;
 	for (i = 0; i < nrows - 1; i++) {
@@ -512,12 +507,14 @@ int do_interpolation(void)
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) ind_multipl, 0, ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(int));
 
 	int count_ind_multipl = 0;
 	if ((mass1 = (float *) malloc(((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) mass1, 0, ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(float));
 	for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
 		mass1[i] = nodata_value;
 	for (i = 0; i < nrows; i++)
@@ -542,6 +539,10 @@ int do_interpolation(void)
 		printf("Memory error\n");
 		return 1;
 	}
+
+	memset((void *) c, 0, ncols * sizeof(float));
+	memset((void *) e, 0, ncols * sizeof(float));
+	memset((void *) f, 0, ncols * sizeof(float));
 
 	int ind_start, ind_finish, flag;
 	for (i = 0; i < nrows; i++) {
@@ -581,9 +582,9 @@ int do_interpolation(void)
 				}
 			}
 		}
-		annihilate_array((void *) c, ncols * sizeof(float));
-		annihilate_array((void *) e, ncols * sizeof(float));
-		annihilate_array((void *) f, ncols * sizeof(float));
+		memset((void *) c, 0, ncols * sizeof(float));
+		memset((void *) e, 0, ncols * sizeof(float));
+		memset((void *) f, 0, ncols * sizeof(float));
 	}
 
 	printf("Interpolation along the y axis have been done\n");
@@ -602,6 +603,10 @@ int do_interpolation(void)
 		printf("Memory error\n");
 		return 1;
 	}
+
+	memset((void *) c, 0, nrows * sizeof(float));
+	memset((void *) e, 0, nrows * sizeof(float));
+	memset((void *) f, 0, nrows * sizeof(float));
 
 	for (j = 0; j < ncols; j++) {
 		for (l = 0; l < ky; l++) {
@@ -656,9 +661,9 @@ int do_interpolation(void)
 						}
 				}
 			}
-			annihilate_array((void *) c, nrows * sizeof(float));
-			annihilate_array((void *) e, nrows * sizeof(float));
-			annihilate_array((void *) f, nrows * sizeof(float));
+			memset((void *) c, 0, nrows * sizeof(float));
+			memset((void *) e, 0, nrows * sizeof(float));
+			memset((void *) f, 0, nrows * sizeof(float));
 			if (j == ncols - 1) break;
 		}
 	}
@@ -685,6 +690,7 @@ int do_interpolation(void)
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) ind_cell_multipl, 0, (nrows - 1) * kx * (ncols - 1) * ky * sizeof(int));
 
 	for (i = 0; i < (nrows - 1) * kx * (ncols - 1) * ky; i++) {
 		ind_cell_multipl[i] = -1;
@@ -833,21 +839,25 @@ numbering faces of cells is so
 
 int set_arrays(void)
 {
-	int i, j, k, l, m, n;
+	int i, j, k, l, m;
 	if ((phase_fraction = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) phase_fraction, 0, n_cells_multipl * nz * sizeof(float));
+	printf("1\n");
 	if ((velocity = (float *) malloc(3 * n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	annihilate_array(velocity, 3 * n_cells_multipl * nz * sizeof(float));
+	memset((void *) velocity, 0, 3 * n_cells_multipl * nz * sizeof(float));
+	printf("2\n");
 	if ((pressure = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	n = 0;
+	memset((void *) pressure, 0, n_cells_multipl * nz * sizeof(float));
+	printf("3\n");
 	//printf("Setting arrays\n");
 	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nrows - 1; i++) {
@@ -885,19 +895,26 @@ int set_arrays(void)
 			}
 		}
 	}
-	//printf("Set phase_fraction array\n");
+	printf("Set phase_fraction array\n");
 	if ((volume = (float *) malloc(n_cells_multipl * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((normal = (float *) malloc(n_cells_multipl * 6 * 3 * sizeof(float))) == NULL) {
+	memset((void *) volume, 0, n_cells_multipl * nz * sizeof(float));
+	printf("4\n");
+	if ((normal = (float *) malloc(6 * 3 * n_cells_multipl * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((area = (float *) malloc(n_cells_multipl * 6 * sizeof(float))) == NULL) {
+	printf("4.5\n");
+	memset((void *) normal, 0, 6 * 3 * n_cells_multipl * nz * sizeof(float));
+	printf("5\n");
+	if ((area = (float *) malloc(6 * n_cells_multipl * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) velocity, 0, 6 * n_cells_multipl * nz * sizeof(float));
+	printf("6\n");
 	float a[4], b[4], c[4], p, d;
 	k = 0;
 	for (i = 0; i < nx; i++) {
@@ -923,7 +940,7 @@ int set_arrays(void)
 				a[1] = cellsize / (float) kx;
 				a[2] = 0;
 				a[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[i * (ny + 1) + j + 1];
-			b[1] = 0;
+				b[1] = 0;
 				b[2] = cellsize / (float) ky;
 				b[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[(i + 1) * (ny + 1) + j];
 				normal[k * 18 + 4 * 3 + 0] += a[2] * b[3] - a[3] * b[2];
@@ -1666,11 +1683,11 @@ void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
 			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1)
-				A[A_IND_S(0, i - 1, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(0, i - 1, j, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
 			else
-				A[A_IND(0, i - 1, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(0, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
 		}
@@ -1690,11 +1707,11 @@ void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
 			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1)
-				A[A_IND_S(1, i, j - 1, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(1, i, j - 1, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
 			else
-				A[A_IND(1, i, j - 1, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(1, i, j - 1, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
 		}
@@ -1727,11 +1744,11 @@ void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
 			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1)
-				A[A_IND_S(2, i, j, k - 1, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(2, i, j, k - 1, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
 			else
-				A[A_IND(2, i, j, k - 1)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(2, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
 		}
@@ -1757,9 +1774,9 @@ void DIV_density_snow_volume_fraction_velocity_half_forward_euler(int i, int j, 
 {
 	int s;
 	for (s = 0; s < 6; s++) {
-		B[B_IND(3, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+		B[B_IND(3, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2) * phase_fraction_on_face(i, j, k, s);
+			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * phase_fraction_on_face(i, j, k, s);
 	}
 	return;
 }
@@ -1780,7 +1797,7 @@ void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j,
 		//	 "velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);\n");
 		A[A_IND(3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);
+			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
 		if (A_IND_S_SWITCH(i, j, k, s) == 1) {
 			//printf("DIV_density_snow_volume_fraction_velocity_half_backward_euler 1\n");
 			//printf("s = %d\n", s);
@@ -1796,14 +1813,14 @@ void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j,
 			//printf("A[A_IND_S(3, i, j, k, s)] = %f\n", A[A_IND_S(3, i, j, k, s)]);
 			A[A_IND_S(3, i, j, k, s)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);
+				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
 			//printf("end\n");
 		}
 		if (A_IND_S_SWITCH(i, j, k, s) == 0) {
 			//printf("DIV_density_snow_volume_fraction_velocity_half_backward_euler 2\n");
 			A[A_IND(3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);
+				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
 			//printf("end\n");
 		}
 		//printf("DIV_density_snow_volume_fraction_velocity_half_backward_euler 4\n");
@@ -1819,19 +1836,22 @@ int create_Ab(void)
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) A, 0, system_dimension * system_dimension * sizeof(float));
 	if ((B = (float *) malloc(system_dimension * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	memset((void *) B, 0, system_dimension * sizeof(float));
 	int i, j, k;
 	set_arrays();
+	printf("we came here?\n");
 	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
 				if (ind_cell_multipl[i * ny + j] != -1) {
 					//printf("create_Ab i = %d,\t\tj = %d,\t\tk = %d\n", i, j, k);
 					/*momentum equation*/
-					//printf("Adding the momentum equation\n");
+					printf("Adding the momentum equation\n");
 					//printf("DDT(i, j, k, density_velocity);\n");
 					DDT(i, j, k, density_velocity);
 					//printf("DIV(i, j, k, density_velocity_velocity, crank_nikolson);\n");
@@ -1864,10 +1884,18 @@ int create_Ab(void)
 	FILE *f = fopen("A.txt","w");
 	for (i = 0; i < system_dimension; i++) {
 		for (j = 0; j < system_dimension; j++) {
-			fprintf(f, "%10lf\t", A[i * system_dimension + j]);
+			fprintf(f, "%010lf\t", A[i * system_dimension + j]);
 		}
 		fprintf(f, "\n");
 	}
+	fclose(f);
+	f = fopen("b.txt","w");
+	for (i = 0; i < system_dimension; i++) {
+		fprintf(f, "%010lf\n", B[i]);
+	}
+	fclose(f);
+	f = fopen("system_dimension.txt","w");
+	fprintf(f, "%d", system_dimension);
 	fclose(f);
 	//printf("Closing file to write matrix A\n");
 	return 0;
