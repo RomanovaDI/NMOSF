@@ -102,6 +102,8 @@ int A_IND(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, 
 		n_cells_multipl * nz * num_parameters + num_parameters * (k_el * n_cells_multipl + ind_cell_multipl[i_el * ny + j_el]) + p_el);
 	if (x >= A_len)
 		printf("Error: out of memory\n");
+	if ((x == 3) || (x == 2))
+		printf("!!!!!!!!!!!!!\n");
 	return x;
 }
 
@@ -875,18 +877,16 @@ int set_arrays(void)
 							//printf("snow_region[0] = %d", snow_region[0]);
 							//printf("snow_region[i * ncols + j] = %d", snow_region[i * ncols + j]);
 							if (snow_region[i * ncols + j] == 1) {
-								if (((float) (k + 1) * cellsize > depth) && (depth > (float) k * cellsize)) {
+								if ((float) (k + 1) * cellsize >= depth) {
+									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 1;
+									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
+										pressure_atmosphere + density_snow * g[2] * (depth - (float) (k * cellsize));
+								} else if (((float) (k + 1) * cellsize < depth) && ((float) k * cellsize) > depth) {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										(depth - (float) k * cellsize) / (float) cellsize;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										pressure_atmosphere + density_snow * g[2] * (depth - (float) (k * cellsize));
-								}
-								else if (depth > (float) (k + 1) * cellsize) {
-									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 1;
-									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										pressure_atmosphere + density_snow * g[2] * (depth - (float) (k * cellsize));
-								}
-								else {
+								} else {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										pressure_atmosphere;
