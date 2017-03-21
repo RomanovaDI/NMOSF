@@ -37,6 +37,10 @@ float *A, *B;
 int num_parameters;
 float shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
 int phase_fraction_len, velocity_len, pressure_len, volume_len, normal_len, area_len, A_len, B_len, mass_len, ind_len, bl_cond_len, snow_region_len, ind_multipl_len, mass1_len, ind_cell_multipl_len;
+int system_dimension;
+float *A_csr_elem;
+int *A_csr_jptr, *A_csr_iptr;
+int non_zero_elem;
 
 int read_asc_and_declare_variables(void);
 int do_interpolation(void);
@@ -86,6 +90,9 @@ int AREA_IND(int i, int j, int k, int s);
 int NORMAL_IND(int p, int i, int j, int k, int s);
 int VOLUME_IND(int i, int j, int k);
 int PHASE_IND(int i, int j, int k);
+void print_A_csr(void);
+int A_csr_func(void);
+void printf_Ab(void);
 
 #define DDT(i, j, k, object) DDT_##object(i, j, k);
 #define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(i, j, k);
@@ -1840,7 +1847,7 @@ void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j,
 int create_Ab(void)
 {
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
-	int system_dimension = n_cells_multipl * nz * num_parameters;
+	system_dimension = n_cells_multipl * nz * num_parameters;
 	A_len = system_dimension * system_dimension;
 	if ((A = (float *) malloc(system_dimension * system_dimension * sizeof(float))) == NULL) {
 		printf("Memory error\n");
@@ -1890,9 +1897,16 @@ int create_Ab(void)
 			}
 		}
 	}
-	//printf("End creating matrix\n");
-	//printf("Openning file to write matrix A\n");
+	printf_Ab();
+	printf("1\n");
+	if (A_csr_func() == 1) return 1;
+	return 0;
+}
+
+void printf_Ab(void)
+{
 	FILE *f = fopen("A.txt","w");
+	int i, j;
 	for (i = 0; i < system_dimension; i++) {
 		for (j = 0; j < system_dimension; j++) {
 			fprintf(f, "%010lf\t", A[i * system_dimension + j]);
@@ -1905,11 +1919,77 @@ int create_Ab(void)
 		fprintf(f, "%010lf\n", B[i]);
 	}
 	fclose(f);
-	f = fopen("system_dimension.txt","w");
-	fprintf(f, "%d", system_dimension);
-	fclose(f);
-	//printf("Closing file to write matrix A\n");
+	return;
+}
+
+int A_csr_func(void)
+{
+	int i, j, k = 0, l;
+	non_zero_elem = 0;
+	for (i = 0; i < system_dimension * system_dimension; i++)
+		if (A[i] != 0) non_zero_elem++;
+	printf("2\n");
+	if ((A_csr_elem = (float *) malloc(non_zero_elem * sizeof(float))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	printf("3\n");
+	if ((A_csr_jptr = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	printf("4\n");
+	if ((A_csr_iptr = (int *) malloc(system_dimension * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	printf("5\n");
+	for (i = 0; i < system_dimension; i++) {
+		l = 0;
+		for (j = 0; j < system_dimension; j++) {
+			if (A[i * system_dimension + j] != 0) {
+				A_csr_elem[k] = A[i * system_dimension + j];
+				A_csr_jptr[k] = j;
+				if ((l == 0) && (k != 0)) {
+					A_csr_iptr[k - 1] = k;
+					l = 1;
+				}
+				k++;
+			}
+		}
+	}
+	printf("6\n");
+	print_A_csr();
+	printf("7\n");
 	return 0;
+}
+
+void print_A_csr(void)
+{
+	printf("printf_A_csr\n");
+	FILE *f;
+	int i;
+	printf("file declared\n");
+	/*f = fopen("A_csr_elem.txt","w");
+	printf("file opened\n");
+	printf("8\n");
+	for (i = 0; i < non_zero_elem; i++) {
+		fprintf(f, "%010lf\n", A_csr_elem[i]);
+	}
+	fclose(f);*/
+	printf("9\n");
+	f = fopen("A_csr_jptr.txt","w");
+	for (i = 0; i < non_zero_elem; i++) {
+		fprintf(f, "%010d\n", A_csr_jptr[i]);
+	}
+	fclose(f);
+	printf("10\n");
+	f = fopen("A_csr_iptr.txt","w");
+	for (i = 0; i < system_dimension; i++) {
+		fprintf(f, "%010d\n", A_csr_iptr[i]);
+	}
+	fclose(f);
+	return;
 }
 
 void display_usage(void)
