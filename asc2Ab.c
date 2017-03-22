@@ -93,6 +93,7 @@ int PHASE_IND(int i, int j, int k);
 void print_A_csr(void);
 int A_csr_func(void);
 void printf_Ab(void);
+int check_for_corrupt_cell(int i, int j, int k);
 
 #define DDT(i, j, k, object) DDT_##object(i, j, k);
 #define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(i, j, k);
@@ -626,13 +627,13 @@ int do_interpolation(void)
 			ind_finish = nrows;
 			for (i = 0; i < nrows; i++) {
 				if (((ind[i * ncols + j] != -1) && (flag == 0) && (l == 0)) ||
-					(((ind[i * ncols + j] != -1) && (ind[i * ncols + j + 1] != -1)) &&
+					(((ind[i * ncols + j] != -1) && ((j + 1 == ncols) || (ind[i * ncols + j + 1] != -1))) &&
 					 	(flag == 0) && (l != 0))) {
 							ind_start = i;
 							flag = 1;
 				}
 				if (((ind[i * ncols + j] == -1) && (flag == 1) && (l == 0)) ||
-					(((ind[i * ncols + j] == -1) || (ind[i * ncols + j + 1] == -1)) &&
+					(((ind[i * ncols + j] == -1) || ((j + 1 == ncols) || (ind[i * ncols + j + 1] == -1))) &&
 					 	(flag == 1) && (l != 0))) {
 							ind_finish = i;
 							flag = 2;
@@ -779,7 +780,7 @@ int print_vtk(void)
 int free_massives(void)
 {
 	printf("free(B);\n");
-	//free(B);
+	free(B);
 	printf("free(A);\n");
 	free(A);
 	printf("free(area);\n");
@@ -789,11 +790,11 @@ int free_massives(void)
 	printf("free(volume);\n");
 	free(volume);
 	printf("free(pressure);\n");
-	//free(pressure);
+	free(pressure);
 	printf("free(velocity);\n");
 	free(velocity);
 	printf("free(phase_fraction);\n");
-	//free(phase_fraction);
+	free(phase_fraction);
 	printf("free(ind_cell_multipl);\n");
 	free(ind_cell_multipl);
 	printf("free(mass1);\n");
@@ -808,10 +809,10 @@ int free_massives(void)
 	free(ind);
 	printf("free(mass);\n");
 	free(mass);
-	printf("free(pressure);\n");
-	free(pressure);
-	printf("free(B);\n");
-	free(B);
+	//printf("free(pressure);\n");
+	//free(pressure);
+	//printf("free(B);\n");
+	//free(B);
 	return 0;
 }
 
@@ -1058,8 +1059,21 @@ list of boundary condition modes
 	no_slip
 */
 
+int check_for_corrupt_cell(int i, int j, int k)
+{
+	if ((i >= nx) || (i < 0) ||
+		(j >= ny) || (j < 0) ||
+		(k >= nz) || (k < 0) ||
+		(ind_cell_multipl[i * ny + j] == -1)) {
+			printf("!!!!!!Operating with corrupt cell!!!!!!\n");
+			return 1;
+	}
+	return 0;
+}
+
 void DDT_density_velocity(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int p;
 	for (p = 0; p < 3; p++) {
 		//printf("p = %d\n", p);
@@ -1070,58 +1084,32 @@ void DDT_density_velocity(int i, int j, int k)
 		B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
 		//printf("B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;");
 	}
+	return;
 }
 
 float velocity_on_face(int p, int i, int j, int k, int s)
 {
 	//printf("velocity_on_face\n");
-	if ((ind_cell_multipl[i * ny + j] == -1) ||
-		(i >= nx) || (i < 0) ||
-		(j >= ny) || (j < 0) ||
-		(k >= nz) || (k < 0))
-			return 0;
+	if (check_for_corrupt_cell(i, j, k)) return 0;
 	int a, b;
-	//printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
 	switch (s) {
 		case 0:
-			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
+			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
 				return velocity[VEL_IND(p, i, j, k)];
 			else
 				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i + 1, j, k)]) / 2;
 		case 1:
-			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
-			{
-				//printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
-				//printf("velocity[VEL_IND(p, i, j, k)] = %f\nend\n", velocity[VEL_IND(p, i, j, k)]);
+			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 				return velocity[VEL_IND(p, i, j, k)];
-			}
 			else
-			{
-				//printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
-				//printf("velocity[VEL_IND(p, i, j, k)] = %f\n", velocity[VEL_IND(p, i, j, k)]);
-				//printf("VEL_IND(p, i, j, k) = %d\n", VEL_IND(p, i, j, k));
-				//printf("VEL_IND(p, i - 1, j, k) = %d\n", VEL_IND(p, i - 1, j, k));
-				//printf("PRESS_IND(i, j, k) = %d\n", PRESS_IND(i, j, k));
-				//printf("PRESS_IND(i, j + 1, k) = %d\n", PRESS_IND(i, j + 1, k));
-				//printf("PRESS_IND(i - 1, j, k) = %d\n", PRESS_IND((i - 1), j, k));
-				//printf("PRESS_IND(i - 1, j, k) = %d\n", PRESS_IND(0, 8, 0));
-				//printf("(k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]) = %d\n", (k * n_cells_multipl + ind_cell_multipl[(i - 1) * ny + j]));
-				//printf("ind_cell_multipl[i * ny + j] = %d\n", ind_cell_multipl[i * ny + j]);
-				//printf("ind_cell_multipl[i * ny + j - 1] = %d\n", ind_cell_multipl[i * ny + j - 1]);
-				//printf("n_cells_multipl = %d\nind_cell_multipl[(i - 1) * ny + j] = %d\nnx = %d\nny = %d\nnz = %d\n", n_cells_multipl, ind_cell_multipl[(i - 1) * ny + j], nx, ny, nz);
-				//for (a = 0; a < nx; a++)
-				//	for (b = 0; b < ny; b++)
-				//		printf("ind_cell_multipl[%d * ny + %d] = %d\n", a, b, ind_cell_multipl[a * ny + b]);
-				//printf("velocity[VEL_IND(p, i - 1, j, k)] = %f\nend\n", velocity[VEL_IND(p, i - 1, j, k)]);
 				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i - 1, j, k)]) / 2;
-			}
 		case 2:
-			if ((ind_cell_multipl[i * ny + j + 1] == -1) || (j + 1 >= ny))
+			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
 				return velocity[VEL_IND(p, i, j, k)];
 			else
 				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i, j + 1, k)]) / 2;
 		case 3:
-			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 				return velocity[VEL_IND(p, i, j, k)];
 			else
 				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i, j - 1, k)]) / 2;
@@ -1141,29 +1129,25 @@ float velocity_on_face(int p, int i, int j, int k, int s)
 float density_on_face(int i, int j, int k, int s)
 {
 	//printf("density_on_face\n");
-	if ((ind_cell_multipl[i * ny + j] == -1) ||
-		(i >= nx) || (i < 0) ||
-		(j >= ny) || (j < 0) ||
-		(k >= nz) || (k < 0))
-			return 0;
+	if (check_for_corrupt_cell(i, j, k)) return 0;
 	switch (s) {
 		case 0:
-			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
+			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
 				return density(i, j, k);
 			else
 				return (density(i, j, k) + density(i + 1, j, k)) / 2;
 		case 1:
-			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 				return density(i, j, k);
 			else
 				return (density(i, j, k) + density(i - 1, j, k)) / 2;
 		case 2:
-			if ((ind_cell_multipl[i * ny + j + 1] == -1) || (j + 1 >= ny))
+			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
 				return density(i, j, k);
 			else
 				return (density(i, j, k) + density(i, j + 1, k)) / 2;
 		case 3:
-			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 				return density(i, j, k);
 			else
 				return (density(i, j, k) + density(i, j - 1, k)) / 2;
@@ -1182,6 +1166,7 @@ float density_on_face(int i, int j, int k, int s)
 
 void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s, p, pr;
 	for (pr = 0; pr < 3; pr++) {
 		for (s = 0; s < 6; s++) {
@@ -1215,29 +1200,25 @@ int A_IND_S(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el
 
 int A_IND_S_SWITCH(int i, int j, int k, int s)
 {
-	if ((ind_cell_multipl[i * ny + j] == -1) ||
-		(i >= nx) || (i < 0) ||
-		(j >= ny) || (j < 0) ||
-		(k >= nz) || (k < 0))
-			return -1;
+	if (check_for_corrupt_cell(i, j, k)) return -1;
 	switch (s) {
 		case 0:
-			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
+			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
 				return 0;
 			else
 				return 1;
 		case 1:
-			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 				return 0;
 			else
 				return 1;
 		case 2:
-			if ((ind_cell_multipl[i * ny + j + 1] == -1) || (j + 1 >= ny))
+			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
 				return 0;
 			else
 				return 1;
 		case 3:
-			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 				return 0;
 			else
 				return 1;
@@ -1256,6 +1237,7 @@ int A_IND_S_SWITCH(int i, int j, int k, int s)
 
 void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s, p, pr;
 	for (pr = 0; pr < 3; pr++) {
 		for (s = 0; s < 6; s++) {
@@ -1288,6 +1270,7 @@ void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 
 void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	//printf("DIV(i, j, k, density_velocity_velocity, half_forward_euler);\n");
 	DIV(i, j, k, density_velocity_velocity, half_forward_euler);
 	//printf("DIV(i, j, k, density_velocity_velocity, half_backward_euler);\n");
@@ -1297,6 +1280,7 @@ void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 
 void GRAD_pressure_crank_nikolson(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	GRAD(i, j, k, pressure, half_forward_euler);
 	GRAD(i, j, k, pressure, half_backward_euler);
 	return;
@@ -1304,12 +1288,13 @@ void GRAD_pressure_crank_nikolson(int i, int j, int k)
 
 void GRAD_pressure_half_forward_euler(int i, int j, int k)
 {
-	if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)) {
+	if (check_for_corrupt_cell(i, j, k)) return;
+	if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
 		B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / (2 * dx);
 	} else {
 		B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
 	}
-	if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)) {
+	if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
 		B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / (2 * dy);
 	} else {
 		B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j - 1, k)]) / (2 * dy);
@@ -1322,14 +1307,15 @@ void GRAD_pressure_half_forward_euler(int i, int j, int k)
 
 void GRAD_pressure_half_backward_euler(int i, int j, int k)
 {
-	if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)) {
+	if (check_for_corrupt_cell(i, j, k)) return;
+	if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
 		A[A_IND(0, i, j, k, 4, i, j, k)] += 1 / (2 * dx);
 		B[B_IND(0, i, j, k)] += pressure_atmosphere / (2 * dx);
 	} else {
 		A[A_IND(0, i, j, k, 4, i, j, k)] += 1 / (2 * dx);
 		A[A_IND(0, i, j, k, 4, i - 1, j, k)] -= 1 / (2 * dx);
 	}
-	if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)) {
+	if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
 		A[A_IND(1, i, j, k, 4, i, j, k)] += 1 / (2 * dy);
 		B[B_IND(1, i, j, k)] += pressure_atmosphere / (2 * dy);
 	} else {
@@ -1345,6 +1331,7 @@ void GRAD_pressure_half_backward_euler(int i, int j, int k)
 
 void VECT_gravity_force_half_forward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int p;
 	for (p = 0; p < 3; p++) {
 		B[B_IND(p, i, j, k)] += density_snow * g[p] * phase_fraction[PHASE_IND(i, j, k)] / 2 + density_air * g[p] * (1 - phase_fraction[PHASE_IND(i, j, k)]) / 2;
@@ -1354,6 +1341,7 @@ void VECT_gravity_force_half_forward_euler(int i, int j, int k)
 
 void VECT_gravity_force_half_backward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int p;
 	for (p = 0; p < 3; p++) {
 		A[A_IND(p, i, j, k, 3, i, j, k)] -= density_snow * g[p] / 2 - density_air * g[p] / 2;
@@ -1364,6 +1352,7 @@ void VECT_gravity_force_half_backward_euler(int i, int j, int k)
 
 void VECT_gravity_force_crank_nikolson(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	VECT(i, j, k, gravity_force, half_forward_euler);
 	VECT(i, j, k, gravity_force, half_backward_euler);
 	return;
@@ -1371,47 +1360,48 @@ void VECT_gravity_force_crank_nikolson(int i, int j, int k)
 
 float strain_rate_on_face(int i, int j, int k, int s, int m, int n)
 {
+	if (check_for_corrupt_cell(i, j, k)) return 0;
 	switch (m + n + m * n) {
 		case 0:
-			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 				return 0;
 			else
 				return (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
 		case 1:
-			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
-				if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
+				if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 					return 0;
 				else
 					return 0.5 * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i - 1, j, k, s)) / dx;
 			else
-				if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+				if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 					return 0.5 * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j - 1, k, s)) / dy;
 				else
 					return 0.5 * ((velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j - 1, k, s)) / dy + (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i - 1, j, k, s)) / dx);
 		case 2:
 			if (k - 1 < 0)
-				if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+				if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 					return 0.5 * velocity_on_face(0, i, j, k, s) / dz;
 				else
 					return 0.5 * (velocity_on_face(0, i, j, k, s) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i - 1, j, k, s)) / dx);
 			else
-				if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+				if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 					return 0.5 * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j, k - 1, s)) / dz;
 				else
 					return 0.5 * ((velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j, k - 1, s)) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i - 1, j, k, s)) / dx);
 		case 3:
-			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 				return 0;
 			else
 				return (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dx;
 		case 5:
 			if (k - 1 < 0)
-				if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+				if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 					return 0.5 * velocity_on_face(1, i, j, k, s) / dz;
 				else
 					return 0.5 * (velocity_on_face(1, i, j, k, s) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j - 1, k, s)) / dy);
 			else
-				if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+				if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 					return 0.5 * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j, k - 1, s)) / dz;
 				else
 					return 0.5 * ((velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j, k - 1, s)) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j - 1, k, s)) / dy);
@@ -1425,6 +1415,7 @@ float strain_rate_on_face(int i, int j, int k, int s, int m, int n)
 
 float shear_rate_on_face(int i, int j, int k, int s)
 {
+	if (check_for_corrupt_cell(i, j, k)) return 0;
 	int m, n;
 	float x = 0;
 	for (m = 0; m < 3; m++) {
@@ -1437,29 +1428,25 @@ float shear_rate_on_face(int i, int j, int k, int s)
 
 float phase_fraction_on_face(int i, int j, int k, int s)
 {
-	if ((ind_cell_multipl[i * ny + j] == -1) ||
-		(i >= nx) || (i < 0) ||
-		(j >= ny) || (j < 0) ||
-		(k >= nz) || (k < 0))
-			return 1;
+	if (check_for_corrupt_cell(i, j, k)) return 1;
 	switch (s) {
 		case 0:
-			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
+			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
 				return phase_fraction[PHASE_IND(i, j, k)];
 			else
 				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i + 1, j, k)]) / 2;
 		case 1:
-			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 				return phase_fraction[PHASE_IND(i, j, k)];
 			else
 				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i - 1, j, k)]) / 2;
 		case 2:
-			if ((ind_cell_multipl[i * ny + j + 1] == -1) || (j + 1 >= ny))
+			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
 				return phase_fraction[PHASE_IND(i, j, k)];
 			else
 				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i, j + 1, k)]) / 2;
 		case 3:
-			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 				return phase_fraction[PHASE_IND(i, j, k)];
 			else
 				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i, j - 1, k)]) / 2;
@@ -1478,6 +1465,7 @@ float phase_fraction_on_face(int i, int j, int k, int s)
 
 float effective_viscosity_on_face(int i, int j, int k, int s)
 {
+	if (check_for_corrupt_cell(i, j, k)) return 0;
 	float phase_fraction_on_face_tmp = phase_fraction_on_face(i, j, k, s);
 	float shear_rate_on_face_tmp = shear_rate_on_face(i, j, k, s);
 	float x = k_viscosity_air * (1 - phase_fraction_on_face_tmp);
@@ -1491,6 +1479,7 @@ float effective_viscosity_on_face(int i, int j, int k, int s)
 
 void DIV_shear_stress_forward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s, p, m;
 	for (p = 0; p < 3; p++) {
 		for (s = 0; s < 6; s++) {
@@ -1504,29 +1493,25 @@ void DIV_shear_stress_forward_euler(int i, int j, int k)
 
 float pressure_on_face(int i, int j, int k, int s)
 {
-	if ((ind_cell_multipl[i * ny + j] == -1) ||
-		(i >= nx) || (i < 0) ||
-		(j >= ny) || (j < 0) ||
-		(k >= nz) || (k < 0))
-			return 1;
+	if (check_for_corrupt_cell(i, j, k)) return 1;
 	switch (s) {
 		case 0:
-			if ((ind_cell_multipl[(i + 1) * ny + j] == -1) || (i + 1 >= nx))
+			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
 				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
 			else
 				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i + 1, j, k)]) / 2;
 		case 1:
-			if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
 			else
 				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i - 1, j, k)]) / 2;
 		case 2:
-			if ((ind_cell_multipl[i * ny + j + 1] == -1) || (j + 1 >= ny))
+			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
 				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
 			else
 				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i, j + 1, k)]) / 2;
 		case 3:
-			if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
 			else
 				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i, j - 1, k)]) / 2;
@@ -1545,6 +1530,7 @@ float pressure_on_face(int i, int j, int k, int s)
 
 void DIV_grad_pressure_crank_nikolson(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	//printf("DIV(i, j, k, grad_pressure, half_forward_euler);\n");
 	DIV(i, j, k, grad_pressure, half_forward_euler);
 	//printf("DIV(i, j, k, grad_pressure, half_backward_euler);\n");
@@ -1554,13 +1540,14 @@ void DIV_grad_pressure_crank_nikolson(int i, int j, int k)
 
 void DIV_grad_pressure_half_forward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
-		if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))
+		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_atmosphere) * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 		else
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i - 1, j, k, s)) * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-		if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))
+		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_atmosphere) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 		else
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
@@ -1572,10 +1559,11 @@ void DIV_grad_pressure_half_forward_euler(int i, int j, int k)
 
 void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
 		//printf("x\n");
-		if ((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)) {
+		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
 			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 			if (A_IND_S_SWITCH(i, j, k, s))
 				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
@@ -1595,7 +1583,7 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 		}
 		//printf("y\n");
-		if ((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)) {
+		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
 			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 			if (A_IND_S_SWITCH(i, j, k, s))
 				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
@@ -1648,6 +1636,7 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 
 void DIV_div_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	//printf("DIV(i, j, k, div_density_velocity_velocity, half_forward_euler);\n");
 	DIV(i, j, k, div_density_velocity_velocity, half_forward_euler);
 	//printf("DIV(i, j, k, div_density_velocity_velocity, half_backward_euler);\n");
@@ -1657,13 +1646,14 @@ void DIV_div_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 
 void DIV_div_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
-		if (!((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0)))
+		if (!((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)))
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
-		if (!((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0)))
+		if (!((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)))
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
@@ -1681,9 +1671,10 @@ void DIV_div_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 
 void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
-		if (!((ind_cell_multipl[(i - 1) * ny + j] == -1) || (i - 1 < 0))) {
+		if (!((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))) {
 			A[A_IND(4, i, j, k, 0, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
@@ -1707,7 +1698,7 @@ void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
 		}
-		if (!((ind_cell_multipl[i * ny + j - 1] == -1) || (j - 1 < 0))) {
+		if (!((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))) {
 			A[A_IND(4, i, j, k, 1, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
@@ -1774,20 +1765,25 @@ void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 
 void DDT_density_snow_volume_fraction(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	A[A_IND(3, i, j, k, 3, i, j, k)] += density(i, j, k) / dt;
 	B[B_IND(3, i, j, k)] += density(i, j, k) * phase_fraction[PHASE_IND(i, j, k)] / dt;
+	return;
 }
 
 void DIV_density_snow_volume_fraction_velocity_crank_nikolson(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	//printf("DIV(i, j, k, density_snow_volume_fraction_velocity, half_forward_euler);\n");
 	DIV(i, j, k, density_snow_volume_fraction_velocity, half_forward_euler);
 	//printf("DIV(i, j, k, density_snow_volume_fraction_velocity, half_backward_euler);\n");
 	DIV(i, j, k, density_snow_volume_fraction_velocity, half_backward_euler);
+	return;
 }
 
 void DIV_density_snow_volume_fraction_velocity_half_forward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
 		B[B_IND(3, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
@@ -1799,6 +1795,7 @@ void DIV_density_snow_volume_fraction_velocity_half_forward_euler(int i, int j, 
 
 void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j, int k)
 {
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
 		//printf("DIV_density_snow_volume_fraction_velocity_half_backward_euler 0\n");
@@ -1853,13 +1850,13 @@ int create_Ab(void)
 		printf("Memory error\n");
 		return 1;
 	}
-	//memset((void *) A, 0, system_dimension * system_dimension * sizeof(float));
+	memset((void *) A, 0, system_dimension * system_dimension * sizeof(float));
 	B_len = system_dimension;
 	if ((B = (float *) malloc(system_dimension * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	//memset((void *) B, 0, system_dimension * sizeof(float));
+	memset((void *) B, 0, system_dimension * sizeof(float));
 	int i, j, k;
 	set_arrays();
 	printf("we came here?\n");
@@ -1899,7 +1896,7 @@ int create_Ab(void)
 	}
 	printf_Ab();
 	printf("1\n");
-	//if (A_csr_func() == 1) return 1;
+	if (A_csr_func() == 1) return 1;
 	return 0;
 }
 
@@ -1919,6 +1916,17 @@ void printf_Ab(void)
 		fprintf(f, "%010lf\n", B[i]);
 	}
 	fclose(f);
+	f = fopen("A_portrait.txt", "w");
+	for (i = 0; i < system_dimension; i++) {
+		for (j = 0; j < system_dimension; j++) {
+			fprintf(f, "%d\t%d\t", i, j);
+			if (A[i * system_dimension + j] == 0)
+				fprintf(f, "0\n");
+			else
+				fprintf(f, "1\n");
+		}
+	}
+	fclose(f);
 	return;
 }
 
@@ -1933,16 +1941,19 @@ int A_csr_func(void)
 		printf("Memory error\n");
 		return 1;
 	}
+	memset(A_csr_elem, 0, non_zero_elem * sizeof(float));
 	printf("3\n");
 	if ((A_csr_jptr = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	memset(A_csr_jptr, 0, non_zero_elem * sizeof(float));
 	printf("4\n");
 	if ((A_csr_iptr = (int *) malloc(system_dimension * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
+	memset(A_csr_iptr, 0, system_dimension * sizeof(float));
 	printf("5\n");
 	for (i = 0; i < system_dimension; i++) {
 		l = 0;
@@ -1950,13 +1961,15 @@ int A_csr_func(void)
 			if (A[i * system_dimension + j] != 0) {
 				A_csr_elem[k] = A[i * system_dimension + j];
 				A_csr_jptr[k] = j;
-				if ((l == 0) && (k != 0)) {
-					A_csr_iptr[k - 1] = k;
+				if ((l == 0) && (j > 0)) {
+					A_csr_iptr[j - 1] = k;
 					l = 1;
 				}
 				k++;
 			}
 		}
+		if ((l == 0) && (j > 1))
+			A_csr_iptr[j - 1] = A_csr_iptr[j - 2];
 	}
 	printf("6\n");
 	print_A_csr();
@@ -2099,7 +2112,7 @@ int main(int argc, char **argv)
 	printf("Free massives\n");
 	if (free_massives() == 1) goto error;
 
-
+	printf("Calculations finished successfully\n");
 	return 0;
 error:
 	printf("Error\n");
