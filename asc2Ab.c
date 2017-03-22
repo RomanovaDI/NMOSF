@@ -1869,7 +1869,7 @@ int create_Ab(void)
 				if (ind_cell_multipl[i * ny + j] != -1) {
 					//printf("create_Ab i = %d,\t\tj = %d,\t\tk = %d\n", i, j, k);
 					/*momentum equation*/
-					printf("Adding the momentum equation\n");
+					//printf("Adding the momentum equation\n");
 					//printf("DDT(i, j, k, density_velocity);\n");
 					DDT(i, j, k, density_velocity);
 					//printf("DIV(i, j, k, density_velocity_velocity, crank_nikolson);\n");
@@ -1899,7 +1899,7 @@ int create_Ab(void)
 	}
 	printf_Ab();
 	printf("1\n");
-	if (A_csr_func() == 1) return 1;
+	//if (A_csr_func() == 1) return 1;
 	return 0;
 }
 
@@ -1970,13 +1970,16 @@ void print_A_csr(void)
 	FILE *f;
 	int i;
 	printf("file declared\n");
-	/*f = fopen("A_csr_elem.txt","w");
+	if ((f = fopen("A_csr_elem.txt","w")) == NULL) {
+		printf("error openning file");
+		return;
+	}
 	printf("file opened\n");
 	printf("8\n");
 	for (i = 0; i < non_zero_elem; i++) {
 		fprintf(f, "%010lf\n", A_csr_elem[i]);
 	}
-	fclose(f);*/
+	fclose(f);
 	printf("9\n");
 	f = fopen("A_csr_jptr.txt","w");
 	for (i = 0; i < non_zero_elem; i++) {
