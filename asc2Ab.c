@@ -33,13 +33,14 @@ float g[3];
 float k_viscosity_snow, k_viscosity_air;
 float *normal, *volume, *area;
 float dt, dx, dy, dz;
-float *A, *B;
+float *A, *B, *Aelem;
+int *Ajptr, *Aiptr, *A_stencil;
 int num_parameters;
 float shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
 int phase_fraction_len, velocity_len, pressure_len, volume_len, normal_len, area_len, A_len, B_len, mass_len, ind_len, bl_cond_len, snow_region_len, ind_multipl_len, mass1_len, ind_cell_multipl_len;
 int system_dimension;
-float *A_csr_elem;
-int *A_csr_jptr, *A_csr_iptr;
+//float *A_csr_elem;
+//int *A_csr_jptr, *A_csr_iptr;
 int non_zero_elem;
 
 int read_asc_and_declare_variables(void);
@@ -809,21 +810,21 @@ int free_massives(void)
 	free(ind);
 	printf("free(mass);\n");
 	free(mass);
-	//printf("free(pressure);\n");
-	//free(pressure);
-	//printf("free(B);\n");
-	//free(B);
+	printf("free(A_stencil);\n");
+	free(A_stencil);
+	printf("free(Aelem);\n");
+	free(Aelem);
+	printf("free(Ajptr);\n");
+	free(Ajptr);
+	printf("free(Aiptr);\n");
+	free(Aiptr);
 	return 0;
 }
 
 float density(int i, int j, int k)
 {
 	float x;
-	//printf("Calculating density\n");
-	//printf("i = %d, j = %d, k = %d\n", i, j, k);
-	//printf("phase_fraction[PHASE_IND(i, j, k)] = %f\n", phase_fraction[PHASE_IND(i, j, k)]);
 	x = (phase_fraction[PHASE_IND(i, j, k)] * density_snow + (1 - phase_fraction[PHASE_IND(i, j, k)]) * density_air);
-	//printf("End\n");
 	return x;
 }
 
@@ -1076,13 +1077,9 @@ void DDT_density_velocity(int i, int j, int k)
 	if (check_for_corrupt_cell(i, j, k)) return;
 	int p;
 	for (p = 0; p < 3; p++) {
-		//printf("p = %d\n", p);
-		//printf("A_IND(p, i, j, k) = %d\n", A_IND(p, i, j, k));
-		//printf("density(i, j, k) = %f\n", density(i, j, k));
 		A[A_IND(p, i, j, k, p, i, j, k)] += density(i, j, k) / dt;
-		//printf("A[A_IND(p, i, j, k)] += density(i, j, k) / dt;");
+		A_stencil[A_IND(p, i, j, k, p, i, j, k)] = 1;
 		B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
-		//printf("B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;");
 	}
 	return;
 }
@@ -1171,7 +1168,6 @@ void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 	for (pr = 0; pr < 3; pr++) {
 		for (s = 0; s < 6; s++) {
 			for (p = 0; p < 3; p++) {
-				//printf("pr = %d, s = %d, p = %d\n", pr, s, p);
 				B[B_IND(pr, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 					velocity_on_face(p, i, j, k, s) * normal[NORMAL_IND(p, i, j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)]);
 			}
@@ -1242,26 +1238,21 @@ void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 	for (pr = 0; pr < 3; pr++) {
 		for (s = 0; s < 6; s++) {
 			for (p = 0; p < 3; p++) {
-				//printf("1div\n");
 				A[A_IND(pr, i, j, k, p, i, j, k)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 					normal[NORMAL_IND(p, i, j, k, s)] / ( 2 * 2 * volume[VOLUME_IND(i, j, k)]);
-				//printf("2div\n");
+				A_stencil[A_IND(pr, i, j, k, p, i, j, k)] = 1;
 				if (A_IND_S_SWITCH(i, j, k, s) == 1)
 				{
-					//printf("3div\n");
-					//printf("A_IND_S(p, i, j, k, s) = %d\n", A_IND_S(p, i, j, k, s));
 					A[A_IND_S(pr, i, j, k, p, i, j, k, s)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
-					//printf("3div\n");
+					A_stencil[A_IND_S(pr, i, j, k, p, i, j, k, s)] = 1;
 				}
 				if (A_IND_S_SWITCH(i, j, k, s) == 0)
 				{
-					//printf("4div\n");
 					A[A_IND(pr, i, j, k, p, i, j, k)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
 						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
-					//printf("4div\n");
+					A_stencil[A_IND(pr, i, j, k, p, i, j, k)] = 1;
 				}
-				//printf("5div\n");
 			}
 		}
 	}
@@ -1271,9 +1262,7 @@ void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return;
-	//printf("DIV(i, j, k, density_velocity_velocity, half_forward_euler);\n");
 	DIV(i, j, k, density_velocity_velocity, half_forward_euler);
-	//printf("DIV(i, j, k, density_velocity_velocity, half_backward_euler);\n");
 	DIV(i, j, k, density_velocity_velocity, half_backward_euler);
 	return;
 }
@@ -1310,21 +1299,29 @@ void GRAD_pressure_half_backward_euler(int i, int j, int k)
 	if (check_for_corrupt_cell(i, j, k)) return;
 	if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
 		A[A_IND(0, i, j, k, 4, i, j, k)] += 1 / (2 * dx);
+		A_stencil[A_IND(0, i, j, k, 4, i, j, k)] = 1;
 		B[B_IND(0, i, j, k)] += pressure_atmosphere / (2 * dx);
 	} else {
 		A[A_IND(0, i, j, k, 4, i, j, k)] += 1 / (2 * dx);
+		A_stencil[A_IND(0, i, j, k, 4, i, j, k)] = 1;
 		A[A_IND(0, i, j, k, 4, i - 1, j, k)] -= 1 / (2 * dx);
+		A_stencil[A_IND(0, i, j, k, 4, i - 1, j, k)] = 1;
 	}
 	if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
 		A[A_IND(1, i, j, k, 4, i, j, k)] += 1 / (2 * dy);
+		A_stencil[A_IND(1, i, j, k, 4, i, j, k)] = 1;
 		B[B_IND(1, i, j, k)] += pressure_atmosphere / (2 * dy);
 	} else {
 		A[A_IND(1, i, j, k, 4, i, j, k)] += 1 / (2 * dy);
+		A_stencil[A_IND(1, i, j, k, 4, i, j, k)] = 1;
 		A[A_IND(1, i, j, k, 4, i, j - 1, k)] -= 1 / (2 * dy);
+		A_stencil[A_IND(1, i, j, k, 4, i, j - 1, k)] = 1;
 	}
 	if (k - 1 >= 0) {
 		A[A_IND(2, i, j, k, 4, i, j, k)] += 1 / (2 * dz);
+		A_stencil[A_IND(2, i, j, k, 4, i, j, k)] = 1;
 		A[A_IND(2, i, j, k, 4, i, j, k - 1)] -= 1 / (2 * dz);
+		A_stencil[A_IND(2, i, j, k, 4, i, j, k - 1)] = 1;
 	}
 	return;
 }
@@ -1345,6 +1342,7 @@ void VECT_gravity_force_half_backward_euler(int i, int j, int k)
 	int p;
 	for (p = 0; p < 3; p++) {
 		A[A_IND(p, i, j, k, 3, i, j, k)] -= density_snow * g[p] / 2 - density_air * g[p] / 2;
+		A_stencil[A_IND(p, i, j, k, 3, i, j, k)] = 1;
 		B[B_IND(p, i, j, k)] += density_air * g[p] / 2;
 	}
 	return;
@@ -1531,9 +1529,7 @@ float pressure_on_face(int i, int j, int k, int s)
 void DIV_grad_pressure_crank_nikolson(int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return;
-	//printf("DIV(i, j, k, grad_pressure, half_forward_euler);\n");
 	DIV(i, j, k, grad_pressure, half_forward_euler);
-	//printf("DIV(i, j, k, grad_pressure, half_backward_euler);\n");
 	DIV(i, j, k, grad_pressure, half_backward_euler);
 	return;
 }
@@ -1562,72 +1558,72 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
-		//printf("x\n");
 		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
 			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (A_IND_S_SWITCH(i, j, k, s))
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
+			if (A_IND_S_SWITCH(i, j, k, s)) {
 				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
+			} else
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 			B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 		} else {
 			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
 			A[A_IND(4, i, j, k, 4, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+			A_stencil[A_IND(4, i, j, k, 4, i - 1, j, k)] = 1;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
+			} else
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1)
+			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 4, i - 1, j, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 4, i - 1, j, k, s)] = 1;
+			} else
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 		}
-		//printf("y\n");
 		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
 			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (A_IND_S_SWITCH(i, j, k, s))
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
+			if (A_IND_S_SWITCH(i, j, k, s)) {
 				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
+			} else
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 			B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 		} else {
 			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
 			A[A_IND(4, i, j, k, 4, i, j - 1, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+			A_stencil[A_IND(4, i, j, k, 4, i, j - 1, k)] = 1;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
+			} else
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1)
+			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 4, i, j - 1, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j - 1, k, s)] = 1;
+			} else
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 		}
-		//printf("z\n");
 		if (k > 0) {
 			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			//printf("1\n");
-			//printf("A_IND(4, i - 1, j, k) = %d\n", A_IND(4, i - 1, j, k));
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
 			A[A_IND(4, i, j, k, 4, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			//printf("2\n");
-			if (A_IND_S_SWITCH(i, j, k, s) == 1)
-			{
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k - 1)] = 1;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-				//printf("3\n");
-			}
-			else
-			{
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
+			} else {
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-				//printf("4\n");
 			}
-			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1)
-			{
+			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1) {
 				A[A_IND_S(4, i, j, k, 4, i, j, k - 1, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-				//printf("5\n");
-			}
-			else
-			{
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k - 1, s)] = 1;
+			} else {
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-				//printf("6\n");
 			}
 		}
 	}
@@ -1637,9 +1633,7 @@ void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 void DIV_div_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return;
-	//printf("DIV(i, j, k, div_density_velocity_velocity, half_forward_euler);\n");
 	DIV(i, j, k, div_density_velocity_velocity, half_forward_euler);
-	//printf("DIV(i, j, k, div_density_velocity_velocity, half_backward_euler);\n");
 	DIV(i, j, k, div_density_velocity_velocity, half_backward_euler);
 	return;
 }
@@ -1678,86 +1672,114 @@ void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 			A[A_IND(4, i, j, k, 0, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+			A_stencil[A_IND(4, i, j, k, 0, i, j, k)] = 1; 
 			A[A_IND(4, i, j, k, 0, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+			A_stencil[A_IND(4, i, j, k, 0, i - 1, j, k)] = 1; 
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 0, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 0, i, j, k, s)] = 1;
+			} else {
 				A[A_IND(4, i, j, k, 0, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1)
+				A_stencil[A_IND(4, i, j, k, 0, i, j, k)] = 1;
+			}
+			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 0, i - 1, j, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 0, i - 1, j, k, s)] = 1;
+			} else {
 				A[A_IND(4, i, j, k, 0, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+				A_stencil[A_IND(4, i, j, k, 0, i - 1, j, k)] = 1;
+			}
 		}
 		if (!((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))) {
 			A[A_IND(4, i, j, k, 1, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+			A_stencil[A_IND(4, i, j, k, 1, i, j, k)] = 1; 
 			A[A_IND(4, i, j, k, 1, i, j - 1, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+			A_stencil[A_IND(4, i, j, k, 1, i, j - 1, k)] = 1; 
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 1, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 1, i, j, k, s)] = 1; 
+			} else {
 				A[A_IND(4, i, j, k, 1, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1)
+				A_stencil[A_IND(4, i, j, k, 1, i, j, k)] = 1;
+			}
+			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 1, i, j - 1, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 1, i, j - 1, k, s)] = 1; 
+			} else {
 				A[A_IND(4, i, j, k, 1, i, j - 1, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+				A_stencil[A_IND(4, i, j, k, 1, i, j - 1, k)] = 1;
+			}
 		}
 		if (k == 0) {
 			A[A_IND(4, i, j, k, 2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+			A_stencil[A_IND(4, i, j, k, 2, i, j, k)] = 1; 
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 2, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 2, i, j, k, s)] = 1;
+			} else {
 				A[A_IND(4, i, j, k, 2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+				A_stencil[A_IND(4, i, j, k, 2, i, j, k)] = 1;
+			}
 		}
 		if (k > 0) {
 			A[A_IND(4, i, j, k, 2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			A_stencil[A_IND(4, i, j, k, 2, i, j, k)] = 1; 
 			A[A_IND(4, i, j, k, 2, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (A_IND_S_SWITCH(i, j, k, s) == 1)
+			A_stencil[A_IND(4, i, j, k, 2, i, j, k - 1)] = 1; 
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
 				A[A_IND_S(4, i, j, k, 2, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 2, i, j, k, s)] = 1; 
+			} else {
 				A[A_IND(4, i, j, k, 2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1)
+				A_stencil[A_IND(4, i, j, k, 2, i, j, k)] = 1;
+			}
+			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1) {
 				A[A_IND_S(4, i, j, k, 2, i, j, k - 1, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			else
+				A_stencil[A_IND_S(4, i, j, k, 2, i, j, k - 1, s)] = 1; 
+			} else {
 				A[A_IND(4, i, j, k, 2, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+				A_stencil[A_IND(4, i, j, k, 2, i, j, k - 1)] = 1;
+			}
 		}
 	}
 	return;
@@ -1767,6 +1789,7 @@ void DDT_density_snow_volume_fraction(int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return;
 	A[A_IND(3, i, j, k, 3, i, j, k)] += density(i, j, k) / dt;
+	A_stencil[A_IND(3, i, j, k, 3, i, j, k)] = 1;
 	B[B_IND(3, i, j, k)] += density(i, j, k) * phase_fraction[PHASE_IND(i, j, k)] / dt;
 	return;
 }
@@ -1774,9 +1797,7 @@ void DDT_density_snow_volume_fraction(int i, int j, int k)
 void DIV_density_snow_volume_fraction_velocity_crank_nikolson(int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return;
-	//printf("DIV(i, j, k, density_snow_volume_fraction_velocity, half_forward_euler);\n");
 	DIV(i, j, k, density_snow_volume_fraction_velocity, half_forward_euler);
-	//printf("DIV(i, j, k, density_snow_volume_fraction_velocity, half_backward_euler);\n");
 	DIV(i, j, k, density_snow_volume_fraction_velocity, half_backward_euler);
 	return;
 }
@@ -1798,45 +1819,22 @@ void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j,
 	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
-		//printf("DIV_density_snow_volume_fraction_velocity_half_backward_euler 0\n");
-		//printf("A[A_IND(3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *\n"
-		//	"(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +\n"
-		//	 "velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);\n");
-		//printf("A[A_IND(3, %d, %d, %d)] += (1 / volume[VOLUME_IND(%d, %d, %d)]) * area[AREA_IND(%d, %d, %d, %d)] * density_on_face(%d, %d, %d, %d) *\n"
-		//	"(velocity_on_face(0, %d, %d, %d, %d) * normal[NORMAL_IND(0, %d, %d, %d, %d)] + velocity_on_face(1, %d, %d, %d, %d) * normal[NORMAL_IND(1, %d, %d, %d, %d)] +\n"
-		//	 "velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);\n");
-		//printf("A[A_IND(3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *\n"
-		//	"(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +\n"
-		//	 "velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 2);\n");
 		A[A_IND(3, i, j, k, 3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
+		A_stencil[A_IND(3, i, j, k, 3, i, j, k)] = 1;
 		if (A_IND_S_SWITCH(i, j, k, s) == 1) {
-			//printf("DIV_density_snow_volume_fraction_velocity_half_backward_euler 1\n");
-			//printf("s = %d\n", s);
-			//printf("volume[VOLUME_IND(i, j, k)] = %f\n", volume[VOLUME_IND(i, j, k)]);
-			//printf("area[AREA_IND(i, j, k, s)] = %f\n", area[AREA_IND(i, j, k, s)]);
-			//printf("density_on_face(i, j, k, s) = %f\n", density_on_face(i, j, k, s));
-			//printf("velocity_on_face(0, i, j, k, s) = %f\n", velocity_on_face(0, i, j, k, s));
-			//printf("normal[NORMAL_IND(0, i, j, k, s)] = %f\n", normal[NORMAL_IND(0, i, j, k, s)]);
-			//printf("velocity_on_face(1, i, j, k, s) = %f\n", velocity_on_face(1, i, j, k, s));
-			//printf("normal[NORMAL_IND(1, i, j, k, s)] = %f\n", normal[NORMAL_IND(1, i, j, k, s)]);
-			//printf("velocity_on_face(2, i, j, k, s) = %f\n", velocity_on_face(2, i, j, k, s));
-			//printf("normal[NORMAL_IND(2, i, j, k, s)]) = %f\n", normal[NORMAL_IND(2, i, j, k, s)]);
-			//printf("A[A_IND_S(3, i, j, k, s)] = %f\n", A[A_IND_S(3, i, j, k, s)]);
 			A[A_IND_S(3, i, j, k, 3, i, j, k, s)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
-			//printf("end\n");
+			A_stencil[A_IND_S(3, i, j, k, 3, i, j, k, s)] = 1;
 		}
 		if (A_IND_S_SWITCH(i, j, k, s) == 0) {
-			//printf("DIV_density_snow_volume_fraction_velocity_half_backward_euler 2\n");
 			A[A_IND(3, i, j, k, 3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
-			//printf("end\n");
+			A_stencil[A_IND(3, i, j, k, 3, i, j, k)] = 1;
 		}
-		//printf("DIV_density_snow_volume_fraction_velocity_half_backward_euler 4\n");
 	}
 	return;
 }
@@ -1851,6 +1849,11 @@ int create_Ab(void)
 		return 1;
 	}
 	memset((void *) A, 0, system_dimension * system_dimension * sizeof(float));
+	if ((A_stencil = (int *) malloc(system_dimension * system_dimension * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset((void *) A_stencil, 0, system_dimension * system_dimension * sizeof(int));
 	B_len = system_dimension;
 	if ((B = (float *) malloc(system_dimension * sizeof(float))) == NULL) {
 		printf("Memory error\n");
@@ -1864,32 +1867,15 @@ int create_Ab(void)
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
 				if (ind_cell_multipl[i * ny + j] != -1) {
-					//printf("create_Ab i = %d,\t\tj = %d,\t\tk = %d\n", i, j, k);
-					/*momentum equation*/
-					//printf("Adding the momentum equation\n");
-					//printf("DDT(i, j, k, density_velocity);\n");
 					DDT(i, j, k, density_velocity);
-					//printf("DIV(i, j, k, density_velocity_velocity, crank_nikolson);\n");
 					DIV(i, j, k, density_velocity_velocity, crank_nikolson);
-					//printf("VECT(i, j, k, gravity_force, crank_nikolson);\n");
 					VECT(i, j, k, gravity_force, crank_nikolson);
-					//printf("GRAD(i, j, k, pressure, crank_nikolson);\n");
 					GRAD(i, j, k, pressure, crank_nikolson);
-					//printf("DIV(i, j, k, shear_stress, forward_euler);\n");
 					DIV(i, j, k, shear_stress, forward_euler);
-					/*pressure equation*/
-					//printf("Adding the pressure equation\n");
-					//printf("DIV(i, j, k, grad_pressure, crank_nikolson);\n");
 					DIV(i, j, k, grad_pressure, crank_nikolson);
-					//printf("DIV(i, j, k, div_density_velocity_velocity, crank_nikolson);\n");
 					DIV(i, j, k, div_density_velocity_velocity, crank_nikolson);
-					/*snow volume fraction equation*/
-					//printf("Adding the snow volume fraction equation\n");
-					//printf("DDT(i, j, k, density_snow_volume_fraction);\n");
 					DDT(i, j, k, density_snow_volume_fraction);
-					//printf("DIV(i, j, k, density_snow_volume_fraction_velocity, crank_nikolson);\n");
 					DIV(i, j, k, density_snow_volume_fraction_velocity, crank_nikolson);
-					//printf("End cycle of create_Ab\n");
 				}
 			}
 		}
@@ -1910,7 +1896,7 @@ void printf_Ab(void)
 		}
 		fprintf(f, "\n");
 	}
-	fclose(f);
+	fclose(f)
 	f = fopen("b.txt","w");
 	for (i = 0; i < system_dimension; i++) {
 		fprintf(f, "%010lf\n", B[i]);
@@ -1935,45 +1921,40 @@ int A_csr_func(void)
 	int i, j, k = 0, l;
 	non_zero_elem = 0;
 	for (i = 0; i < system_dimension * system_dimension; i++)
-		if (A[i] != 0) non_zero_elem++;
-	printf("2\n");
-	if ((A_csr_elem = (float *) malloc(non_zero_elem * sizeof(float))) == NULL) {
+		if (A_stencil[i] != 0) non_zero_elem++;
+	if ((Aelem = (float *) malloc(non_zero_elem * sizeof(float))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset(A_csr_elem, 0, non_zero_elem * sizeof(float));
-	printf("3\n");
-	if ((A_csr_jptr = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
+	memset(Aelem, 0, non_zero_elem * sizeof(float));
+	if ((Ajptr = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset(A_csr_jptr, 0, non_zero_elem * sizeof(float));
-	printf("4\n");
-	if ((A_csr_iptr = (int *) malloc(system_dimension * sizeof(int))) == NULL) {
+	memset(Ajptr, 0, non_zero_elem * sizeof(float));
+	if ((Aiptr = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset(A_csr_iptr, 0, system_dimension * sizeof(float));
-	printf("5\n");
+	memset(Aiptr, 0, (system_dimension + 1) * sizeof(float));
 	for (i = 0; i < system_dimension; i++) {
 		l = 0;
 		for (j = 0; j < system_dimension; j++) {
-			if (A[i * system_dimension + j] != 0) {
-				A_csr_elem[k] = A[i * system_dimension + j];
-				A_csr_jptr[k] = j;
-				if ((l == 0) && (j > 0)) {
-					A_csr_iptr[j - 1] = k;
+			if (A_stencil[i * system_dimension + j] != 0) {
+				Aelem[k] = A[i * system_dimension + j];
+				Ajptr[k] = j;
+				if (l == 0) {
+					Aiptr[i] = k;
 					l = 1;
 				}
 				k++;
 			}
 		}
-		if ((l == 0) && (j > 1))
-			A_csr_iptr[j - 1] = A_csr_iptr[j - 2];
+		if (l == 0)
+			Aiptr[j] = A_csr_iptr[j - 1];
 	}
-	printf("6\n");
+	Aiptr[i] = k;
 	print_A_csr();
-	printf("7\n");
 	return 0;
 }
 
