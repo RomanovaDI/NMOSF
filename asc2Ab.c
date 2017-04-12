@@ -3,57 +3,56 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
+#include "slu_ddefs.h"
 
 char *map_name;
 char *region_map_name;
-float hight;
+double hight;
 int kx, ky, kz;
 int nx, ny, nz;
 int n_bl_x, n_bl_y, n_bl_z;
 int ncols;
 int nrows;
-float cellsize;
-float *mass;
+double cellsize;
+double *mass;
 int *ind;
 int *bl_cond;
 int n_points, n_cells;
 int n_points_multipl, n_cells_multipl;
 int *ind_multipl, *ind_cell_multipl;
-float interpolation, interpolation_poli;
-float *mass1;
-float nodata_value;
+double interpolation, interpolation_poli;
+double *mass1;
+double nodata_value;
 int *snow_region;
-float depth;
-float density_snow, density_air;
-float *phase_fraction;
-float *velocity;
-float *pressure;
-float pressure_atmosphere;
-float g[3];
-float k_viscosity_snow, k_viscosity_air;
-float *normal, *volume, *area;
-float dt, dx, dy, dz;
-float *A, *B, *Aelem;
-int *Ajptr, *Aiptr, *A_stencil;
+double depth;
+double density_snow, density_air;
+double *phase_fraction;
+double *velocity;
+double *pressure;
+double pressure_atmosphere;
+double g[3];
+double k_viscosity_snow, k_viscosity_air;
+double *normal, *volume, *area;
+double dt, dx, dy, dz;
+double *A, *B, *Aelem_csr, *Aelem_csc;
+int *Ajptr_csr, *Aiptr_csr, *A_stencil, *Aiptr_csc, *Ajptr_csc;
 int num_parameters;
-float shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
+double shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
 int phase_fraction_len, velocity_len, pressure_len, volume_len, normal_len, area_len, A_len, B_len, mass_len, ind_len, bl_cond_len, snow_region_len, ind_multipl_len, mass1_len, ind_cell_multipl_len;
 int system_dimension;
-//float *A_csr_elem;
-//int *A_csr_jptr, *A_csr_iptr;
 int non_zero_elem;
 
 int read_asc_and_declare_variables(void);
 int do_interpolation(void);
 int print_vtk(void);
 int free_massives(void);
-float density(int i, int j, int k);
+double density(int i, int j, int k);
 void print_mass(void);
 int set_arrays(void);
 int conformity(int i, int j);
 void DDT_density_velocity(int i, int j, int k);
-float velocity_on_face(int p, int i, int j, int k, int s);
-float density_on_face(int i, int j, int k, int s);
+double velocity_on_face(int p, int i, int j, int k, int s);
+double density_on_face(int i, int j, int k, int s);
 void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k);
 int A_IND_S(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, int k_el, int s);
 int A_IND_S_SWITCH(int i, int j, int k, int s);
@@ -65,12 +64,12 @@ void GRAD_pressure_half_backward_euler(int i, int j, int k);
 void VECT_gravity_force_half_forward_euler(int i, int j, int k);
 void VECT_gravity_force_half_backward_euler(int i, int j, int k);
 void VECT_gravity_force_crank_nikolson(int i, int j, int k);
-float strain_rate_on_face(int i, int j, int k, int s, int m, int n);
-float shear_rate_on_face(int i, int j, int k, int s);
-float phase_fraction_on_face(int i, int j, int k, int s);
-float effective_viscosity_on_face(int i, int j, int k, int s);
+double strain_rate_on_face(int i, int j, int k, int s, int m, int n);
+double shear_rate_on_face(int i, int j, int k, int s);
+double phase_fraction_on_face(int i, int j, int k, int s);
+double effective_viscosity_on_face(int i, int j, int k, int s);
 void DIV_shear_stress_forward_euler(int i, int j, int k);
-float pressure_on_face(int i, int j, int k, int s);
+double pressure_on_face(int i, int j, int k, int s);
 void DIV_grad_pressure_crank_nikolson(int i, int j, int k);
 void DIV_grad_pressure_half_forward_euler(int i, int j, int k);
 void DIV_grad_pressure_half_backward_euler(int i, int j, int k);
@@ -93,6 +92,7 @@ int VOLUME_IND(int i, int j, int k);
 int PHASE_IND(int i, int j, int k);
 void print_A_csr(void);
 int A_csr_func(void);
+int A_csc_func(void);
 void printf_Ab(void);
 int check_for_corrupt_cell(int i, int j, int k);
 
@@ -227,7 +227,7 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 
-	float xllcorner;
+	double xllcorner;
 	if ((err = fscanf(f, "%s %f", str, &xllcorner)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
@@ -237,7 +237,7 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 	
-	float yllcorner;
+	double yllcorner;
 	if ((err = fscanf(f, "%s %f", str, &yllcorner)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
@@ -285,7 +285,7 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 
-	float xllcorner1;
+	double xllcorner1;
 	if ((err = fscanf(f1, "%s %f", str, &xllcorner1)) == EOF) {
 		printf("Error file of region\n");
 		return 1;
@@ -295,7 +295,7 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 	
-	float yllcorner1;
+	double yllcorner1;
 	if ((err = fscanf(f1, "%s %f", str, &yllcorner1)) == EOF) {
 		printf("Error file of region\n");
 		return 1;
@@ -305,7 +305,7 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 	
-	float cellsize1;
+	double cellsize1;
 	if ((err = fscanf(f1, "%s %f", str, &cellsize1)) == EOF) {
 		printf("Error file of region\n");
 		return 1;
@@ -315,7 +315,7 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 
-	float nodata_value1;
+	double nodata_value1;
 	if ((err = fscanf(f1, "%s %f", str, &nodata_value1)) == EOF) {
 		printf("Error file of region\n");
 		return 1;
@@ -344,11 +344,11 @@ int read_asc_and_declare_variables(void)
 	}
 
 	mass_len = ncols * nrows;
-	if ((mass = (float *) malloc(ncols * nrows * sizeof(float))) == NULL) {
+	if ((mass = (double *) malloc(ncols * nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) mass, 0, ncols * nrows * sizeof(float));
+	memset((void *) mass, 0, ncols * nrows * sizeof(double));
 	ind_len = ncols * nrows;
 	if ((ind = (int *) malloc(ncols * nrows * sizeof(int))) == NULL) {
 		printf("Memory error\n");
@@ -374,12 +374,12 @@ int read_asc_and_declare_variables(void)
 	fclose(f);
 	remove("map.txt");
 	
-	float *mass_tmp;
-	if ((mass_tmp = (float *) malloc(ncols1 * nrows1 * sizeof(float))) == NULL) {
+	double *mass_tmp;
+	if ((mass_tmp = (double *) malloc(ncols1 * nrows1 * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) mass_tmp, 0, ncols1 * nrows1 * sizeof(float));
+	memset((void *) mass_tmp, 0, ncols1 * nrows1 * sizeof(double));
 	for (i = 0; i < ncols1 * nrows1; i++) {
 		if (err = fscanf(f1, "%f", &mass_tmp[i]) == EOF) {
 			printf("Error file of region\n");
@@ -394,10 +394,10 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 	memset((void *) snow_region, 0, ncols * nrows * sizeof(int));
-	float xlucorner = xllcorner - cellsize * nrows;
-	float ylucorner = yllcorner;
-	float xlucorner1 = xllcorner1 - cellsize1 * nrows1;
-	float ylucorner1 = yllcorner1;
+	double xlucorner = xllcorner - cellsize * nrows;
+	double ylucorner = yllcorner;
+	double xlucorner1 = xllcorner1 - cellsize1 * nrows1;
+	double ylucorner1 = yllcorner1;
 	for (i = 0; i < nrows; i++) {
 		for (j = 0; j < ncols; j++) {
 			if ((xlucorner1 - xlucorner >= 0) && (ylucorner -ylucorner1 >= 0) &&
@@ -488,10 +488,10 @@ int do_interpolation(void)
 {
 	//printf("Interpolating mesh.\n");
 	int i, j, k, l = 0;
-	float a, b, d;
-	float *c;
-	float *e;
-	float *f;
+	double a, b, d;
+	double *c;
+	double *e;
+	double *f;
 	
 	n_points_multipl = 0;
 	for (i = 0; i < nrows - 1; i++) {
@@ -523,11 +523,11 @@ int do_interpolation(void)
 
 	int count_ind_multipl = 0;
 	mass1_len = ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1);
-	if ((mass1 = (float *) malloc(((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(float))) == NULL) {
+	if ((mass1 = (double *) malloc(((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) mass1, 0, ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(float));
+	memset((void *) mass1, 0, ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(double));
 	for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
 		mass1[i] = nodata_value;
 	for (i = 0; i < nrows; i++)
@@ -538,24 +538,24 @@ int do_interpolation(void)
 	//for (i = 0; i < ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1); i++)
 	//	printf("%f\n", mass1[i]);
 
-	if ((c = (float *) malloc(ncols * sizeof(float))) == NULL) {
+	if ((c = (double *) malloc(ncols * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 
-	if ((e = (float *) malloc(ncols * sizeof(float))) == NULL) {
+	if ((e = (double *) malloc(ncols * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 
-	if ((f = (float *) malloc(ncols * sizeof(float))) == NULL) {
+	if ((f = (double *) malloc(ncols * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 
-	memset((void *) c, 0, ncols * sizeof(float));
-	memset((void *) e, 0, ncols * sizeof(float));
-	memset((void *) f, 0, ncols * sizeof(float));
+	memset((void *) c, 0, ncols * sizeof(double));
+	memset((void *) e, 0, ncols * sizeof(double));
+	memset((void *) f, 0, ncols * sizeof(double));
 
 	int ind_start, ind_finish, flag;
 	for (i = 0; i < nrows; i++) {
@@ -589,37 +589,37 @@ int do_interpolation(void)
 			b = (mass[i * ncols + j] - mass[i * ncols + j - 1]) / cellsize + cellsize * (2 * c[j] + c[j - 1]) / 6;
 			if ((ind[i * ncols + j - 1] != -1) && (ind[i * ncols + j] != -1)) {
 				for (k = 0; k < ky; k++) {
-					mass1[i * ((ncols - 1) * ky + 1) * kx + (j - 1) * ky + k] = a + b * ((float) k * cellsize / (float) ky - cellsize) +
-						c[j] * pow((float) k * cellsize / (float) ky - cellsize, 2) / 2 +
-						d * pow((float) k * cellsize / (float) ky - cellsize, 3) / 6;
+					mass1[i * ((ncols - 1) * ky + 1) * kx + (j - 1) * ky + k] = a + b * ((double) k * cellsize / (double) ky - cellsize) +
+						c[j] * pow((double) k * cellsize / (double) ky - cellsize, 2) / 2 +
+						d * pow((double) k * cellsize / (double) ky - cellsize, 3) / 6;
 				}
 			}
 		}
-		memset((void *) c, 0, ncols * sizeof(float));
-		memset((void *) e, 0, ncols * sizeof(float));
-		memset((void *) f, 0, ncols * sizeof(float));
+		memset((void *) c, 0, ncols * sizeof(double));
+		memset((void *) e, 0, ncols * sizeof(double));
+		memset((void *) f, 0, ncols * sizeof(double));
 	}
 
 	printf("Interpolation along the y axis have been done\n");
 	
-	if ((c = (float *) realloc(c, nrows * sizeof(float))) == NULL) {
+	if ((c = (double *) realloc(c, nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 
-	if ((e = (float *) realloc(e, nrows * sizeof(float))) == NULL) {
+	if ((e = (double *) realloc(e, nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 
-	if ((f = (float *) realloc(f, nrows * sizeof(float))) == NULL) {
+	if ((f = (double *) realloc(f, nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 
-	memset((void *) c, 0, nrows * sizeof(float));
-	memset((void *) e, 0, nrows * sizeof(float));
-	memset((void *) f, 0, nrows * sizeof(float));
+	memset((void *) c, 0, nrows * sizeof(double));
+	memset((void *) e, 0, nrows * sizeof(double));
+	memset((void *) f, 0, nrows * sizeof(double));
 
 	for (j = 0; j < ncols; j++) {
 		for (l = 0; l < ky; l++) {
@@ -668,15 +668,15 @@ int do_interpolation(void)
 					(mass1[i * ((ncols - 1) * ky + 1) * kx + j * ky + l] != nodata_value)) {
 						for (k = 0; k < kx; k++) {
 							mass1[(i - 1) * ((ncols - 1) * ky + 1) * kx + k * ((ncols - 1) * ky + 1) + j * ky + l] =
-								a + b * ((float) k * cellsize / (float) kx - cellsize) +
-								c[i] * pow((float) k * cellsize / (float) kx - cellsize, 2) / 2 +
-								d * pow((float) k * cellsize / (float) kx - cellsize, 3) / 6;
+								a + b * ((double) k * cellsize / (double) kx - cellsize) +
+								c[i] * pow((double) k * cellsize / (double) kx - cellsize, 2) / 2 +
+								d * pow((double) k * cellsize / (double) kx - cellsize, 3) / 6;
 						}
 				}
 			}
-			memset((void *) c, 0, nrows * sizeof(float));
-			memset((void *) e, 0, nrows * sizeof(float));
-			memset((void *) f, 0, nrows * sizeof(float));
+			memset((void *) c, 0, nrows * sizeof(double));
+			memset((void *) e, 0, nrows * sizeof(double));
+			memset((void *) f, 0, nrows * sizeof(double));
 			if (j == ncols - 1) break;
 		}
 	}
@@ -722,9 +722,9 @@ int do_interpolation(void)
 		}
 	}
 
-	dx /= (float) kx;
-	dy /= (float) ky;
-	dz /= (float) kz;
+	dx /= (double) kx;
+	dy /= (double) ky;
+	dz /= (double) kz;
 	return 0;
 }
 
@@ -737,13 +737,13 @@ int print_vtk(void)
 	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
 
 	int i, j, k, a;
-	fprintf(f, "POINTS %d float\n", n_points_multipl * ((int) (hight / cellsize) * kz + 1));
+	fprintf(f, "POINTS %d double\n", n_points_multipl * ((int) (hight / cellsize) * kz + 1));
 	for (k = 0; k <= (int) (hight / cellsize) * kz; k++) {
 		for (i = 0; i < (nrows - 1) * kx + 1; i ++) {
 			for (j = 0; j < (ncols - 1) * ky + 1; j++) {
 				if (ind_multipl[i * ((ncols - 1) * ky + 1) + j] != -1)
-					fprintf(f, "%f %f %f\n", i * cellsize / (float) kx, j * cellsize / (float) ky,
-						mass1[i * ((ncols - 1) * ky + 1) + j] + k * cellsize / (float) kz);
+					fprintf(f, "%f %f %f\n", i * cellsize / (double) kx, j * cellsize / (double) ky,
+						mass1[i * ((ncols - 1) * ky + 1) + j] + k * cellsize / (double) kz);
 			}
 		}
 	}
@@ -821,9 +821,9 @@ int free_massives(void)
 	return 0;
 }
 
-float density(int i, int j, int k)
+double density(int i, int j, int k)
 {
-	float x;
+	double x;
 	x = (phase_fraction[PHASE_IND(i, j, k)] * density_snow + (1 - phase_fraction[PHASE_IND(i, j, k)]) * density_air);
 	return x;
 }
@@ -855,25 +855,25 @@ int set_arrays(void)
 {
 	int i, j, k, l, m;
 	phase_fraction_len = n_cells_multipl * nz;
-	if ((phase_fraction = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
+	if ((phase_fraction = (double *) malloc(n_cells_multipl * nz * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) phase_fraction, 0, n_cells_multipl * nz * sizeof(float));
+	memset((void *) phase_fraction, 0, n_cells_multipl * nz * sizeof(double));
 	printf("1\n");
 	velocity_len = 3 * n_cells_multipl * nz;
-	if ((velocity = (float *) malloc(3 * n_cells_multipl * nz * sizeof(float))) == NULL) {
+	if ((velocity = (double *) malloc(3 * n_cells_multipl * nz * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) velocity, 0, 3 * n_cells_multipl * nz * sizeof(float));
+	memset((void *) velocity, 0, 3 * n_cells_multipl * nz * sizeof(double));
 	printf("2\n");
 	pressure_len = n_cells_multipl * nz;
-	if ((pressure = (float *) malloc(n_cells_multipl * nz * sizeof(float))) == NULL) {
+	if ((pressure = (double *) malloc(n_cells_multipl * nz * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) pressure, 0, n_cells_multipl * nz * sizeof(float));
+	memset((void *) pressure, 0, n_cells_multipl * nz * sizeof(double));
 	printf("3\n");
 	//printf("Setting arrays\n");
 	for (k = 0; k < nz; k++) {
@@ -886,15 +886,15 @@ int set_arrays(void)
 							//printf("snow_region[0] = %d", snow_region[0]);
 							//printf("snow_region[i * ncols + j] = %d", snow_region[i * ncols + j]);
 							if (snow_region[i * ncols + j] == 1) {
-								if ((float) (k + 1) * cellsize >= depth) {
+								if ((double) (k + 1) * cellsize >= depth) {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 1;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										pressure_atmosphere + density_snow * g[2] * (depth - (float) (k * cellsize));
-								} else if (((float) (k + 1) * cellsize < depth) && ((float) k * cellsize) > depth) {
+										pressure_atmosphere + density_snow * g[2] * (depth - (double) (k * cellsize));
+								} else if (((double) (k + 1) * cellsize < depth) && ((double) k * cellsize) > depth) {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										(depth - (float) k * cellsize) / (float) cellsize;
+										(depth - (double) k * cellsize) / (double) cellsize;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										pressure_atmosphere + density_snow * g[2] * (depth - (float) (k * cellsize));
+										pressure_atmosphere + density_snow * g[2] * (depth - (double) (k * cellsize));
 								} else {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
@@ -912,40 +912,40 @@ int set_arrays(void)
 	}
 	printf("Set phase_fraction array\n");
 	volume_len = n_cells_multipl;
-	if ((volume = (float *) malloc(n_cells_multipl * sizeof(float))) == NULL) {
+	if ((volume = (double *) malloc(n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) volume, 0, n_cells_multipl * sizeof(float));
+	memset((void *) volume, 0, n_cells_multipl * sizeof(double));
 	printf("4\n");
 	normal_len = 6 * 3 * n_cells_multipl;
-	if ((normal = (float *) malloc(6 * 3 * n_cells_multipl * sizeof(float))) == NULL) {
+	if ((normal = (double *) malloc(6 * 3 * n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	printf("4.5\n");
-	memset((void *) normal, 0, 6 * 3 * n_cells_multipl * sizeof(float));
+	memset((void *) normal, 0, 6 * 3 * n_cells_multipl * sizeof(double));
 	printf("5\n");
 	area_len = 6 * n_cells_multipl;
-	if ((area = (float *) malloc(6 * n_cells_multipl * sizeof(float))) == NULL) {
+	if ((area = (double *) malloc(6 * n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) velocity, 0, 6 * n_cells_multipl * sizeof(float));
+	memset((void *) velocity, 0, 6 * n_cells_multipl * sizeof(double));
 	printf("6\n");
-	float a[4], b[4], c[4], p, d;
+	double a[4], b[4], c[4], p, d;
 	k = 0;
 	for (i = 0; i < nx; i++) {
 		for (j = 0; j < ny; j++) {
 			if (ind_cell_multipl[i * ny + j] != -1) {
-				a[1] = cellsize / (float) kx;
+				a[1] = cellsize / (double) kx;
 				a[2] = 0;
 				a[3] = mass1[(i + 1) * (ny + 1) + j] - mass1[i * (ny + 1) + j];
 				b[1] = 0;
-				b[2] = cellsize / (float) ky;
+				b[2] = cellsize / (double) ky;
 				b[3] = mass1[i * (ny + 1) + j + 1] - mass1[i * (ny + 1) + j];
-				c[1] = cellsize / (float) kx;
-				c[2] = - cellsize / (float) ky;
+				c[1] = cellsize / (double) kx;
+				c[2] = - cellsize / (double) ky;
 				c[3] = mass1[(i + 1) * (ny + 1) + j] - mass1[i * (ny + 1) + j + 1];
 				normal[k * 18 + 4 * 3 + 0] = a[2] * b[3] - a[3] * b[2];
 				normal[k * 18 + 4 * 3 + 1] = a[3] * b[1] - a[1] * b[3];
@@ -955,11 +955,11 @@ int set_arrays(void)
 				c[0] = sqrt(c[1] * c[1] + c[2] * c[2] + c[3] * c[3]);
 				p = (a[0] + b[0] + c[0]) / 2;
 				area[k * 6 + 4] = sqrt(p * (p - a[0]) * (p - b[0]) * (p - c[0]));
-				a[1] = cellsize / (float) kx;
+				a[1] = cellsize / (double) kx;
 				a[2] = 0;
 				a[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[i * (ny + 1) + j + 1];
 				b[1] = 0;
-				b[2] = cellsize / (float) ky;
+				b[2] = cellsize / (double) ky;
 				b[3] = mass1[(i + 1) * (ny + 1) + j + 1] - mass1[(i + 1) * (ny + 1) + j];
 				normal[k * 18 + 4 * 3 + 0] += a[2] * b[3] - a[3] * b[2];
 				normal[k * 18 + 4 * 3 + 1] += a[3] * b[1] - a[1] * b[3];
@@ -987,12 +987,12 @@ int set_arrays(void)
 				normal[k * 18 + 1 * 3 + 0] = - 1;
 				normal[k * 18 + 1 * 3 + 1] = 0;
 				normal[k * 18 + 1 * 3 + 2] = 0;
-				area[k * 6 + 2] = cellsize * cellsize / ((float) kx * (float) kz);
-				area[k * 6 + 3] = cellsize * cellsize / ((float) kx * (float) kz);
-				area[k * 6 + 0] = cellsize * cellsize / ((float) ky * (float) kz);
-				area[k * 6 + 1] = cellsize * cellsize / ((float) ky * (float) kz);
+				area[k * 6 + 2] = cellsize * cellsize / ((double) kx * (double) kz);
+				area[k * 6 + 3] = cellsize * cellsize / ((double) kx * (double) kz);
+				area[k * 6 + 0] = cellsize * cellsize / ((double) ky * (double) kz);
+				area[k * 6 + 1] = cellsize * cellsize / ((double) ky * (double) kz);
 				area[k * 6 + 5] = area[k * 6 + 0];
-				volume[k] = cellsize * cellsize * cellsize / ((float) kx * (float) ky * (float) kz);
+				volume[k] = cellsize * cellsize * cellsize / ((double) kx * (double) ky * (double) kz);
 				k++;
 			}
 		}
@@ -1084,7 +1084,7 @@ void DDT_density_velocity(int i, int j, int k)
 	return;
 }
 
-float velocity_on_face(int p, int i, int j, int k, int s)
+double velocity_on_face(int p, int i, int j, int k, int s)
 {
 	//printf("velocity_on_face\n");
 	if (check_for_corrupt_cell(i, j, k)) return 0;
@@ -1123,7 +1123,7 @@ float velocity_on_face(int p, int i, int j, int k, int s)
 	}
 }
 
-float density_on_face(int i, int j, int k, int s)
+double density_on_face(int i, int j, int k, int s)
 {
 	//printf("density_on_face\n");
 	if (check_for_corrupt_cell(i, j, k)) return 0;
@@ -1356,7 +1356,7 @@ void VECT_gravity_force_crank_nikolson(int i, int j, int k)
 	return;
 }
 
-float strain_rate_on_face(int i, int j, int k, int s, int m, int n)
+double strain_rate_on_face(int i, int j, int k, int s, int m, int n)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 0;
 	switch (m + n + m * n) {
@@ -1411,11 +1411,11 @@ float strain_rate_on_face(int i, int j, int k, int s, int m, int n)
 	}
 }
 
-float shear_rate_on_face(int i, int j, int k, int s)
+double shear_rate_on_face(int i, int j, int k, int s)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 0;
 	int m, n;
-	float x = 0;
+	double x = 0;
 	for (m = 0; m < 3; m++) {
 		for (n = 0; n < 3; n ++) {
 			x += strain_rate_on_face(i, j, k, s, m, n) * strain_rate_on_face(i, j, k, s, m, n);
@@ -1424,7 +1424,7 @@ float shear_rate_on_face(int i, int j, int k, int s)
 	return x;
 }
 
-float phase_fraction_on_face(int i, int j, int k, int s)
+double phase_fraction_on_face(int i, int j, int k, int s)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	switch (s) {
@@ -1461,12 +1461,12 @@ float phase_fraction_on_face(int i, int j, int k, int s)
 	}
 }
 
-float effective_viscosity_on_face(int i, int j, int k, int s)
+double effective_viscosity_on_face(int i, int j, int k, int s)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 0;
-	float phase_fraction_on_face_tmp = phase_fraction_on_face(i, j, k, s);
-	float shear_rate_on_face_tmp = shear_rate_on_face(i, j, k, s);
-	float x = k_viscosity_air * (1 - phase_fraction_on_face_tmp);
+	double phase_fraction_on_face_tmp = phase_fraction_on_face(i, j, k, s);
+	double shear_rate_on_face_tmp = shear_rate_on_face(i, j, k, s);
+	double x = k_viscosity_air * (1 - phase_fraction_on_face_tmp);
 	if (shear_rate_on_face_tmp <= shear_rate_0) {
 		x += limiting_viscosity_snow * phase_fraction_on_face_tmp;
 	} else {
@@ -1489,7 +1489,7 @@ void DIV_shear_stress_forward_euler(int i, int j, int k)
 	return;
 }
 
-float pressure_on_face(int i, int j, int k, int s)
+double pressure_on_face(int i, int j, int k, int s)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	switch (s) {
@@ -1844,22 +1844,22 @@ int create_Ab(void)
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	system_dimension = n_cells_multipl * nz * num_parameters;
 	A_len = system_dimension * system_dimension;
-	if ((A = (float *) malloc(system_dimension * system_dimension * sizeof(float))) == NULL) {
+	if ((A = (double *) malloc(system_dimension * system_dimension * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) A, 0, system_dimension * system_dimension * sizeof(float));
+	memset((void *) A, 0, system_dimension * system_dimension * sizeof(double));
 	if ((A_stencil = (int *) malloc(system_dimension * system_dimension * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) A_stencil, 0, system_dimension * system_dimension * sizeof(int));
 	B_len = system_dimension;
-	if ((B = (float *) malloc(system_dimension * sizeof(float))) == NULL) {
+	if ((B = (double *) malloc(system_dimension * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) B, 0, system_dimension * sizeof(float));
+	memset((void *) B, 0, system_dimension * sizeof(double));
 	int i, j, k;
 	set_arrays();
 	printf("we came here?\n");
@@ -1916,44 +1916,86 @@ void printf_Ab(void)
 	return;
 }
 
-int A_csr_func(void)
+int A_csc_func(void)
 {
 	int i, j, k = 0, l;
 	non_zero_elem = 0;
 	for (i = 0; i < system_dimension * system_dimension; i++)
 		if (A_stencil[i] != 0) non_zero_elem++;
-	if ((Aelem = (float *) malloc(non_zero_elem * sizeof(float))) == NULL) {
+	if ((Aelem_csc = (double *) malloc(non_zero_elem * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset(Aelem, 0, non_zero_elem * sizeof(float));
-	if ((Ajptr = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
+	memset(Aelem_csc, 0, non_zero_elem * sizeof(double));
+	if ((Aiptr_csc = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset(Ajptr, 0, non_zero_elem * sizeof(float));
-	if ((Aiptr = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
+	memset(Aiptr_csc, 0, non_zero_elem * sizeof(double));
+	if ((Ajptr_csc = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset(Aiptr, 0, (system_dimension + 1) * sizeof(float));
-	for (i = 0; i < system_dimension; i++) {
+	memset(Ajptr_csc, 0, (system_dimension + 1) * sizeof(double));
+	for (j = 0; j < system_dimension; j++) {
 		l = 0;
-		for (j = 0; j < system_dimension; j++) {
+		for (i = 0; i < system_dimension; i++) {
 			if (A_stencil[i * system_dimension + j] != 0) {
-				Aelem[k] = A[i * system_dimension + j];
-				Ajptr[k] = j;
+				Aelem_csc[k] = A[i * system_dimension + j];
+				Aiptr_csc[k] = i;
 				if (l == 0) {
-					Aiptr[i] = k;
+					Ajptr_csc[j] = k;
 					l = 1;
 				}
 				k++;
 			}
 		}
 		if (l == 0)
-			Aiptr[j] = A_csr_iptr[j - 1];
+			Ajptr_csc[j] = Ajptr_csc[j - 1];
 	}
-	Aiptr[i] = k;
+	Ajptr_csc[j] = k;
+//	print_A_csr();
+	return 0;
+}
+
+int A_csr_func(void)
+{
+	int i, j, k = 0, l;
+	non_zero_elem = 0;
+	for (i = 0; i < system_dimension * system_dimension; i++)
+		if (A_stencil[i] != 0) non_zero_elem++;
+	if ((Aelem_csr = (double *) malloc(non_zero_elem * sizeof(double))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset(Aelem_csr, 0, non_zero_elem * sizeof(double));
+	if ((Ajptr_csr = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset(Ajptr_csr, 0, non_zero_elem * sizeof(double));
+	if ((Aiptr_csr = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset(Aiptr_csr, 0, (system_dimension + 1) * sizeof(double));
+	for (i = 0; i < system_dimension; i++) {
+		l = 0;
+		for (j = 0; j < system_dimension; j++) {
+			if (A_stencil[i * system_dimension + j] != 0) {
+				Aelem_csr[k] = A[i * system_dimension + j];
+				Ajptr_csr[k] = j;
+				if (l == 0) {
+					Aiptr_csr[i] = k;
+					l = 1;
+				}
+				k++;
+			}
+		}
+		if (l == 0)
+			Aiptr_csr[i] = Aiptr_csr[i - 1];
+	}
+	Aiptr_csr[i] = k;
 	print_A_csr();
 	return 0;
 }
@@ -1989,26 +2031,123 @@ void print_A_csr(void)
 	return;
 }
 
+int solve_matrix(void)
+{
+	SuperMatrix A_csc;
+	NCformat *Astore;
+//	double   *a;
+//	int      *asub, *xa;
+	int      *perm_c; /* column permutation vector */
+	int      *perm_r; /* row permutations from partial pivoting */
+	SuperMatrix L;      /* factor L */
+	SCformat *Lstore;
+	SuperMatrix U;      /* factor U */
+	NCformat *Ustore;
+	SuperMatrix B_csc;
+	int      nrhs, ldx, info, m, n, nnz;
+//	double   *xact, *rhs;
+//	double   *xact;
+	mem_usage_t   mem_usage;
+	superlu_options_t options;
+	SuperLUStat_t stat;
+
+#if ( DEBUGlevel>=1 )
+	CHECK_MALLOC("Enter main()");
+#endif
+
+	/* Set the default input options:
+	options.Fact = DOFACT;
+	options.Equil = YES;
+	options.ColPerm = COLAMD;
+	options.DiagPivotThresh = 1.0;
+	options.Trans = NOTRANS;
+	options.IterRefine = NOREFINE;
+	options.SymmetricMode = NO;
+	options.PivotGrowth = NO;
+	options.ConditionNumber = NO;
+	options.PrintStat = YES;
+	 */
+
+	set_default_options(&options);
+
+	/* Read the matrix in Harwell-Boeing format. */
+//	dreadhb(&m, &n, &nnz, &a, &asub, &xa);
+	dCreate_CompCol_Matrix(&A_csc, system_dimension, system_dimension, non_zero_elem, Aelem_csc, Aiptr_csc, Ajptr_csc, SLU_NC, SLU_D, SLU_GE);
+	Astore = A.Store;
+	printf("Dimension %dx%d; # nonzeros %d\n", A.nrow, A.ncol, Astore->nnz);
+	nrhs   = 1;
+//	if ( !(rhs = doubleMalloc(m * nrhs)) ) ABORT("Malloc fails for rhs[].");
+	dCreate_Dense_Matrix(&B_csc, system_dimension, nrhs, B, system_dimension, SLU_DN, SLU_D, SLU_GE);
+//	xact = doubleMalloc(n * nrhs);
+//	ldx = n;
+//	dGenXtrue(n, nrhs, xact, ldx);
+//	dFillRHS(options.Trans, nrhs, xact, ldx, &A, &B);
+	if ( !(perm_c = intMalloc(system_dimension)) ) ABORT("Malloc fails for perm_c[].");
+	if ( !(perm_r = intMalloc(system_dimension)) ) ABORT("Malloc fails for perm_r[].");
+
+	/* Initialize the statistics variables. */
+	StatInit(&stat);
+	dgssv(&options, &A_csc, perm_c, perm_r, &L, &U, &B_csc, &stat, &info);
+	if ( info == 0 ) {
+		/* This is how you could access the solution matrix. */
+		double *sol = (double*) ((DNformat*) B.Store)->nzval; 
+		/* Compute the infinity norm of the error. */
+//		dinf_norm_error(nrhs, &B, xact);
+		dinf_norm_error(nrhs, &B_csc, sol);
+		Lstore = (SCformat *) L.Store;
+		Ustore = (NCformat *) U.Store;
+		printf("No of nonzeros in factor L = %d\n", Lstore->nnz);
+		printf("No of nonzeros in factor U = %d\n", Ustore->nnz);
+		printf("No of nonzeros in L+U = %d\n", Lstore->nnz + Ustore->nnz - n);
+		printf("FILL ratio = %.1f\n", (float)(Lstore->nnz + Ustore->nnz - n)/nnz);
+		dQuerySpace(&L, &U, &mem_usage);
+		printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
+		mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
+	} else {
+		printf("dgssv() error returns INFO= %d\n", info);
+		if ( info <= n ) { /* factorization completes */
+			dQuerySpace(&L, &U, &mem_usage);
+			printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
+					mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
+		}
+	}
+	if ( options.PrintStat ) StatPrint(&stat);
+	
+	StatFree(&stat);
+	SUPERLU_FREE (rhs);
+	SUPERLU_FREE (xact);
+	SUPERLU_FREE (perm_r);
+	SUPERLU_FREE (perm_c);
+	Destroy_CompCol_Matrix(&A);
+	Destroy_SuperMatrix_Store(&B);
+	Destroy_SuperNode_Matrix(&L);
+	Destroy_CompCol_Matrix(&U);
+
+#if ( DEBUGlevel>=1 )
+	CHECK_MALLOC("Exit main()");
+#endif
+}
+
 void display_usage(void)
 {
 	printf("Options -m, -r, -H, -D, -x, -y, -z, -a, -s, -p, -v, -k, -i, -l, -S must be declared\n\n");
 	printf("-m\tmap\tASCII file of map\n");
 	printf("-r\trerion\tASCII file of region\n");
-	printf("-H\thight\thight of calculation area (float)\n");
-	printf("-D\tdepth\tdepth of snow cover (float)\n");
+	printf("-H\thight\thight of calculation area (double)\n");
+	printf("-D\tdepth\tdepth of snow cover (double)\n");
 	printf("-x\tkx\treduction ratio in x direction (int)\n");
 	printf("-y\tky\treduction ratio in y direction (int)\n");
 	printf("-z\tkz\treduction ratio in z direction (int)\n");
-	printf("-a\tsnow density air density\tdensity of snow and air (float)\n");
-	printf("-s\tsnow density air density\tdensity of snow and air (float)\n");
+	printf("-a\tsnow density air density\tdensity of snow and air (double)\n");
+	printf("-s\tsnow density air density\tdensity of snow and air (double)\n");
 	printf("-p\tpressure\tatmosphere pressure\n");
-	//printf("-v\tsnow kinematic viscosity air kinematic viscosity\tkinematic viscisity of snow and air (float)\n");
-	//printf("-v\tsnow viscosity air viscosity\tviscisity of snow and air (float)\n");
-	printf("-v\tair viscosity\tshear viscosity of the air for Newtonian model (float)\n");
-	printf("-k\tsnow consistency index\tconsistency index for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
-	printf("-i\tflow index\tflow index for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
-	printf("-l\tyield stress\tyield stress for the constitutive equation of the Herschel-Bulkley model for snow (float)\n");
-	printf("-S\tlimiting shear rate\tlimiting shear rate for the effective viscosity to use Herschel-Bulkley model as a generalized Newtonian fluid model (float)\n");
+	//printf("-v\tsnow kinematic viscosity air kinematic viscosity\tkinematic viscisity of snow and air (double)\n");
+	//printf("-v\tsnow viscosity air viscosity\tviscisity of snow and air (double)\n");
+	printf("-v\tair viscosity\tshear viscosity of the air for Newtonian model (double)\n");
+	printf("-k\tsnow consistency index\tconsistency index for the constitutive equation of the Herschel-Bulkley model for snow (double)\n");
+	printf("-i\tflow index\tflow index for the constitutive equation of the Herschel-Bulkley model for snow (double)\n");
+	printf("-l\tyield stress\tyield stress for the constitutive equation of the Herschel-Bulkley model for snow (double)\n");
+	printf("-S\tlimiting shear rate\tlimiting shear rate for the effective viscosity to use Herschel-Bulkley model as a generalized Newtonian fluid model (double)\n");
 	printf("-h\tdisplay usage\n");
 }
 
