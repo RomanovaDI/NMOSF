@@ -44,7 +44,7 @@ int non_zero_elem;
 
 int read_asc_and_declare_variables(void);
 int do_interpolation(void);
-int print_vtk(void);
+int print_vtk(int n);
 int free_massives(void);
 double density(int i, int j, int k);
 void print_mass(void);
@@ -95,6 +95,7 @@ int A_csr_func(void);
 int A_csc_func(void);
 void printf_Ab(void);
 int check_for_corrupt_cell(int i, int j, int k);
+int solve_matrix(void);
 
 #define DDT(i, j, k, object) DDT_##object(i, j, k);
 #define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(i, j, k);
@@ -228,7 +229,7 @@ int read_asc_and_declare_variables(void)
 	}
 
 	double xllcorner;
-	if ((err = fscanf(f, "%s %f", str, &xllcorner)) == EOF) {
+	if ((err = fscanf(f, "%s %lf", str, &xllcorner)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
 	}
@@ -238,7 +239,7 @@ int read_asc_and_declare_variables(void)
 	}
 	
 	double yllcorner;
-	if ((err = fscanf(f, "%s %f", str, &yllcorner)) == EOF) {
+	if ((err = fscanf(f, "%s %lf", str, &yllcorner)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
 	}
@@ -247,7 +248,7 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 	
-	if ((err = fscanf(f, "%s %f", str, &cellsize)) == EOF) {
+	if ((err = fscanf(f, "%s %lf", str, &cellsize)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
 	}
@@ -256,7 +257,7 @@ int read_asc_and_declare_variables(void)
 		return 1;
 	}
 
-	if ((err = fscanf(f, "%s %f", str, &nodata_value)) == EOF) {
+	if ((err = fscanf(f, "%s %lf", str, &nodata_value)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
 	}
@@ -286,7 +287,7 @@ int read_asc_and_declare_variables(void)
 	}
 
 	double xllcorner1;
-	if ((err = fscanf(f1, "%s %f", str, &xllcorner1)) == EOF) {
+	if ((err = fscanf(f1, "%s %lf", str, &xllcorner1)) == EOF) {
 		printf("Error file of region\n");
 		return 1;
 	}
@@ -296,7 +297,7 @@ int read_asc_and_declare_variables(void)
 	}
 	
 	double yllcorner1;
-	if ((err = fscanf(f1, "%s %f", str, &yllcorner1)) == EOF) {
+	if ((err = fscanf(f1, "%s %lf", str, &yllcorner1)) == EOF) {
 		printf("Error file of region\n");
 		return 1;
 	}
@@ -306,7 +307,7 @@ int read_asc_and_declare_variables(void)
 	}
 	
 	double cellsize1;
-	if ((err = fscanf(f1, "%s %f", str, &cellsize1)) == EOF) {
+	if ((err = fscanf(f1, "%s %lf", str, &cellsize1)) == EOF) {
 		printf("Error file of region\n");
 		return 1;
 	}
@@ -316,7 +317,7 @@ int read_asc_and_declare_variables(void)
 	}
 
 	double nodata_value1;
-	if ((err = fscanf(f1, "%s %f", str, &nodata_value1)) == EOF) {
+	if ((err = fscanf(f1, "%s %lf", str, &nodata_value1)) == EOF) {
 		printf("Error file of region\n");
 		return 1;
 	}
@@ -363,7 +364,7 @@ int read_asc_and_declare_variables(void)
 	memset((void *) bl_cond, 0, (ncols - 1) * (nrows - 1) * sizeof(int));
 
 	for (i = 0; i < ncols * nrows; i++) {
-		if (err = fscanf(f, "%f", &mass[i]) == EOF) {
+		if (err = fscanf(f, "%lf", &mass[i]) == EOF) {
 			printf("Error file of map\n");
 			return 1;
 		}
@@ -381,7 +382,7 @@ int read_asc_and_declare_variables(void)
 	}
 	memset((void *) mass_tmp, 0, ncols1 * nrows1 * sizeof(double));
 	for (i = 0; i < ncols1 * nrows1; i++) {
-		if (err = fscanf(f1, "%f", &mass_tmp[i]) == EOF) {
+		if (err = fscanf(f1, "%lf", &mass_tmp[i]) == EOF) {
 			printf("Error file of region\n");
 			return 1;
 		}
@@ -728,15 +729,22 @@ int do_interpolation(void)
 	return 0;
 }
 
-int print_vtk(void)
+int print_vtk(int n)
 {
-	FILE *f = fopen("map.vtk", "w");
+	int nn;
+	int i = 0, j, k, a;
+	while (nn > 0) {
+		nn /= 10;
+		i++;
+	}
+	char file_name[7 + i];
+	sprintf(file_name, "map%d.vtk", n);
+	FILE *f = fopen(file_name, "w");
 	fprintf(f, "# vtk DataFile Version 2.0\n");
 	fprintf(f, "slope\n");
 	fprintf(f, "ASCII\n");
 	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
 
-	int i, j, k, a;
 	fprintf(f, "POINTS %d double\n", n_points_multipl * ((int) (hight / cellsize) * kz + 1));
 	for (k = 0; k <= (int) (hight / cellsize) * kz; k++) {
 		for (i = 0; i < (nrows - 1) * kx + 1; i ++) {
@@ -775,6 +783,20 @@ int print_vtk(void)
 	for (i = 0; i < n_cells * kx * ky * kz * (int) (hight / cellsize); i++) {
 		fprintf(f, "%d\n", 12);
 	}
+
+	fprintf(f, "CELL_DATA %d\n", n_cells_multipl * nz);
+	fprintf(f, "VECTOR velocity double\n");
+	for (i = 0; i < n_cells_multipl * nz; i++)
+		fprintf(f, "%20.10f\t%20.10f\t%20.10f\n", velocity[i * 3 + 0], velocity[i * 3 + 1], velocity[i * 3 + 2]);
+	fprintf(f, "SCALARS pressure double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (i = 0; i < n_cells_multipl * nz; i++)
+		fprintf(f, "%20.10f\n", pressure[i]);
+	fprintf(f, "SCALARS snow_volume_fraction double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (i = 0; i < n_cells_multipl * nz; i++)
+		fprintf(f, "%20.10f\n", phase_fraction[i]);
+	fclose(f);
 	return 0;
 }
 
@@ -812,12 +834,12 @@ int free_massives(void)
 	free(mass);
 	printf("free(A_stencil);\n");
 	free(A_stencil);
-	printf("free(Aelem);\n");
-	free(Aelem);
-	printf("free(Ajptr);\n");
-	free(Ajptr);
-	printf("free(Aiptr);\n");
-	free(Aiptr);
+	printf("free(Aelem_csc);\n");
+	free(Aelem_csc);
+	printf("free(Ajptr_csc);\n");
+	free(Ajptr_csc);
+	printf("free(Aiptr_csc);\n");
+	free(Aiptr_csc);
 	return 0;
 }
 
@@ -931,7 +953,7 @@ int set_arrays(void)
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) velocity, 0, 6 * n_cells_multipl * sizeof(double));
+	memset((void *) area, 0, 6 * n_cells_multipl * sizeof(double));
 	printf("6\n");
 	double a[4], b[4], c[4], p, d;
 	k = 0;
@@ -1862,6 +1884,8 @@ int create_Ab(void)
 	memset((void *) B, 0, system_dimension * sizeof(double));
 	int i, j, k;
 	set_arrays();
+	if (print_vtk(0) == 1)
+		printf("Error printing vtk file\n");
 	printf("we came here?\n");
 	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nx; i++) {
@@ -1881,7 +1905,9 @@ int create_Ab(void)
 		}
 	}
 	printf_Ab();
-	printf("1\n");
+	solve_matrix();
+	if (print_vtk(1) == 1)
+		printf("Error printing vtk file\n");
 	if (A_csr_func() == 1) return 1;
 	return 0;
 }
@@ -1896,7 +1922,7 @@ void printf_Ab(void)
 		}
 		fprintf(f, "\n");
 	}
-	fclose(f)
+	fclose(f);
 	f = fopen("b.txt","w");
 	for (i = 0; i < system_dimension; i++) {
 		fprintf(f, "%010lf\n", B[i]);
@@ -2013,19 +2039,19 @@ void print_A_csr(void)
 	printf("file opened\n");
 	printf("8\n");
 	for (i = 0; i < non_zero_elem; i++) {
-		fprintf(f, "%010lf\n", A_csr_elem[i]);
+		fprintf(f, "%010lf\n", Aelem_csr[i]);
 	}
 	fclose(f);
 	printf("9\n");
 	f = fopen("A_csr_jptr.txt","w");
 	for (i = 0; i < non_zero_elem; i++) {
-		fprintf(f, "%010d\n", A_csr_jptr[i]);
+		fprintf(f, "%010d\n", Ajptr_csr[i]);
 	}
 	fclose(f);
 	printf("10\n");
 	f = fopen("A_csr_iptr.txt","w");
 	for (i = 0; i < system_dimension; i++) {
-		fprintf(f, "%010d\n", A_csr_iptr[i]);
+		fprintf(f, "%010d\n", Aiptr_csr[i]);
 	}
 	fclose(f);
 	return;
@@ -2044,7 +2070,8 @@ int solve_matrix(void)
 	SuperMatrix U;      /* factor U */
 	NCformat *Ustore;
 	SuperMatrix B_csc;
-	int      nrhs, ldx, info, m, n, nnz;
+//	int      nrhs, ldx, info, m, n, nnz;
+	int      info, i, nrhs;
 //	double   *xact, *rhs;
 //	double   *xact;
 	mem_usage_t   mem_usage;
@@ -2073,8 +2100,8 @@ int solve_matrix(void)
 	/* Read the matrix in Harwell-Boeing format. */
 //	dreadhb(&m, &n, &nnz, &a, &asub, &xa);
 	dCreate_CompCol_Matrix(&A_csc, system_dimension, system_dimension, non_zero_elem, Aelem_csc, Aiptr_csc, Ajptr_csc, SLU_NC, SLU_D, SLU_GE);
-	Astore = A.Store;
-	printf("Dimension %dx%d; # nonzeros %d\n", A.nrow, A.ncol, Astore->nnz);
+	Astore = A_csc.Store;
+	printf("Dimension %dx%d; # nonzeros %d\n", A_csc.nrow, A_csc.ncol, Astore->nnz);
 	nrhs   = 1;
 //	if ( !(rhs = doubleMalloc(m * nrhs)) ) ABORT("Malloc fails for rhs[].");
 	dCreate_Dense_Matrix(&B_csc, system_dimension, nrhs, B, system_dimension, SLU_DN, SLU_D, SLU_GE);
@@ -2090,7 +2117,7 @@ int solve_matrix(void)
 	dgssv(&options, &A_csc, perm_c, perm_r, &L, &U, &B_csc, &stat, &info);
 	if ( info == 0 ) {
 		/* This is how you could access the solution matrix. */
-		double *sol = (double*) ((DNformat*) B.Store)->nzval; 
+		double *sol = (double*) ((DNformat*) B_csc.Store)->nzval; 
 		/* Compute the infinity norm of the error. */
 //		dinf_norm_error(nrhs, &B, xact);
 		dinf_norm_error(nrhs, &B_csc, sol);
@@ -2098,34 +2125,44 @@ int solve_matrix(void)
 		Ustore = (NCformat *) U.Store;
 		printf("No of nonzeros in factor L = %d\n", Lstore->nnz);
 		printf("No of nonzeros in factor U = %d\n", Ustore->nnz);
-		printf("No of nonzeros in L+U = %d\n", Lstore->nnz + Ustore->nnz - n);
-		printf("FILL ratio = %.1f\n", (float)(Lstore->nnz + Ustore->nnz - n)/nnz);
+		printf("No of nonzeros in L+U = %d\n", Lstore->nnz + Ustore->nnz - system_dimension);
+		printf("FILL ratio = %.1f\n", (float)(Lstore->nnz + Ustore->nnz - system_dimension)/non_zero_elem);
 		dQuerySpace(&L, &U, &mem_usage);
 		printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
 		mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
 	} else {
 		printf("dgssv() error returns INFO= %d\n", info);
-		if ( info <= n ) { /* factorization completes */
+		if ( info <= system_dimension ) { /* factorization completes */
 			dQuerySpace(&L, &U, &mem_usage);
 			printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
 					mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
 		}
 	}
 	if ( options.PrintStat ) StatPrint(&stat);
+	/*
+	for (i = 0; i < n_cells_multipl * nz; i++) {
+		velocity[i * 3 + 0] = sol[i * num_parameters + 0];
+		velocity[i * 3 + 1] = sol[i * num_parameters + 1];
+		velocity[i * 3 + 3] = sol[i * num_parameters + 2];
+		phase_fraction[i] = sol[i * num_parameters + 3];
+		pressure[i] = sol[i * num_parameters + 4];
+	}
+	*/
 	
 	StatFree(&stat);
-	SUPERLU_FREE (rhs);
-	SUPERLU_FREE (xact);
+//	SUPERLU_FREE (rhs);
+//	SUPERLU_FREE (xact);
 	SUPERLU_FREE (perm_r);
 	SUPERLU_FREE (perm_c);
-	Destroy_CompCol_Matrix(&A);
-	Destroy_SuperMatrix_Store(&B);
+	Destroy_CompCol_Matrix(&A_csc);
+	Destroy_SuperMatrix_Store(&B_csc);
 	Destroy_SuperNode_Matrix(&L);
 	Destroy_CompCol_Matrix(&U);
 
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC("Exit main()");
 #endif
+	return 0;
 }
 
 void display_usage(void)
@@ -2221,10 +2258,6 @@ int main(int argc, char **argv)
 	printf("Files of map and region have been processed\n");
 	if (do_interpolation() == 1) goto error;
 	printf("The interpolation have been done\n");
-	//printf("snow_region[0] = %d\n", snow_region[0]);
-	if (print_vtk() == 1) goto error;
-	printf("Map was printed to VTK format\n");
-	//print_mass();
 	dt = 0.01;//we need to set dt!!!
 	printf("Creating Ax = b equation\n");
 	if (create_Ab() == 1) goto error;
