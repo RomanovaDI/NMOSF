@@ -112,8 +112,6 @@ int A_IND(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, 
 		n_cells_multipl * nz * num_parameters + num_parameters * (k_el * n_cells_multipl + ind_cell_multipl[i_el * ny + j_el]) + p_el);
 	if (x >= A_len)
 		printf("Error: out of memory\n");
-	if ((x == 3) || (x == 2))
-		printf("!!!!!!!!!!!!!\n");
 	return x;
 }
 
@@ -731,13 +729,13 @@ int do_interpolation(void)
 
 int print_vtk(int n)
 {
-	int nn;
+	int nn = n;
 	int i = 0, j, k, a;
 	while (nn > 0) {
 		nn /= 10;
 		i++;
 	}
-	char file_name[7 + i];
+	char file_name[8 + i];
 	sprintf(file_name, "map%d.vtk", n);
 	FILE *f = fopen(file_name, "w");
 	fprintf(f, "# vtk DataFile Version 2.0\n");
@@ -882,21 +880,18 @@ int set_arrays(void)
 		return 1;
 	}
 	memset((void *) phase_fraction, 0, n_cells_multipl * nz * sizeof(double));
-	printf("1\n");
 	velocity_len = 3 * n_cells_multipl * nz;
 	if ((velocity = (double *) malloc(3 * n_cells_multipl * nz * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) velocity, 0, 3 * n_cells_multipl * nz * sizeof(double));
-	printf("2\n");
 	pressure_len = n_cells_multipl * nz;
 	if ((pressure = (double *) malloc(n_cells_multipl * nz * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) pressure, 0, n_cells_multipl * nz * sizeof(double));
-	printf("3\n");
 	//printf("Setting arrays\n");
 	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nrows - 1; i++) {
@@ -932,29 +927,24 @@ int set_arrays(void)
 			}
 		}
 	}
-	printf("Set phase_fraction array\n");
 	volume_len = n_cells_multipl;
 	if ((volume = (double *) malloc(n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) volume, 0, n_cells_multipl * sizeof(double));
-	printf("4\n");
 	normal_len = 6 * 3 * n_cells_multipl;
 	if ((normal = (double *) malloc(6 * 3 * n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	printf("4.5\n");
 	memset((void *) normal, 0, 6 * 3 * n_cells_multipl * sizeof(double));
-	printf("5\n");
 	area_len = 6 * n_cells_multipl;
 	if ((area = (double *) malloc(6 * n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) area, 0, 6 * n_cells_multipl * sizeof(double));
-	printf("6\n");
 	double a[4], b[4], c[4], p, d;
 	k = 0;
 	for (i = 0; i < nx; i++) {
@@ -1886,7 +1876,6 @@ int create_Ab(void)
 	set_arrays();
 	if (print_vtk(0) == 1)
 		printf("Error printing vtk file\n");
-	printf("we came here?\n");
 	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
@@ -1904,21 +1893,30 @@ int create_Ab(void)
 			}
 		}
 	}
+	A_csc_func();
 	printf_Ab();
 	solve_matrix();
 	if (print_vtk(1) == 1)
 		printf("Error printing vtk file\n");
-	if (A_csr_func() == 1) return 1;
 	return 0;
 }
 
 void printf_Ab(void)
 {
+	printf("Printing A, B and A_stencil matrixes to files\n");
 	FILE *f = fopen("A.txt","w");
 	int i, j;
 	for (i = 0; i < system_dimension; i++) {
 		for (j = 0; j < system_dimension; j++) {
 			fprintf(f, "%010lf\t", A[i * system_dimension + j]);
+		}
+		fprintf(f, "\n");
+	}
+	fclose(f);
+	f = fopen("A_stencil.txt","w");
+	for (i = 0; i < system_dimension; i++) {
+		for (j = 0; j < system_dimension; j++) {
+			fprintf(f, "%d\t", A_stencil[i * system_dimension + j]);
 		}
 		fprintf(f, "\n");
 	}
@@ -1944,6 +1942,7 @@ void printf_Ab(void)
 
 int A_csc_func(void)
 {
+	printf("Converting A matrix to CSC format\n");
 	int i, j, k = 0, l;
 	non_zero_elem = 0;
 	for (i = 0; i < system_dimension * system_dimension; i++)
@@ -1957,12 +1956,12 @@ int A_csc_func(void)
 		printf("Memory error\n");
 		return 1;
 	}
-	memset(Aiptr_csc, 0, non_zero_elem * sizeof(double));
+	memset(Aiptr_csc, 0, non_zero_elem * sizeof(int));
 	if ((Ajptr_csc = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset(Ajptr_csc, 0, (system_dimension + 1) * sizeof(double));
+	memset(Ajptr_csc, 0, (system_dimension + 1) * sizeof(int));
 	for (j = 0; j < system_dimension; j++) {
 		l = 0;
 		for (i = 0; i < system_dimension; i++) {
@@ -2059,6 +2058,7 @@ void print_A_csr(void)
 
 int solve_matrix(void)
 {
+	printf("Solving matrix\n");
 	SuperMatrix A_csc;
 	NCformat *Astore;
 //	double   *a;
@@ -2071,7 +2071,7 @@ int solve_matrix(void)
 	NCformat *Ustore;
 	SuperMatrix B_csc;
 //	int      nrhs, ldx, info, m, n, nnz;
-	int      info, i, nrhs;
+	int      info, i, j, nrhs;
 //	double   *xact, *rhs;
 //	double   *xact;
 	mem_usage_t   mem_usage;
@@ -2148,6 +2148,7 @@ int solve_matrix(void)
 		pressure[i] = sol[i * num_parameters + 4];
 	}
 	*/
+	printf("Matrix solved\n");
 	
 	StatFree(&stat);
 //	SUPERLU_FREE (rhs);
@@ -2162,6 +2163,7 @@ int solve_matrix(void)
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC("Exit main()");
 #endif
+	printf("End of function solve matrix\n");
 	return 0;
 }
 
