@@ -783,7 +783,7 @@ int print_vtk(int n)
 	}
 
 	fprintf(f, "CELL_DATA %d\n", n_cells_multipl * nz);
-	fprintf(f, "VECTOR velocity double\n");
+	fprintf(f, "VECTORS velocity double\n");
 	for (i = 0; i < n_cells_multipl * nz; i++)
 		fprintf(f, "%20.10f\t%20.10f\t%20.10f\n", velocity[i * 3 + 0], velocity[i * 3 + 1], velocity[i * 3 + 2]);
 	fprintf(f, "SCALARS pressure double 1\n");
@@ -832,12 +832,12 @@ int free_massives(void)
 	free(mass);
 	printf("free(A_stencil);\n");
 	free(A_stencil);
-	printf("free(Aelem_csc);\n");
-	free(Aelem_csc);
-	printf("free(Ajptr_csc);\n");
-	free(Ajptr_csc);
-	printf("free(Aiptr_csc);\n");
-	free(Aiptr_csc);
+	//printf("free(Aelem_csc);\n");
+	//free(Aelem_csc);
+	//printf("free(Ajptr_csc);\n");
+	//free(Ajptr_csc);
+	//printf("free(Aiptr_csc);\n");
+	//free(Aiptr_csc);
 	return 0;
 }
 
@@ -903,11 +903,11 @@ int set_arrays(void)
 							//printf("snow_region[0] = %d", snow_region[0]);
 							//printf("snow_region[i * ncols + j] = %d", snow_region[i * ncols + j]);
 							if (snow_region[i * ncols + j] == 1) {
-								if ((double) (k + 1) * cellsize >= depth) {
+								if ((double) (k + 1) * cellsize <= depth) {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 1;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										pressure_atmosphere + density_snow * g[2] * (depth - (double) (k * cellsize));
-								} else if (((double) (k + 1) * cellsize < depth) && ((double) k * cellsize) > depth) {
+								} else if (((double) (k + 1) * cellsize > depth) && ((double) k * cellsize) < depth) {
 									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
 										(depth - (double) k * cellsize) / (double) cellsize;
 									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
@@ -1893,11 +1893,7 @@ int create_Ab(void)
 			}
 		}
 	}
-	A_csc_func();
 	printf_Ab();
-	solve_matrix();
-	if (print_vtk(1) == 1)
-		printf("Error printing vtk file\n");
 	return 0;
 }
 
@@ -1913,30 +1909,30 @@ void printf_Ab(void)
 		fprintf(f, "\n");
 	}
 	fclose(f);
-	f = fopen("A_stencil.txt","w");
-	for (i = 0; i < system_dimension; i++) {
-		for (j = 0; j < system_dimension; j++) {
-			fprintf(f, "%d\t", A_stencil[i * system_dimension + j]);
-		}
-		fprintf(f, "\n");
-	}
-	fclose(f);
+//	f = fopen("A_stencil.txt","w");
+//	for (i = 0; i < system_dimension; i++) {
+//		for (j = 0; j < system_dimension; j++) {
+//			fprintf(f, "%d\t", A_stencil[i * system_dimension + j]);
+//		}
+//		fprintf(f, "\n");
+//	}
+//	fclose(f);
 	f = fopen("b.txt","w");
 	for (i = 0; i < system_dimension; i++) {
 		fprintf(f, "%010lf\n", B[i]);
 	}
 	fclose(f);
-	f = fopen("A_portrait.txt", "w");
-	for (i = 0; i < system_dimension; i++) {
-		for (j = 0; j < system_dimension; j++) {
-			fprintf(f, "%d\t%d\t", i, j);
-			if (A[i * system_dimension + j] == 0)
-				fprintf(f, "0\n");
-			else
-				fprintf(f, "1\n");
-		}
-	}
-	fclose(f);
+//	f = fopen("A_portrait.txt", "w");
+//	for (i = 0; i < system_dimension; i++) {
+//		for (j = 0; j < system_dimension; j++) {
+//			fprintf(f, "%d\t%d\t", i, j);
+//			if (A[i * system_dimension + j] == 0)
+//				fprintf(f, "0\n");
+//			else
+//				fprintf(f, "1\n");
+//		}
+//	}
+//	fclose(f);
 	return;
 }
 
@@ -2118,6 +2114,13 @@ int solve_matrix(void)
 	if ( info == 0 ) {
 		/* This is how you could access the solution matrix. */
 		double *sol = (double*) ((DNformat*) B_csc.Store)->nzval; 
+		for (i = 0; i < n_cells_multipl * nz; i++) {
+			velocity[i * 3 + 0] = sol[i * num_parameters + 0];
+			velocity[i * 3 + 1] = sol[i * num_parameters + 1];
+			velocity[i * 3 + 3] = sol[i * num_parameters + 2];
+			phase_fraction[i] = sol[i * num_parameters + 3];
+			pressure[i] = sol[i * num_parameters + 4];
+		}
 		/* Compute the infinity norm of the error. */
 //		dinf_norm_error(nrhs, &B, xact);
 		dinf_norm_error(nrhs, &B_csc, sol);
@@ -2139,15 +2142,13 @@ int solve_matrix(void)
 		}
 	}
 	if ( options.PrintStat ) StatPrint(&stat);
-	/*
-	for (i = 0; i < n_cells_multipl * nz; i++) {
-		velocity[i * 3 + 0] = sol[i * num_parameters + 0];
-		velocity[i * 3 + 1] = sol[i * num_parameters + 1];
-		velocity[i * 3 + 3] = sol[i * num_parameters + 2];
-		phase_fraction[i] = sol[i * num_parameters + 3];
-		pressure[i] = sol[i * num_parameters + 4];
-	}
-	*/
+//	for (i = 0; i < n_cells_multipl * nz; i++) {
+//		velocity[i * 3 + 0] = sol[i * num_parameters + 0];
+//		velocity[i * 3 + 1] = sol[i * num_parameters + 1];
+//		velocity[i * 3 + 3] = sol[i * num_parameters + 2];
+//		phase_fraction[i] = sol[i * num_parameters + 3];
+//		pressure[i] = sol[i * num_parameters + 4];
+//	}
 	printf("Matrix solved\n");
 	
 	StatFree(&stat);
@@ -2264,6 +2265,22 @@ int main(int argc, char **argv)
 	printf("Creating Ax = b equation\n");
 	if (create_Ab() == 1) goto error;
 	printf("Ax = b equation well done\n");
+	if (print_vtk(0) == 1) {
+		printf("Error printing vtk file\n");
+		goto error;
+	} else {
+		printf("Result printed to vtk file\n");
+	}
+	if (A_csc_func() == 1) goto error;
+	printf("Matrix convertered to CSC format\n");
+	if (solve_matrix() == 1) goto error;
+	printf("Matrix solved\n");
+	if (print_vtk(1) == 1) {
+		printf("Error printing vtk file\n");
+		goto error;
+	} else {
+		printf("Result printed to vtk file\n");
+	}
 	printf("Free massives\n");
 	if (free_massives() == 1) goto error;
 
