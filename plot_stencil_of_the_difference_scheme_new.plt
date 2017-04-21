@@ -9,7 +9,7 @@ unset hidden3d
 #unset border
 set border 4095
 unset tics
-set output 'image.png'
+set output 'stensil.png'
 set key off
 #set xtics ("i+1" 1, "i" 0, "i-1" -1, "i-2" -2)
 #set ytics ("j+1" 1, "j" 0, "j-1" -1, "j-2" -2)
