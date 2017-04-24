@@ -3,7 +3,6 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
-#include <sys/time.h>
 #include "slu_ddefs.h"
 
 char *map_name;
@@ -35,14 +34,13 @@ double g[3];
 double k_viscosity_snow, k_viscosity_air;
 double *normal, *volume, *area;
 double dt, dx, dy, dz;
-double *B, *Aelem_csr;
-int *Ajptr_csr, *Aiptr_csr;
+double *A, *B, *Aelem_csr, *Aelem_csc;
+int *Ajptr_csr, *Aiptr_csr, *A_stencil, *Aiptr_csc, *Ajptr_csc;
 int num_parameters;
 double shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
 int phase_fraction_len, velocity_len, pressure_len, volume_len, normal_len, area_len, A_len, B_len, mass_len, ind_len, bl_cond_len, snow_region_len, ind_multipl_len, mass1_len, ind_cell_multipl_len;
 int system_dimension;
 int non_zero_elem;
-int A_csr_el_num, A_ind_current;
 
 int read_asc_and_declare_variables(void);
 int do_interpolation(void);
@@ -52,36 +50,36 @@ double density(int i, int j, int k);
 void print_mass(void);
 int set_arrays(void);
 int conformity(int i, int j);
-int DDT_density_velocity(int p, int i, int j, int k);
+void DDT_density_velocity(int i, int j, int k);
 double velocity_on_face(int p, int i, int j, int k, int s);
 double density_on_face(int i, int j, int k, int s);
-int DIV_density_velocity_velocity_half_forward_euler(int p, int i, int j, int k);
-int A_IND_S(int p, int i, int j, int k, int s);
+void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k);
+int A_IND_S(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, int k_el, int s);
 int A_IND_S_SWITCH(int i, int j, int k, int s);
-int DIV_density_velocity_velocity_half_backward_euler(int p, int i, int j, int k);
-int DIV_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k);
-int GRAD_pressure_crank_nikolson(int p, int i, int j, int k);
-int GRAD_pressure_half_forward_euler(int p, int i, int j, int k);
-int GRAD_pressure_half_backward_euler(int p, int i, int j, int k);
-int VECT_gravity_force_half_forward_euler(int p, int i, int j, int k);
-int VECT_gravity_force_half_backward_euler(int p, int i, int j, int k);
-int VECT_gravity_force_crank_nikolson(int p, int i, int j, int k);
+void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k);
+void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k);
+void GRAD_pressure_crank_nikolson(int i, int j, int k);
+void GRAD_pressure_half_forward_euler(int i, int j, int k);
+void GRAD_pressure_half_backward_euler(int i, int j, int k);
+void VECT_gravity_force_half_forward_euler(int i, int j, int k);
+void VECT_gravity_force_half_backward_euler(int i, int j, int k);
+void VECT_gravity_force_crank_nikolson(int i, int j, int k);
 double strain_rate_on_face(int i, int j, int k, int s, int m, int n);
 double shear_rate_on_face(int i, int j, int k, int s);
 double phase_fraction_on_face(int i, int j, int k, int s);
 double effective_viscosity_on_face(int i, int j, int k, int s);
-int DIV_shear_stress_forward_euler(int p, int i, int j, int k);
+void DIV_shear_stress_forward_euler(int i, int j, int k);
 double pressure_on_face(int i, int j, int k, int s);
-int DIV_grad_pressure_crank_nikolson(int p, int i, int j, int k);
-int DIV_grad_pressure_half_forward_euler(int p, int i, int j, int k);
-int DIV_grad_pressure_half_backward_euler(int p, int i, int j, int k);
-int DIV_div_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k);
-int DIV_div_density_velocity_velocity_half_forward_euler(int p, int i, int j, int k);
-int DIV_div_density_velocity_velocity_half_backward_euler(int p, int i, int j, int k);
-int DDT_density_snow_volume_fraction(int p, int i, int j, int k);
-int DIV_density_snow_volume_fraction_velocity_crank_nikolson(int p, int i, int j, int k);
-int DIV_density_snow_volume_fraction_velocity_half_forward_euler(int p, int i, int j, int k);
-int DIV_density_snow_volume_fraction_velocity_half_backward_euler(int p, int i, int j, int k);
+void DIV_grad_pressure_crank_nikolson(int i, int j, int k);
+void DIV_grad_pressure_half_forward_euler(int i, int j, int k);
+void DIV_grad_pressure_half_backward_euler(int i, int j, int k);
+void DIV_div_density_velocity_velocity_crank_nikolson(int i, int j, int k);
+void DIV_div_density_velocity_velocity_half_forward_euler(int i, int j, int k);
+void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k);
+void DDT_density_snow_volume_fraction(int i, int j, int k);
+void DIV_density_snow_volume_fraction_velocity_crank_nikolson(int i, int j, int k);
+void DIV_density_snow_volume_fraction_velocity_half_forward_euler(int i, int j, int k);
+void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j, int k);
 int create_Ab(void);
 void display_usage(void);
 int A_IND(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, int k_el);
@@ -93,23 +91,20 @@ int NORMAL_IND(int p, int i, int j, int k, int s);
 int VOLUME_IND(int i, int j, int k);
 int PHASE_IND(int i, int j, int k);
 void print_A_csr(void);
+int A_csr_func(void);
+int A_csc_func(void);
+void printf_Ab(void);
 int check_for_corrupt_cell(int i, int j, int k);
 int solve_matrix(void);
-int write_to_A_csr(int row, int column, double value);
-int A_IND_LIN(int p, int i, int j, int k);
 
-/* modes of matrix creating */
-#define PATTERN 0
-#define MATRIX 1
-
-#define DDT(p, i, j, k, object) DDT_##object(p, i, j, k)
-#define DIV(p, i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(p, i, j, k)
-//#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme(p, i, j, k, s)
-//#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme(p, i, j, k, s)
-#define GRAD(p, i, j, k, mode, numerical_scheme) GRAD_##mode##_##numerical_scheme(p, i, j, k)
-#define VECT(p, i, j, k, mode, numerical_scheme) VECT_##mode##_##numerical_scheme(p, i, j, k)
-//#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme(p, i, j, k, s)
-//#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme(p, i, j, k, s)
+#define DDT(i, j, k, object) DDT_##object(i, j, k);
+#define DIV(i, j, k, object, numerical_scheme) DIV_##object##_##numerical_scheme(i, j, k);
+#define BOUNDARY_CONDITION(p, i, j, k, s, object, mode, numerical_scheme) BOUNDARY_CONDITION_##object##_##mode##_##numerical_scheme(p, i, j, k, s)
+#define DDX(p, i, j, k, s, mode, numerical_scheme) DDX_##mode##_##numerical_scheme(p, i, j, k, s)
+#define GRAD(i, j, k, mode, numerical_scheme) GRAD_##mode##_##numerical_scheme(i, j, k)
+#define VECT(i, j, k, mode, numerical_scheme) VECT_##mode##_##numerical_scheme(i, j, k)
+#define DDY(p, i, j, k, s, mode, numerical_scheme) DDY_##mode##_##numerical_scheme(p, i, j, k, s)
+#define DDZ(p, i, j, k, s, mode, numerical_scheme) DDZ_##mode##_##numerical_scheme(p, i, j, k, s)
 
 int A_IND(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, int k_el)
 {
@@ -126,11 +121,6 @@ int B_IND(int p, int i, int j, int k)
 	if (x >= B_len)
 		printf("Error: out of memory\n");
 	return x;
-}
-
-int A_IND_LIN(int p, int i, int j, int k)
-{
-	return B_IND(p, i, j, k);
 }
 
 int PRESS_IND(int i, int j, int k)
@@ -812,6 +802,8 @@ int free_massives(void)
 {
 	printf("free(B);\n");
 	free(B);
+	printf("free(A);\n");
+	free(A);
 	printf("free(area);\n");
 	free(area);
 	printf("free(normal);\n");
@@ -838,12 +830,14 @@ int free_massives(void)
 	free(ind);
 	printf("free(mass);\n");
 	free(mass);
-	//printf("free(Aelem_csr);\n");
-	//free(Aelem_csr);
-	//printf("free(Ajptr_csr);\n");
-	//free(Ajptr_csr);
-	//printf("free(Aiptr_csr);\n");
-	//free(Aiptr_csr);
+	printf("free(A_stencil);\n");
+	free(A_stencil);
+	//printf("free(Aelem_csc);\n");
+	//free(Aelem_csc);
+	//printf("free(Ajptr_csc);\n");
+	//free(Ajptr_csc);
+	//printf("free(Aiptr_csc);\n");
+	//free(Aiptr_csc);
 	return 0;
 }
 
@@ -879,8 +873,6 @@ numbering faces of cells is so
 
 int set_arrays(void)
 {
-	printf("Set arrays function\n");
-	time_start();
 	int i, j, k, l, m;
 	phase_fraction_len = n_cells_multipl * nz;
 	if ((phase_fraction = (double *) malloc(n_cells_multipl * nz * sizeof(double))) == NULL) {
@@ -893,7 +885,7 @@ int set_arrays(void)
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) velocity, 0, 3 * n_cells_multipl * nz * sizeof(double));
+	memset((void *) velocity, 1, 3 * n_cells_multipl * nz * sizeof(double));
 	pressure_len = n_cells_multipl * nz;
 	if ((pressure = (double *) malloc(n_cells_multipl * nz * sizeof(double))) == NULL) {
 		printf("Memory error\n");
@@ -1017,7 +1009,7 @@ int set_arrays(void)
 			}
 		}
 	}
-	ptintf("Time: %ld\n", time_stop());
+
 	return 0;
 }
 
@@ -1092,75 +1084,21 @@ int check_for_corrupt_cell(int i, int j, int k)
 	return 0;
 }
 
-int write_to_A_csr(int row, int column, double value)
+void DDT_density_velocity(int i, int j, int k)
 {
-	int i, j;
-	if (Aiptr_csr[row] > A_ind_current)
-		printf("pizdeca ma\n");
-	for (i = Aiptr_csr[row]; i <= A_ind_current; i++) {
-		if (Ajptr_csr[i] == -1) {
-			Aelem_csr[i] = value;
-			Ajptr_csr[i] = column;
-			break;
-		} else if (Ajptr_csr[i] == column) {
-			Aelem_csr[i] += value;
-			break;
-		} else if (Ajptr_csr[i] > column) {
-			A_ind_current++;
-			if (A_ind_current == A_csr_el_num) {
-				A_csr_el_num++;
-				if ((Aelem_csr = (double *) realloc(Aelem_csr, A_csr_el_num * sizeof(double))) == NULL) {
-					printf("Memory error\n");
-					return 1;
-				}
-				if ((Ajptr_csr = (int *) realloc(Ajptr_csr, A_csr_el_num * sizeof(int))) == NULL) {
-					printf("Memory error\n");
-					return 1;
-				}
-			}
-			for (j = A_ind_current; j > i; j--) {
-				Aelem_csr[j] = Aelem_csr[j - 1];
-				Ajptr_csr[j] = Ajptr_csr[j - 1];
-			}
-			Aelem_csr[i] = value;
-			Ajptr_csr[i] = column;
-			break;
-		} else if (i == A_ind_current) {
-			A_ind_current++;
-			if (A_ind_current == A_csr_el_num) {
-				A_csr_el_num++;
-				if ((Aelem_csr = (double *) realloc(Aelem_csr, A_csr_el_num * sizeof(double))) == NULL) {
-					printf("Memory error\n");
-					return 1;
-				}
-				if ((Ajptr_csr = (int *) realloc(Ajptr_csr, A_csr_el_num * sizeof(int))) == NULL) {
-					printf("Memory error\n");
-					return 1;
-				}
-			}
-			Aelem_csr[A_ind_current] = value;
-			Ajptr_csr[A_ind_current] = column;
-			break;
-		}
+	if (check_for_corrupt_cell(i, j, k)) return;
+	int p;
+	for (p = 0; p < 3; p++) {
+		A[A_IND(p, i, j, k, p, i, j, k)] += density(i, j, k) / dt;
+		A_stencil[A_IND(p, i, j, k, p, i, j, k)] = 1;
+		B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
 	}
-	return 0;
-}
-
-int DDT_density_velocity(int p, int i, int j, int k)
-{
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	double A_value;
-	A_value = density(i, j, k) / dt;
-	if (write_to_A_csr(A_IND_LIN(p, i, j, k), A_IND_LIN(p ,i, j, k), A_value)) {
-		printf("Error writing matrix A\n");
-		return 1;
-	}
-	B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
-	return 0;
+	return;
 }
 
 double velocity_on_face(int p, int i, int j, int k, int s)
 {
+	//printf("velocity_on_face\n");
 	if (check_for_corrupt_cell(i, j, k)) return 0;
 	int a, b;
 	switch (s) {
@@ -1199,6 +1137,7 @@ double velocity_on_face(int p, int i, int j, int k, int s)
 
 double density_on_face(int i, int j, int k, int s)
 {
+	//printf("density_on_face\n");
 	if (check_for_corrupt_cell(i, j, k)) return 0;
 	switch (s) {
 		case 0:
@@ -1234,34 +1173,36 @@ double density_on_face(int i, int j, int k, int s)
 	}
 }
 
-int DIV_density_velocity_velocity_half_forward_euler(int p, int i, int j, int k)
+void DIV_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int s, pr;
-	for (s = 0; s < 6; s++) {
-		for (pr = 0; pr < 3; pr++) {
-			B[B_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
-				velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)]);
+	if (check_for_corrupt_cell(i, j, k)) return;
+	int s, p, pr;
+	for (pr = 0; pr < 3; pr++) {
+		for (s = 0; s < 6; s++) {
+			for (p = 0; p < 3; p++) {
+				B[B_IND(pr, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+					velocity_on_face(p, i, j, k, s) * normal[NORMAL_IND(p, i, j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)]);
+			}
 		}
 	}
-	return 0;
+	return;
 }
 
-int A_IND_S(int p, int i, int j, int k, int s)
+int A_IND_S(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, int k_el, int s)
 {
 	switch (s) {
 		case 0:
-			return A_IND_LIN(p, i + 1, j, k);
+			return A_IND(p_eq, i_eq, j_eq, k_eq, p_el, i_el + 1, j_el, k_el);
 		case 1:
-			return A_IND_LIN(p, i - 1, j, k);
+			return A_IND(p_eq, i_eq, j_eq, k_eq, p_el, i_el - 1, j_el, k_el);
 		case 2:
-			return A_IND_LIN(p, i, j + 1, k);
+			return A_IND(p_eq, i_eq, j_eq, k_eq, p_el, i_el, j_el + 1, k_el);
 		case 3:
-			return A_IND_LIN(p, i, j - 1, k);
+			return A_IND(p_eq, i_eq, j_eq, k_eq, p_el, i_el, j_el - 1, k_el);
 		case 4:
-			return A_IND_LIN(p, i, j, k + 1);
+			return A_IND(p_eq, i_eq, j_eq, k_eq, p_el, i_el, j_el, k_el + 1);
 		case 5:
-			return A_IND_LIN(p, i, j, k - 1);
+			return A_IND(p_eq, i_eq, j_eq, k_eq, p_el, i_el, j_el, k_el - 1);
 	}
 }
 
@@ -1302,166 +1243,129 @@ int A_IND_S_SWITCH(int i, int j, int k, int s)
 	}
 }
 
-int DIV_density_velocity_velocity_half_backward_euler(int p, int i, int j, int k)
+void DIV_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int s, pr;
-	double A_value;
-	for (s = 0; s < 6; s++) {
-		for (pr = 0; pr < 3; pr++) {
-			A_value = area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
-				normal[NORMAL_IND(pr, i, j, k, s)] / ( 2 * 2 * volume[VOLUME_IND(i, j, k)]);
-			if (write_to_A_csr(A_IND_LIN(p, i, j, k), A_IND_LIN(pr ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s))
-			{
-				A_value = area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
-					normal[NORMAL_IND(pr, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
-				if (write_to_A_csr(A_IND_LIN(p, i, j, k), A_IND_S(pr ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
+	if (check_for_corrupt_cell(i, j, k)) return;
+	int s, p, pr;
+	for (pr = 0; pr < 3; pr++) {
+		for (s = 0; s < 6; s++) {
+			for (p = 0; p < 3; p++) {
+				A[A_IND(pr, i, j, k, p, i, j, k)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+					normal[NORMAL_IND(p, i, j, k, s)] / ( 2 * 2 * volume[VOLUME_IND(i, j, k)]);
+				A_stencil[A_IND(pr, i, j, k, p, i, j, k)] = 1;
+				if (A_IND_S_SWITCH(i, j, k, s) == 1)
+				{
+					A[A_IND_S(pr, i, j, k, p, i, j, k, s)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
+					A_stencil[A_IND_S(pr, i, j, k, p, i, j, k, s)] = 1;
 				}
-			} else {
-				B[B_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
-					velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
+				if (A_IND_S_SWITCH(i, j, k, s) == 0)
+				{
+					A[A_IND(pr, i, j, k, p, i, j, k)] += area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) *
+						normal[NORMAL_IND(p, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
+					A_stencil[A_IND(pr, i, j, k, p, i, j, k)] = 1;
+				}
 			}
 		}
 	}
-	return 0;
+	return;
 }
 
-int DIV_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k)
+void DIV_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (DIV(p, i, j, k, density_velocity_velocity, half_forward_euler)) return 1;
-	if (DIV(p, i, j, k, density_velocity_velocity, half_backward_euler)) return 1;
-	return 0;
+	if (check_for_corrupt_cell(i, j, k)) return;
+	DIV(i, j, k, density_velocity_velocity, half_forward_euler);
+	DIV(i, j, k, density_velocity_velocity, half_backward_euler);
+	return;
 }
 
-int GRAD_pressure_crank_nikolson(int p, int i, int j, int k)
+void GRAD_pressure_crank_nikolson(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (GRAD(p, i, j, k, pressure, half_forward_euler)) return 1;
-	if (GRAD(p, i, j, k, pressure, half_backward_euler)) return 1;
-	return 0;
+	if (check_for_corrupt_cell(i, j, k)) return;
+	GRAD(i, j, k, pressure, half_forward_euler);
+	GRAD(i, j, k, pressure, half_backward_euler);
+	return;
 }
 
-int GRAD_pressure_half_forward_euler(int p, int i, int j, int k)
+void GRAD_pressure_half_forward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (p == 0) {
-		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
-			B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / (2 * dx);
-		} else {
-			B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
-		}
+	if (check_for_corrupt_cell(i, j, k)) return;
+	if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
+		B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / (2 * dx);
+	} else {
+		B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
 	}
-	if (p == 1) {
-		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
-			B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / (2 * dy);
-		} else {
-			B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j - 1, k)]) / (2 * dy);
-		}
+	if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
+		B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / (2 * dy);
+	} else {
+		B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j - 1, k)]) / (2 * dy);
 	}
-	if (p == 2) {
-		if (k - 1 >= 0) {
-			B[B_IND(2, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j, k - 1)]) / (2 * dz);
-		}
+	if (k - 1 >= 0) {
+		B[B_IND(2, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j, k - 1)]) / (2 * dz);
 	}
-	return 0;
+	return;
 }
 
-int GRAD_pressure_half_backward_euler(int p, int i, int j, int k)
+void GRAD_pressure_half_backward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	double A_value;
-	if (p == 0) {
-		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
-			A_value = 1 / (2 * dx);
-			if (write_to_A_csr(A_IND_LIN(0, i, j, k), A_IND_LIN(4, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			B[B_IND(0, i, j, k)] += pressure_atmosphere / (2 * dx);
-		} else {
-			A_value = 1 / (2 * dx);
-			if (write_to_A_csr(A_IND_LIN(0, i, j, k), A_IND_LIN(4, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - 1 / (2 * dx);
-			if (write_to_A_csr(A_IND_LIN(0, i, j, k), A_IND_LIN(4 ,i - 1, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-		}
+	if (check_for_corrupt_cell(i, j, k)) return;
+	if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
+		A[A_IND(0, i, j, k, 4, i, j, k)] += 1 / (2 * dx);
+		A_stencil[A_IND(0, i, j, k, 4, i, j, k)] = 1;
+		B[B_IND(0, i, j, k)] += pressure_atmosphere / (2 * dx);
+	} else {
+		A[A_IND(0, i, j, k, 4, i, j, k)] += 1 / (2 * dx);
+		A_stencil[A_IND(0, i, j, k, 4, i, j, k)] = 1;
+		A[A_IND(0, i, j, k, 4, i - 1, j, k)] -= 1 / (2 * dx);
+		A_stencil[A_IND(0, i, j, k, 4, i - 1, j, k)] = 1;
 	}
-	if (p == 1) {
-		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
-			A_value = 1 / (2 * dy);
-			if (write_to_A_csr(A_IND_LIN(1, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			B[B_IND(1, i, j, k)] += pressure_atmosphere / (2 * dy);
-		} else {
-			A_value = 1 / (2 * dy);
-			if (write_to_A_csr(A_IND_LIN(1, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - 1 / (2 * dy);
-			if (write_to_A_csr(A_IND_LIN(1, i, j, k), A_IND_LIN(4 ,i, j - 1, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-		}
+	if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
+		A[A_IND(1, i, j, k, 4, i, j, k)] += 1 / (2 * dy);
+		A_stencil[A_IND(1, i, j, k, 4, i, j, k)] = 1;
+		B[B_IND(1, i, j, k)] += pressure_atmosphere / (2 * dy);
+	} else {
+		A[A_IND(1, i, j, k, 4, i, j, k)] += 1 / (2 * dy);
+		A_stencil[A_IND(1, i, j, k, 4, i, j, k)] = 1;
+		A[A_IND(1, i, j, k, 4, i, j - 1, k)] -= 1 / (2 * dy);
+		A_stencil[A_IND(1, i, j, k, 4, i, j - 1, k)] = 1;
 	}
-	if (p == 2) {
-		if (k - 1 >= 0) {
-			A_value = 1 / (2 * dz);
-			if (write_to_A_csr(A_IND_LIN(2, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - 1 / (2 * dz);
-			if (write_to_A_csr(A_IND_LIN(2, i, j, k), A_IND_LIN(4 ,i, j, k - 1), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-		}
+	if (k - 1 >= 0) {
+		A[A_IND(2, i, j, k, 4, i, j, k)] += 1 / (2 * dz);
+		A_stencil[A_IND(2, i, j, k, 4, i, j, k)] = 1;
+		A[A_IND(2, i, j, k, 4, i, j, k - 1)] -= 1 / (2 * dz);
+		A_stencil[A_IND(2, i, j, k, 4, i, j, k - 1)] = 1;
 	}
-	return 0;
+	return;
 }
 
-int VECT_gravity_force_half_forward_euler(int p, int i, int j, int k)
+void VECT_gravity_force_half_forward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	B[B_IND(p, i, j, k)] += density_snow * g[p] * phase_fraction[PHASE_IND(i, j, k)] / 2 + density_air * g[p] * (1 - phase_fraction[PHASE_IND(i, j, k)]) / 2;
-	return 0;
-}
-
-int VECT_gravity_force_half_backward_euler(int p, int i, int j, int k)
-{
-	double A_value;
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	A_value = - density_snow * g[p] / 2 + density_air * g[p] / 2;
-	if (write_to_A_csr(A_IND_LIN(p, i, j, k), A_IND_LIN(3 ,i, j, k), A_value)) {
-		printf("Error writing matrix A\n");
-		return 1;
+	if (check_for_corrupt_cell(i, j, k)) return;
+	int p;
+	for (p = 0; p < 3; p++) {
+		B[B_IND(p, i, j, k)] += density_snow * g[p] * phase_fraction[PHASE_IND(i, j, k)] / 2 + density_air * g[p] * (1 - phase_fraction[PHASE_IND(i, j, k)]) / 2;
 	}
-	B[B_IND(p, i, j, k)] += density_air * g[p] / 2;
-	return 0;
+	return;
 }
 
-int VECT_gravity_force_crank_nikolson(int p, int i, int j, int k)
+void VECT_gravity_force_half_backward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (VECT(p, i, j, k, gravity_force, half_forward_euler)) return 1;
-	if (VECT(p, i, j, k, gravity_force, half_backward_euler)) return 1;
-	return 0;
+	if (check_for_corrupt_cell(i, j, k)) return;
+	int p;
+	for (p = 0; p < 3; p++) {
+		A[A_IND(p, i, j, k, 3, i, j, k)] -= density_snow * g[p] / 2 - density_air * g[p] / 2;
+		A_stencil[A_IND(p, i, j, k, 3, i, j, k)] = 1;
+		B[B_IND(p, i, j, k)] += density_air * g[p] / 2;
+	}
+	return;
+}
+
+void VECT_gravity_force_crank_nikolson(int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return;
+	VECT(i, j, k, gravity_force, half_forward_euler);
+	VECT(i, j, k, gravity_force, half_backward_euler);
+	return;
 }
 
 double strain_rate_on_face(int i, int j, int k, int s, int m, int n)
@@ -1583,16 +1487,18 @@ double effective_viscosity_on_face(int i, int j, int k, int s)
 	return x;
 }
 
-int DIV_shear_stress_forward_euler(int p, int i, int j, int k)
+void DIV_shear_stress_forward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int s, m;
-	for (s = 0; s < 6; s++) {
-		for (m = 0; m < 3; m++) {
-			B[B_IND(p, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * 2 * effective_viscosity_on_face(i, j, k, s) * strain_rate_on_face(i, j, k, s, p, m) * normal[NORMAL_IND(m, i, j, k, s)];
+	if (check_for_corrupt_cell(i, j, k)) return;
+	int s, p, m;
+	for (p = 0; p < 3; p++) {
+		for (s = 0; s < 6; s++) {
+			for (m = 0; m < 3; m++) {
+				B[B_IND(p, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * 2 * effective_viscosity_on_face(i, j, k, s) * strain_rate_on_face(i, j, k, s, p, m) * normal[NORMAL_IND(m, i, j, k, s)];
+			}
 		}
 	}
-	return 0;
+	return;
 }
 
 double pressure_on_face(int i, int j, int k, int s)
@@ -1632,17 +1538,17 @@ double pressure_on_face(int i, int j, int k, int s)
 	}
 }
 
-int DIV_grad_pressure_crank_nikolson(int p, int i, int j, int k)
+void DIV_grad_pressure_crank_nikolson(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (DIV(p, i, j, k, grad_pressure, half_forward_euler)) return 1;
-	if (DIV(p, i, j, k, grad_pressure, half_backward_euler)) return 1;
-	return 0;
+	if (check_for_corrupt_cell(i, j, k)) return;
+	DIV(i, j, k, grad_pressure, half_forward_euler);
+	DIV(i, j, k, grad_pressure, half_backward_euler);
+	return;
 }
 
-int DIV_grad_pressure_half_forward_euler(int p, int i, int j, int k)
+void DIV_grad_pressure_half_forward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
 		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
@@ -1656,146 +1562,97 @@ int DIV_grad_pressure_half_forward_euler(int p, int i, int j, int k)
 		if (k > 0)
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / dz;
 	}
-	return 0;
+	return;
 }
 
-int DIV_grad_pressure_half_backward_euler(int p, int i, int j, int k)
+void DIV_grad_pressure_half_backward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
-	double A_value;
 	for (s = 0; s < 6; s++) {
 		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
+			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
 			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
 			} else
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 			B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 		} else {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i - 1, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
+			A[A_IND(4, i, j, k, 4, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+			A_stencil[A_IND(4, i, j, k, 4, i - 1, j, k)] = 1;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
+				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
 			} else
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (A_IND_S_SWITCH(i - 1, j, k, s)) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i - 1, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1) {
+				A[A_IND_S(4, i, j, k, 4, i - 1, j, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+				A_stencil[A_IND_S(4, i, j, k, 4, i - 1, j, k, s)] = 1;
 			} else
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
 		}
 		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
+			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
 			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
 			} else
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 			B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 		} else {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j - 1, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
+			A[A_IND(4, i, j, k, 4, i, j - 1, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+			A_stencil[A_IND(4, i, j, k, 4, i, j - 1, k)] = 1;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
+				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
 			} else
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (A_IND_S_SWITCH(i, j - 1, k, s)) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j - 1, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1) {
+				A[A_IND_S(4, i, j, k, 4, i, j - 1, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j - 1, k, s)] = 1;
 			} else
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
 		}
 		if (k > 0) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k - 1), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+			A[A_IND(4, i, j, k, 4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k)] = 1;
+			A[A_IND(4, i, j, k, 4, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+			A_stencil[A_IND(4, i, j, k, 4, i, j, k - 1)] = 1;
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
+				A[A_IND_S(4, i, j, k, 4, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k, s)] = 1;
 			} else {
 				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
 			}
-			if (A_IND_S_SWITCH(i, j, k - 1, s)) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k - 1, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1) {
+				A[A_IND_S(4, i, j, k, 4, i, j, k - 1, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+				A_stencil[A_IND_S(4, i, j, k, 4, i, j, k - 1, s)] = 1;
 			} else {
 				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
 			}
 		}
 	}
-	return 0;
+	return;
 }
 
-int DIV_div_density_velocity_velocity_crank_nikolson(int p, int i, int j, int k)
+void DIV_div_density_velocity_velocity_crank_nikolson(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (DIV(p, i, j, k, div_density_velocity_velocity, half_forward_euler)) return 1;
-	if (DIV(p, i, j, k, div_density_velocity_velocity, half_backward_euler)) return 1;
-	return 0;
+	if (check_for_corrupt_cell(i, j, k)) return;
+	DIV(i, j, k, div_density_velocity_velocity, half_forward_euler);
+	DIV(i, j, k, div_density_velocity_velocity, half_backward_euler);
+	return;
 }
 
-int DIV_div_density_velocity_velocity_half_forward_euler(int p, int i, int j, int k)
+void DIV_div_density_velocity_velocity_half_forward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
 		if (!((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)))
@@ -1806,7 +1663,7 @@ int DIV_div_density_velocity_velocity_half_forward_euler(int p, int i, int j, in
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
-		if (k == 0)
+		if (k <= 0)
 			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(2, i, j, k, s) / dz;
@@ -1815,370 +1672,382 @@ int DIV_div_density_velocity_velocity_half_forward_euler(int p, int i, int j, in
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
 	}
-	return 0;
+	return;
 }
 
-int DIV_div_density_velocity_velocity_half_backward_euler(int p, int i, int j, int k)
+void DIV_div_density_velocity_velocity_half_backward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
-	double A_value;
 	for (s = 0; s < 6; s++) {
 		if (!((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			A[A_IND(4, i, j, k, 0, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(0, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			A_stencil[A_IND(4, i, j, k, 0, i, j, k)] = 1; 
+			A[A_IND(4, i, j, k, 0, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(0, i - 1, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			A_stencil[A_IND(4, i, j, k, 0, i - 1, j, k)] = 1; 
+			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
+				A[A_IND_S(4, i, j, k, 0, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(0, i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A_stencil[A_IND_S(4, i, j, k, 0, i, j, k, s)] = 1;
 			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(4, i, j, k, 0, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(0, i, j, k, s) / dx;
+					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+				A_stencil[A_IND(4, i, j, k, 0, i, j, k)] = 1;
 			}
 			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(4, i, j, k, 0, i - 1, j, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(0, i - 1, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A_stencil[A_IND_S(4, i, j, k, 0, i - 1, j, k, s)] = 1;
 			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(4, i, j, k, 0, i - 1, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (- velocity_on_face(0, i - 1, j, k, s)) / dx;
+					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+				A_stencil[A_IND(4, i, j, k, 0, i - 1, j, k)] = 1;
 			}
 		}
 		if (!((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			A[A_IND(4, i, j, k, 1, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(1, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			A_stencil[A_IND(4, i, j, k, 1, i, j, k)] = 1; 
+			A[A_IND(4, i, j, k, 1, i, j - 1, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(1, i, j - 1, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
+			A_stencil[A_IND(4, i, j, k, 1, i, j - 1, k)] = 1; 
 			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(4, i, j, k, 1, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(1, i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A_stencil[A_IND_S(4, i, j, k, 1, i, j, k, s)] = 1; 
 			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(4, i, j, k, 1, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(1, i, j, k, s) / dy;
+					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+				A_stencil[A_IND(4, i, j, k, 1, i, j, k)] = 1;
 			}
 			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(4, i, j, k, 1, i, j - 1, k, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(1, i, j - 1, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A_stencil[A_IND_S(4, i, j, k, 1, i, j - 1, k, s)] = 1; 
 			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(4, i, j, k, 1, i, j - 1, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * ( - velocity_on_face(1, i, j - 1, k, s)) / dy;
+					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+				A_stencil[A_IND(4, i, j, k, 1, i, j - 1, k)] = 1;
 			}
 		}
 		if (k == 0) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			A[A_IND(4, i, j, k, 2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(2, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
+			A_stencil[A_IND(4, i, j, k, 2, i, j, k)] = 1; 
 			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(4, i, j, k, 2, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(2, i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A_stencil[A_IND_S(4, i, j, k, 2, i, j, k, s)] = 1;
+			} else {
+				A[A_IND(4, i, j, k, 2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+				A_stencil[A_IND(4, i, j, k, 2, i, j, k)] = 1;
 			}
 		}
 		if (k > 0) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			A[A_IND(4, i, j, k, 2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(2, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			A_stencil[A_IND(4, i, j, k, 2, i, j, k)] = 1; 
+			A[A_IND(4, i, j, k, 2, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(2, i, j, k - 1), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
+			A_stencil[A_IND(4, i, j, k, 2, i, j, k - 1)] = 1; 
 			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(4, i, j, k, 2, i, j, k, s)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(2, i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A_stencil[A_IND_S(4, i, j, k, 2, i, j, k, s)] = 1; 
 			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(4, i, j, k, 2, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(2, i, j, k, s) / dz;
+					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+				A_stencil[A_IND(4, i, j, k, 2, i, j, k)] = 1;
 			}
 			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND_S(4, i, j, k, 2, i, j, k - 1, s)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(2, i, j, k - 1, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
+				A_stencil[A_IND_S(4, i, j, k, 2, i, j, k - 1, s)] = 1; 
 			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+				A[A_IND(4, i, j, k, 2, i, j, k - 1)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (- velocity_on_face(2, i, j, k - 1, s)) / dz;
+					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+				A_stencil[A_IND(4, i, j, k, 2, i, j, k - 1)] = 1;
 			}
 		}
 	}
-	return 0;
+	return;
 }
 
-int DDT_density_snow_volume_fraction(int p, int i, int j, int k)
+void DDT_density_snow_volume_fraction(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	double A_value;
-	A_value = density(i, j, k) / dt;
-	if (write_to_A_csr(A_IND_LIN(3, i, j, k), A_IND_LIN(3, i, j, k), A_value)) {
-		printf("Error writing matrix A\n");
-		return 1;
-	}
+	if (check_for_corrupt_cell(i, j, k)) return;
+	A[A_IND(3, i, j, k, 3, i, j, k)] += density(i, j, k) / dt;
+	A_stencil[A_IND(3, i, j, k, 3, i, j, k)] = 1;
 	B[B_IND(3, i, j, k)] += density(i, j, k) * phase_fraction[PHASE_IND(i, j, k)] / dt;
-	return 0;
+	return;
 }
 
-int DIV_density_snow_volume_fraction_velocity_crank_nikolson(int p, int i, int j, int k)
+void DIV_density_snow_volume_fraction_velocity_crank_nikolson(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, half_forward_euler)) return 1;
-	if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, half_backward_euler)) return 1;
-	return 0;
+	if (check_for_corrupt_cell(i, j, k)) return;
+	DIV(i, j, k, density_snow_volume_fraction_velocity, half_forward_euler);
+	DIV(i, j, k, density_snow_volume_fraction_velocity, half_backward_euler);
+	return;
 }
 
-int DIV_density_snow_volume_fraction_velocity_half_forward_euler(int p, int i, int j, int k)
+void DIV_density_snow_volume_fraction_velocity_half_forward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
 	for (s = 0; s < 6; s++) {
 		B[B_IND(3, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * phase_fraction_on_face(i, j, k, s);
 	}
-	return 0;
+	return;
 }
 
-int DIV_density_snow_volume_fraction_velocity_half_backward_euler(int p, int i, int j, int k)
+void DIV_density_snow_volume_fraction_velocity_half_backward_euler(int i, int j, int k)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (check_for_corrupt_cell(i, j, k)) return;
 	int s;
-	double A_value;
 	for (s = 0; s < 6; s++) {
-		A_value = (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+		A[A_IND(3, i, j, k, 3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
-		if (write_to_A_csr(A_IND_LIN(3, i, j, k), A_IND_LIN(3, i, j, k), A_value)) {
-			printf("Error writing matrix A\n");
-			return 1;
-		}
-		if (A_IND_S_SWITCH(i, j, k, s)) {
-			A_value = (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+		A_stencil[A_IND(3, i, j, k, 3, i, j, k)] = 1;
+		if (A_IND_S_SWITCH(i, j, k, s) == 1) {
+			A[A_IND_S(3, i, j, k, 3, i, j, k, s)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
-			if (write_to_A_csr(A_IND_LIN(3, i, j, k), A_IND_S(3, i, j, k, s), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-		} else {
-			B[B_IND(3, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+			A_stencil[A_IND_S(3, i, j, k, 3, i, j, k, s)] = 1;
+		}
+		if (A_IND_S_SWITCH(i, j, k, s) == 0) {
+			A[A_IND(3, i, j, k, 3, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * phase_fraction_on_face(i, j, k, s);
+				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
+			A_stencil[A_IND(3, i, j, k, 3, i, j, k)] = 1;
 		}
 	}
-	return 0;
+	return;
 }
 
 int create_Ab(void)
 {
-	printf("Creating matrix A and vector B function\n");
-	time_start();
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	system_dimension = n_cells_multipl * nz * num_parameters;
 	A_len = system_dimension * system_dimension;
+	if ((A = (double *) malloc(system_dimension * system_dimension * sizeof(double))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset((void *) A, 0, system_dimension * system_dimension * sizeof(double));
+	if ((A_stencil = (int *) malloc(system_dimension * system_dimension * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset((void *) A_stencil, 0, system_dimension * system_dimension * sizeof(int));
 	B_len = system_dimension;
 	if ((B = (double *) malloc(system_dimension * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) B, 0, system_dimension * sizeof(double));
-	int i, j, k, p;
+	int i, j, k;
 	set_arrays();
 	if (print_vtk(0) == 1)
 		printf("Error printing vtk file\n");
-	int num_el_in_row = 100; // it is inaccurate value
-	A_csr_el_num = num_el_in_row * system_dimension;
-	if ((Aelem_csr = (double *) malloc(A_csr_el_num * sizeof(double))) == NULL) {
-		printf("Memory error\n");
-		return 1;
-	}
-	memset((void *) Aelem_csr, 0, A_csr_el_num * sizeof(double));
-	if ((Ajptr_csr = (int *) malloc(A_csr_el_num * sizeof(int))) == NULL) {
-		printf("Memory error\n");
-		return 1;
-	}
-	memset((void *) Ajptr_csr, -1, A_csr_el_num * sizeof(int));
-	if ((Aiptr_csr = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
-		printf("Memory error\n");
-		return 1;
-	}
-	memset((void *) Aiptr_csr, -1, system_dimension * sizeof(int));
-
-/* creating matrix */
-	A_ind_current = 0;
 	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
 				if (ind_cell_multipl[i * ny + j] != -1) {
-					/* momentum equation */
-					for (p = 0; p < 3; p++) {
-						if (Ajptr_csr[A_ind_current] != -1)
-							A_ind_current++;
-						Aiptr_csr[A_IND_LIN(p, i, j, k)] = A_ind_current;
-						if (DDT(p, i, j, k, density_velocity)) return 1;
-						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson)) return 1;
-						if (VECT(p, i, j, k, gravity_force, crank_nikolson)) return 1;
-						if (GRAD(p, i, j, k, pressure, crank_nikolson)) return 1;
-						if (DIV(p, i, j, k, shear_stress, forward_euler)) return 1;
-					}
-					/* transport equation for snow volume fraction */
-					p = 3;
-					if (Ajptr_csr[A_ind_current] != -1)
-						A_ind_current++;
-					Aiptr_csr[A_IND_LIN(p, i, j, k)] = A_ind_current;
-					if (DDT(p, i, j, k, density_snow_volume_fraction)) return 1;
-					if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, crank_nikolson)) return 1;
-					/* poisson equation for pressure */
-					p = 4;
-					if (Ajptr_csr[A_ind_current] != -1)
-						A_ind_current++;
-					Aiptr_csr[A_IND_LIN(p, i, j, k)] = A_ind_current;
-					if (DIV(p, i, j, k, grad_pressure, crank_nikolson)) return 1;
-					if (DIV(p, i, j, k, div_density_velocity_velocity, crank_nikolson)) return 1;
+					DDT(i, j, k, density_velocity);
+					DIV(i, j, k, density_velocity_velocity, crank_nikolson);
+					VECT(i, j, k, gravity_force, crank_nikolson);
+					GRAD(i, j, k, pressure, crank_nikolson);
+					DIV(i, j, k, shear_stress, forward_euler);
+					DIV(i, j, k, grad_pressure, crank_nikolson);
+					DIV(i, j, k, div_density_velocity_velocity, crank_nikolson);
+					DDT(i, j, k, density_snow_volume_fraction);
+					DIV(i, j, k, density_snow_volume_fraction_velocity, crank_nikolson);
 				}
 			}
 		}
 	}
-	non_zero_elem = A_ind_current + 1;
-	Aiptr_csr[system_dimension] = non_zero_elem;
-	if ((Aelem_csr = (double *) realloc(Aelem_csr, non_zero_elem * sizeof(double))) == NULL) {
+	printf_Ab();
+	return 0;
+}
+
+void printf_Ab(void)
+{
+	printf("Printing A, B and A_stencil matrixes to files\n");
+	FILE *f = fopen("A.txt","w");
+	int i, j;
+	for (i = 0; i < system_dimension; i++) {
+		for (j = 0; j < system_dimension; j++) {
+			fprintf(f, "%010lf\t", A[i * system_dimension + j]);
+		}
+		fprintf(f, "\n");
+	}
+	fclose(f);
+//	f = fopen("A_stencil.txt","w");
+//	for (i = 0; i < system_dimension; i++) {
+//		for (j = 0; j < system_dimension; j++) {
+//			fprintf(f, "%d\t", A_stencil[i * system_dimension + j]);
+//		}
+//		fprintf(f, "\n");
+//	}
+//	fclose(f);
+	f = fopen("b.txt","w");
+	for (i = 0; i < system_dimension; i++) {
+		fprintf(f, "%010lf\n", B[i]);
+	}
+	fclose(f);
+//	f = fopen("A_portrait.txt", "w");
+//	for (i = 0; i < system_dimension; i++) {
+//		for (j = 0; j < system_dimension; j++) {
+//			fprintf(f, "%d\t%d\t", i, j);
+//			if (A[i * system_dimension + j] == 0)
+//				fprintf(f, "0\n");
+//			else
+//				fprintf(f, "1\n");
+//		}
+//	}
+//	fclose(f);
+	return;
+}
+
+int A_csc_func(void)
+{
+	printf("Converting A matrix to CSC format\n");
+	int i, j, k = 0, l;
+	non_zero_elem = 0;
+	for (i = 0; i < system_dimension * system_dimension; i++)
+		if (A_stencil[i] != 0) non_zero_elem++;
+	if ((Aelem_csc = (double *) malloc(non_zero_elem * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	if ((Ajptr_csr = (int *) realloc(Ajptr_csr, non_zero_elem * sizeof(int))) == NULL) {
+	memset(Aelem_csc, 0, non_zero_elem * sizeof(double));
+	if ((Aiptr_csc = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	//print_A_csr();
-	printf("Time: %ld\n", time_stop());
+	memset(Aiptr_csc, 0, non_zero_elem * sizeof(int));
+	if ((Ajptr_csc = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset(Ajptr_csc, 0, (system_dimension + 1) * sizeof(int));
+	for (j = 0; j < system_dimension; j++) {
+		l = 0;
+		for (i = 0; i < system_dimension; i++) {
+			if (A_stencil[i * system_dimension + j] != 0) {
+				Aelem_csc[k] = A[i * system_dimension + j];
+				Aiptr_csc[k] = i;
+				if (l == 0) {
+					Ajptr_csc[j] = k;
+					l = 1;
+				}
+				k++;
+			}
+		}
+		if (l == 0)
+			Ajptr_csc[j] = Ajptr_csc[j - 1];
+	}
+	Ajptr_csc[j] = k;
+//	print_A_csr();
+	return 0;
+}
+
+int A_csr_func(void)
+{
+	int i, j, k = 0, l;
+	non_zero_elem = 0;
+	for (i = 0; i < system_dimension * system_dimension; i++)
+		if (A_stencil[i] != 0) non_zero_elem++;
+	if ((Aelem_csr = (double *) malloc(non_zero_elem * sizeof(double))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset(Aelem_csr, 0, non_zero_elem * sizeof(double));
+	if ((Ajptr_csr = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset(Ajptr_csr, 0, non_zero_elem * sizeof(int));
+	if ((Aiptr_csr = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset(Aiptr_csr, 0, (system_dimension + 1) * sizeof(int));
+	for (i = 0; i < system_dimension; i++) {
+		l = 0;
+		for (j = 0; j < system_dimension; j++) {
+			if (A_stencil[i * system_dimension + j] != 0) {
+				Aelem_csr[k] = A[i * system_dimension + j];
+				Ajptr_csr[k] = j;
+				if (l == 0) {
+					Aiptr_csr[i] = k;
+					l = 1;
+				}
+				k++;
+			}
+		}
+		if (l == 0)
+			Aiptr_csr[i] = Aiptr_csr[i - 1];
+	}
+	Aiptr_csr[i] = k;
+	print_A_csr();
 	return 0;
 }
 
 void print_A_csr(void)
 {
-	printf("Print matrix A in CSR format function\n");
-	time_start();
+	printf("printf_A_csr\n");
 	FILE *f;
 	int i, j;
-	if ((f = fopen("A_csr.txt","w")) == NULL) {
+	printf("file declared\n");
+	if ((f = fopen("A_csr.old.txt","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
+	printf("file opened\n");
+	printf("8\n");
 	fprintf(f, "#%10d\n", system_dimension);
-	double max = abs(Aelem_csr[0]);
 	for (i = 0; i < non_zero_elem; i++) {
-		if (max < abs(Aelem_csr[i]))
-			max = abs(Aelem_csr[i]);
 		j = 0;
 		while (!((i >= Aiptr_csr[j]) && (i < Aiptr_csr[j + 1])))
 			j++;
 		fprintf(f, "%20.10lf\t%10d\t%10d\n", Aelem_csr[i], j, Ajptr_csr[i]);
 	}
 	fclose(f);
-	if ((f = fopen("A_pattern.dat","w")) == NULL) {
-		printf("error openning file");
-		return;
-	}
-	fprintf(f, "#%10d\n", system_dimension);
-	for (i = 0; i < non_zero_elem; i++) {
-		j = 0;
-		while (!((i >= Aiptr_csr[j]) && (i <= Aiptr_csr[j + 1])))
-			j++;
-		fprintf(f, "%20.10lf\t%10d\t%10d\n", Aelem_csr[i] / max, j, Ajptr_csr[i]);
-	}
-	fclose(f);
-	if ((f = fopen("A_elem_jprt.txt","w")) == NULL) {
-		printf("error openning file");
-		return;
-	}
-	fprintf(f, "#%10d\n", system_dimension);
-	for (i = 0; i < non_zero_elem; i++) {
-		fprintf(f, "%10d\t%20.10lf\t%10d\n", i, Aelem_csr[i], Ajptr_csr[i]);
-	}
-	fclose(f);
-	if ((f = fopen("A_iptr.txt","w")) == NULL) {
-		printf("error openning file");
-		return;
-	}
-	fprintf(f, "#%10d\n", system_dimension);
-	for (i = 0; i < system_dimension; i++) {
-		fprintf(f, "%10d\n", Aiptr_csr[i]);
-	}
-	fclose(f);
-	printf("Time: %ld\n", time_stop());
 	return;
 }
 
 int solve_matrix(void)
 {
 	printf("Solving matrix\n");
-	SuperMatrix A_csr;
+	SuperMatrix A_csc;
 	NCformat *Astore;
 //	double   *a;
 //	int      *asub, *xa;
@@ -2188,7 +2057,7 @@ int solve_matrix(void)
 	SCformat *Lstore;
 	SuperMatrix U;      /* factor U */
 	NCformat *Ustore;
-	SuperMatrix B_csr;
+	SuperMatrix B_csc;
 //	int      nrhs, ldx, info, m, n, nnz;
 	int      info, i, j, nrhs;
 //	double   *xact, *rhs;
@@ -2218,12 +2087,12 @@ int solve_matrix(void)
 
 	/* Read the matrix in Harwell-Boeing format. */
 //	dreadhb(&m, &n, &nnz, &a, &asub, &xa);
-	dCreate_CompCol_Matrix(&A_csr, system_dimension, system_dimension, non_zero_elem, Aelem_csr, Ajptr_csr, Aiptr_csr, SLU_NR, SLU_D, SLU_GE);
-	Astore = A_csr.Store;
-	printf("Dimension %dx%d; # nonzeros %d\n", A_csr.nrow, A_csr.ncol, Astore->nnz);
+	dCreate_CompCol_Matrix(&A_csc, system_dimension, system_dimension, non_zero_elem, Aelem_csc, Aiptr_csc, Ajptr_csc, SLU_NC, SLU_D, SLU_GE);
+	Astore = A_csc.Store;
+	printf("Dimension %dx%d; # nonzeros %d\n", A_csc.nrow, A_csc.ncol, Astore->nnz);
 	nrhs   = 1;
 //	if ( !(rhs = doubleMalloc(m * nrhs)) ) ABORT("Malloc fails for rhs[].");
-	dCreate_Dense_Matrix(&B_csr, system_dimension, nrhs, B, system_dimension, SLU_DN, SLU_D, SLU_GE);
+	dCreate_Dense_Matrix(&B_csc, system_dimension, nrhs, B, system_dimension, SLU_DN, SLU_D, SLU_GE);
 //	xact = doubleMalloc(n * nrhs);
 //	ldx = n;
 //	dGenXtrue(n, nrhs, xact, ldx);
@@ -2233,20 +2102,20 @@ int solve_matrix(void)
 
 	/* Initialize the statistics variables. */
 	StatInit(&stat);
-	dgssv(&options, &A_csr, perm_c, perm_r, &L, &U, &B_csr, &stat, &info);
+	dgssv(&options, &A_csc, perm_c, perm_r, &L, &U, &B_csc, &stat, &info);
 	if ( info == 0 ) {
 		/* This is how you could access the solution matrix. */
-		double *sol = (double*) ((DNformat*) B_csr.Store)->nzval; 
+		double *sol = (double*) ((DNformat*) B_csc.Store)->nzval; 
 		for (i = 0; i < n_cells_multipl * nz; i++) {
 			velocity[i * 3 + 0] = sol[i * num_parameters + 0];
 			velocity[i * 3 + 1] = sol[i * num_parameters + 1];
-			velocity[i * 3 + 2] = sol[i * num_parameters + 2];
+			velocity[i * 3 + 3] = sol[i * num_parameters + 2];
 			phase_fraction[i] = sol[i * num_parameters + 3];
 			pressure[i] = sol[i * num_parameters + 4];
 		}
 		/* Compute the infinity norm of the error. */
 //		dinf_norm_error(nrhs, &B, xact);
-		dinf_norm_error(nrhs, &B_csr, sol);
+		dinf_norm_error(nrhs, &B_csc, sol);
 		Lstore = (SCformat *) L.Store;
 		Ustore = (NCformat *) U.Store;
 		printf("No of nonzeros in factor L = %d\n", Lstore->nnz);
@@ -2279,8 +2148,8 @@ int solve_matrix(void)
 //	SUPERLU_FREE (xact);
 	SUPERLU_FREE (perm_r);
 	SUPERLU_FREE (perm_c);
-	Destroy_CompCol_Matrix(&A_csr);
-	Destroy_SuperMatrix_Store(&B_csr);
+	Destroy_CompCol_Matrix(&A_csc);
+	Destroy_SuperMatrix_Store(&B_csc);
 	Destroy_SuperNode_Matrix(&L);
 	Destroy_CompCol_Matrix(&U);
 
@@ -2319,7 +2188,6 @@ int main(int argc, char **argv)
 	int opt = 0;
 	g[0] = g[1] = 0;
 	g[2] = 9,81;
-	//g[2] = 0;
 	static const char *optString = "m:r:H:D:x:y:z:a:s:p:v:k:i:l:S:h?";
 	while ((opt = getopt(argc, argv, optString)) != -1) {
 		switch (opt) {
@@ -2389,13 +2257,15 @@ int main(int argc, char **argv)
 	printf("Creating Ax = b equation\n");
 	if (create_Ab() == 1) goto error;
 	printf("Ax = b equation well done\n");
-	//print_A_csr();
 	if (print_vtk(0) == 1) {
 		printf("Error printing vtk file\n");
 		goto error;
 	} else {
 		printf("Result printed to vtk file\n");
 	}
+	if (A_csr_func() == 1) goto error;
+	if (A_csc_func() == 1) goto error;
+	printf("Matrix convertered to CSC format\n");
 	if (solve_matrix() == 1) goto error;
 	printf("Matrix solved\n");
 	if (print_vtk(1) == 1) {
