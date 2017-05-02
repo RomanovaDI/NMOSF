@@ -166,6 +166,7 @@ int DIV_density_snow_volume_fraction_velocity_half_backward_euler_first(int p, i
 int create_Ab(void);
 void display_usage(void);
 int A_IND_S(int p, int i, int j, int k, int s);
+int A_IND_S_SWITCH(int i, int j, int k, int s);
 int A_IND(int p, int i, int j, int k);
 int B_IND(int p, int i, int j, int k);
 int AREA_IND(int i, int j, int k, int s);
@@ -882,7 +883,9 @@ int SET_initial_CONDITION_phase_fraction_ascii_map(void)
 						if ((double) (k + 1) * (cellsize / kz) <= depth) {
 							B_prev[B_IND(3, i, j, k)] = 1;
 						} else if (((double) (k + 1) * (cellsize / kz) > depth) && ((double) k * (cellsize / kz)) < depth) {
+							printf("i = %d, j = %d, k = %d\n", i, j, k);
 							B_prev[B_IND(3, i, j, k)] = (depth - (double) k * (cellsize / kz)) / (double) (cellsize / kz);
+							printf("%lf\n", B_prev[B_IND(3, i, j, k)]);
 						} else {
 							B_prev[B_IND(3, i, j, k)] = 0;
 						}
@@ -907,8 +910,8 @@ int SET_initial_CONDITION_pressure_fixed_value_with_hydrostatic_pressure(void)
 					if (snow_region[(i / kx) * ncols + j / ky] == 1) {
 						if ((double) (k + 1) * (cellsize / kz) <= depth) {
 							B_prev[B_IND(4, i, j, k)] = pressure_atmosphere + density_snow * g[2] * (depth - (double) (k * (cellsize / kz)));
-						} else if (((double) (k - stencil_size + 1) * (cellsize / kz) > depth) && ((double) k * (cellsize / kz)) < depth) {
-							B_prev[B_IND(4, i, j, k)] = pressure_atmosphere + density_snow * g[2] * (depth - (double) k * (cellsize / kz));
+						} else if (((double) (k + 1) * (cellsize / kz) > depth) && ((double) k * (cellsize / kz)) < depth) {
+							B_prev[B_IND(4, i, j, k)] = pressure_atmosphere + density_snow * g[2] * (depth - (double) (k * (cellsize / kz)));
 						} else {
 							B_prev[B_IND(4, i, j, k)] = pressure_atmosphere;
 						}
@@ -1194,6 +1197,7 @@ int free_massives(void)
 	free(Ajptr_csr);
 	free(Aiptr_csr);
 	free(B_prev);
+	free(ind_boundary_cells);
 	return 0;
 }
 
@@ -1335,8 +1339,10 @@ int check_for_corrupt_cell(int i, int j, int k)
 
 int write_to_A_csr(int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, int j, int k, int s, double value)
 {
-	if ((i >= 0) && (i < nx) && (j >= 0) && (j < ny) && (k >= 0) && (k < nz) && (ind_cell_multipl[i * ny + j] != -1)) {
+	if ((i >= 0) && (i < nx) && (j >= 0) && (j < ny) && (k >= 0) && (k < nz) && (ind_cell_multipl[i * ny + j] != -1) && (A_IND_S_SWITCH(i, j, k, s))) {
 		int l, m, column, row;
+		if (!((i_eq >= 0) && (i_eq < nx) && (j_eq >= 0) && (j_eq < ny) && (k_eq >= 0) && (k_eq < nz) && (ind_cell_multipl[i_eq * ny + j_eq] != -1)))
+			printf("something wery strange\n");
 		if (s == -1) {
 			column = A_IND(p, i, j, k);
 		} else {
@@ -1404,6 +1410,43 @@ int write_to_A_csr(int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, int j, 
 		B[A_IND(p_eq, i_eq, j_eq, k_eq)] -= value * B_prev[B_IND(p_eq, i_eq, j_eq, k_eq)];
 	}
 	return 0;
+}
+
+int A_IND_S_SWITCH(int i, int j, int k, int s)
+{
+	switch (s) {
+		case 0:
+			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
+				return 0;
+			else
+				return 1;
+		case 1:
+			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
+				return 0;
+			else
+				return 1;
+		case 2:
+			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
+				return 0;
+			else
+				return 1;
+		case 3:
+			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
+				return 0;
+			else
+				return 1;
+		case 4:
+			if (k + 1 >= nz)
+				return 0;
+			else
+				return 1;
+		case 5:
+			if (k - 1 < 0)
+				return 0;
+			else
+				return 1;
+	}
+	return 1;
 }
 
 int A_IND_S(int p, int i, int j, int k, int s)
@@ -1958,7 +2001,7 @@ int write_B_to_B_prev(void)
 		for (k = 0; k < nz; k++) {
 			for (i = 0; i < nx; i++) {
 				for (j = 0; j < ny; j++) {
-					B_prev[B_IND(p, i + stencil_size, j + stencil_size, k + stencil_size)] = B[A_IND(p, i, j, k)];
+					B_prev[B_IND(p, i, j, k)] = B[A_IND(p, i, j, k)];
 				}
 			}
 		}
@@ -1973,7 +2016,7 @@ int write_B_prev_to_B(void)
 		for (k = 0; k < nz; k++) {
 			for (i = 0; i < nx; i++) {
 				for (j = 0; j < ny; j++) {
-					B[A_IND(p, i, j, k)] = B_prev[B_IND(p, i + stencil_size, j + stencil_size, k + stencil_size)];
+					B[A_IND(p, i, j, k)] = B_prev[B_IND(p, i, j, k)];
 				}
 			}
 		}
@@ -2361,6 +2404,7 @@ int main(int argc, char **argv)
 
 	if (read_asc_and_declare_variables() == 1) goto error;
 	if (do_interpolation() == 1) goto error;
+	make_boundary();
 	system_dimension = n_cells_multipl * nz * num_parameters;
 	system_dimension_with_boundary = n_boundary_cells * (nz + 2 * stencil_size) * num_parameters;
 	if ((B_prev = (double *) malloc(system_dimension_with_boundary * sizeof(double))) == NULL) {
@@ -2368,7 +2412,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	memset((void *) B_prev, 0, system_dimension_with_boundary * sizeof(double));
-	make_boundary();
 	SET_CONDITION(initial, velocity, fixed_value);
 	SET_CONDITION(initial, phase_fraction, ascii_map);
 	SET_CONDITION(initial, pressure, fixed_value_with_hydrostatic_pressure);
