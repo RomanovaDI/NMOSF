@@ -1,3 +1,81 @@
+/*
+matrix A and vector B structure:
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, 0, 0]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, 1, 0]
+.....................................................................
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, ny - 1, 0]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [1, ny - 1, 0]
+.....................................................................
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, 0]
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, 1]
+.....................................................................
+velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, nz - 1]
+*/
+
+/*
+list of objects
+   density_velocity
+   density_velocity_velocity
+   pressure
+   shear_stress
+   gravity_force
+   grad_pressure
+   div_density_velocity_velocity
+   density_snow_volume_fraction
+   density_snow_volume_fraction_velocity
+*/
+
+/*
+list of numerical_schemes
+	crank_nikolson
+	half_forward_euler
+	half_backward_euler
+	forward_euler
+*/
+
+/*
+list of approximation orders
+	first
+	second
+*/
+
+/*
+list of conditions types
+	initial
+	boundary
+*/
+
+/*
+list of conditions objects
+	velocity
+	phase_fraction
+	pressure
+*/
+
+/*
+list of boundary condition modes
+	zero_gradient_on_up_and_sides_no_slip_on_low
+	zero_gradient_on_all
+	fixed_value_on_up_and_sides_zero_gradient_on_low
+*/
+
+/*
+list of initial conditions
+	fixed_value
+	ascii_map
+	fixed_value_with_hydrostatic_pressure
+*/
+
+/*
+numbering faces of cells is so
+0 face - from end of x-axis
+1 face - from beginning of x-axis
+2 face - from end of y-axis
+3 face - from beginning of y-axis
+4 face - from end of z-axis
+5 face - from beginning of z-axis
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,26 +105,24 @@ double nodata_value;
 int *snow_region;
 double depth;
 double density_snow, density_air;
-double *phase_fraction;
-double *velocity;
-double *pressure;
 double pressure_atmosphere;
 double g[3];
 double k_viscosity_snow, k_viscosity_air;
 double *normal, *volume, *area;
 double dt, dx, dy, dz;
-double *B, *Aelem_csr;
+double *B, *Aelem_csr, *B_prev;
 int *Ajptr_csr, *Aiptr_csr;
 int num_parameters;
 double shear_rate_0,limiting_viscosity_snow, flow_index, yield_stress;
-int phase_fraction_len, velocity_len, pressure_len, volume_len, normal_len, area_len, mass_len, ind_len, bl_cond_len, snow_region_len, ind_multipl_len, mass1_len, ind_cell_multipl_len;
-int system_dimension;
+int system_dimension, system_dimension_with_boundary;
 int non_zero_elem;
 int A_ind_current;
 struct timeval tv1,tv2,dtv;
 struct timezone tz;
 int flag_first_time_step;
 double end_time;
+int stencil_size;
+int *ind_boundary_cells, n_boundary_cells;
 
 int read_asc_and_declare_variables(void);
 int do_interpolation(void);
@@ -90,22 +166,29 @@ int DIV_density_snow_volume_fraction_velocity_half_backward_euler_first(int p, i
 int create_Ab(void);
 void display_usage(void);
 int A_IND_S(int p, int i, int j, int k, int s);
-int A_IND_S_SWITCH(int i, int j, int k, int s);
-int A_IND(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, int k_el);
+int A_IND(int p, int i, int j, int k);
 int B_IND(int p, int i, int j, int k);
-int PRESS_IND(int i, int j, int k);
-int VEL_IND(int p, int i, int j, int k);
 int AREA_IND(int i, int j, int k, int s);
 int NORMAL_IND(int p, int i, int j, int k, int s);
 int VOLUME_IND(int i, int j, int k);
-int PHASE_IND(int i, int j, int k);
-int A_IND_LIN(int p, int i, int j, int k);
 void print_A_csr(void);
 int check_for_corrupt_cell(int i, int j, int k);
 int solve_matrix(void);
-int write_to_A_csr(int row, int column, double value);
+int write_to_A_csr(int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, int j, int k, int s, double value);
 void time_start(void);
 long time_stop(void);
+int make_boundary(void);
+int SET_initial_CONDITION_velocity_fixed_value(void);
+int SET_initial_CONDITION_phase_fraction_ascii_map(void);
+int SET_initial_CONDITION_pressure_fixed_value_with_hydrostatic_pressure(void);
+int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low(void);
+int SET_boundary_CONDITION_phase_fraction_zero_gradient_on_all(void);
+int SET_boundary_CONDITION_pressure_fixed_value_on_up_and_sides_zero_gradient_on_low(void);
+int write_B_to_B_prev(void);
+int write_B_prev_to_B(void);
+double velocity(int p, int i, int j, int k);
+double phase_fraction(int i, int j, int k);
+double pressure(int i, int j, int k);
 
 /* modes of matrix creating */
 #define PATTERN 0
@@ -113,8 +196,15 @@ long time_stop(void);
 
 #define DDT(p, i, j, k, object, approximation_order) DDT_##object##_##approximation_order(p, i, j, k)
 #define DIV(p, i, j, k, object, numerical_scheme, approximation_order) DIV_##object##_##numerical_scheme##_##approximation_order(p, i, j, k)
-#define GRAD(p, i, j, k, mode, numerical_scheme, approximation_order) GRAD_##mode##_##numerical_scheme##_##approximation_order(p, i, j, k)
-#define VECT(p, i, j, k, mode, numerical_scheme, approximation_order) VECT_##mode##_##numerical_scheme##_##approximation_order(p, i, j, k)
+#define GRAD(p, i, j, k, object, numerical_scheme, approximation_order) GRAD_##object##_##numerical_scheme##_##approximation_order(p, i, j, k)
+#define VECT(p, i, j, k, object, numerical_scheme, approximation_order) VECT_##object##_##numerical_scheme##_##approximation_order(p, i, j, k)
+#define SET_CONDITION(type, object, mode) SET_##type##_CONDITION_##object##_##mode()
+
+#define WRITE_TO_A(pr_m, i_m, j_m, k_m, s_m)\
+	if (write_to_A_csr(p, i, j, k, pr_m, i_m, j_m, k_m, s_m, A_value)) { \
+		printf("Error writing matrix A\n"); \
+		return 1; \
+	}
 
 void time_start(void)
 {
@@ -131,72 +221,44 @@ long time_stop(void)
 		return dtv.tv_sec*1000+dtv.tv_usec/1000;
 }
 
-int A_IND(int p_eq, int i_eq, int j_eq, int k_eq, int p_el, int i_el, int j_el, int k_el)
+int A_IND(int p, int i, int j, int k)
 {
-	int x = ((num_parameters * (k_eq * n_cells_multipl + ind_cell_multipl[i_eq * ny + j_eq]) + p_eq) *
-		n_cells_multipl * nz * num_parameters + num_parameters * (k_el * n_cells_multipl + ind_cell_multipl[i_el * ny + j_el]) + p_el);
-	return x;
+	return (num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p);
 }
 
 int B_IND(int p, int i, int j, int k)
 {
-	int x = (num_parameters * (k * n_cells_multipl + ind_cell_multipl[i * ny + j]) + p);
-	if (x >= system_dimension)
-		printf("Error: out of memory\n");
-	return x;
-}
-
-int A_IND_LIN(int p, int i, int j, int k)
-{
-	return B_IND(p, i, j, k);
-}
-
-int PRESS_IND(int i, int j, int k)
-{
-	int x = (k * n_cells_multipl + ind_cell_multipl[i * ny + j]);
-	if (x >= pressure_len)
-		printf("Error: out of memory\n");
-	return x;
-}
-
-int VEL_IND(int p, int i, int j, int k)
-{
-	int x = (3 * PRESS_IND(i, j, k) + p);
-	if (x >= velocity_len)
-		printf("Error: out of memory\n");
-	return x;
+	return (num_parameters * ((k + stencil_size) * n_boundary_cells + ind_boundary_cells[(i + stencil_size) * ny + j + stencil_size]) + p);
 }
 
 int AREA_IND(int i, int j, int k, int s)
 {
-	int x = (6 * ind_cell_multipl[i * ny + j] + s);
-	if (x >= area_len)
-		printf("Error: out of memory\n");
-	return x;
+	return (6 * ind_cell_multipl[i * ny + j] + s);
 }
 
 int NORMAL_IND(int p, int i, int j, int k, int s)
 {
-	int x = (18 * ind_cell_multipl[i * ny + j] + s * 3 + p);
-	if (x >= normal_len)
-		printf("Error: out of memory\n");
-	return x;
+	return (18 * ind_cell_multipl[i * ny + j] + s * 3 + p);
 }
 
 int VOLUME_IND(int i, int j, int k)
 {
-	int x = (ind_cell_multipl[i * ny + j]);
-	if (x >= volume_len)
-		printf("Error: out of memory\n");
-	return x;
+	return (ind_cell_multipl[i * ny + j]);
 }
 
-int PHASE_IND(int i, int j, int k)
+double velocity(int p, int i, int j, int k)
 {
-	int x = (k * n_cells_multipl + ind_cell_multipl[i * ny + j]);
-	if (x >= phase_fraction_len)
-		printf("Error: out of memory\n");
-	return x;
+	return B_prev[B_IND(p, i, j, k)];
+}
+
+double phase_fraction(int i, int j, int k)
+{
+	return B_prev[B_IND(3, i, j, k)];
+}
+
+double pressure(int i, int j, int k)
+{
+	return B_prev[B_IND(4, i, j, k)];
 }
 
 int read_asc_and_declare_variables(void)
@@ -370,19 +432,16 @@ int read_asc_and_declare_variables(void)
 			return 1;
 	}
 
-	mass_len = ncols * nrows;
 	if ((mass = (double *) malloc(ncols * nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) mass, 0, ncols * nrows * sizeof(double));
-	ind_len = ncols * nrows;
 	if ((ind = (int *) malloc(ncols * nrows * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) ind, 0, ncols * nrows * sizeof(int));
-	bl_cond_len = (ncols - 1) * (nrows - 1);
 	if ((bl_cond = (int *) malloc((ncols - 1) * (nrows - 1) * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -415,7 +474,6 @@ int read_asc_and_declare_variables(void)
 	}
 	remove("regions_map.txt");
 
-	snow_region_len = ncols * nrows;
 	if ((snow_region = (int *) malloc(ncols * nrows * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -541,7 +599,6 @@ int do_interpolation(void)
 		}
 	}
 
-	ind_multipl_len = ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1);
 	if ((ind_multipl = (int *) malloc(((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -549,7 +606,6 @@ int do_interpolation(void)
 	memset((void *) ind_multipl, 0, ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(int));
 
 	int count_ind_multipl = 0;
-	mass1_len = ((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1);
 	if ((mass1 = (double *) malloc(((ncols - 1) * ky + 1) * ((nrows - 1) * kx + 1) * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -726,7 +782,6 @@ int do_interpolation(void)
 		}
 	}
 
-	ind_cell_multipl_len = (nrows - 1) * kx * (ncols - 1) * ky;
 	if ((ind_cell_multipl = (int *) malloc((nrows - 1) * kx * (ncols - 1) * ky * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -752,6 +807,302 @@ int do_interpolation(void)
 	dx /= (double) kx;
 	dy /= (double) ky;
 	dz /= (double) kz;
+	return 0;
+}
+
+int make_boundary(void)
+{
+	printf("Make boundary function\n");
+	if ((ind_boundary_cells = (int *) malloc((nx + 2 * stencil_size) * (ny + 2 * stencil_size) * sizeof(int))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset((void *) ind_boundary_cells, -1, (nx + 2 * stencil_size) * (ny + 2 * stencil_size) * sizeof(int));
+	int i, j, k, l;
+	for (i = stencil_size; i < stencil_size + nx; i++) {
+		for (j = stencil_size; j < stencil_size + ny; j++) {
+			if (ind_cell_multipl[(i - stencil_size) * ny + j - stencil_size] != -1) {
+				for (k = -stencil_size; k <= stencil_size; k++) {
+					for (l = -stencil_size; l<= stencil_size; l++) {
+						ind_boundary_cells[(i + k) * (ny + 2 * stencil_size) + j + l] = 1;
+					}
+				}
+			}
+		}
+	}
+	k = 0;
+	for (i = 0; i < nx + 2 * stencil_size; i++) {
+		for (j = 0; j < ny + 2 * stencil_size; j++) {
+			if (ind_boundary_cells[i * (ny + 2 * stencil_size) + j] != -1) {
+				ind_boundary_cells[i * (ny + 2 * stencil_size) + j] = k;
+				k++;
+			}
+		}
+	}
+	n_boundary_cells = k;
+	FILE *f = fopen("boundary.txt", "w");
+	for (i = 0; i < nx + 2 * stencil_size; i++) {
+		for (j = 0; j < ny + 2 * stencil_size; j++) {
+			fprintf(f, "%d ", ind_boundary_cells[i * (ny + 2 * stencil_size) + j]);
+		}
+		fprintf(f, "\n");
+	}
+	fclose(f);
+	return 0;
+}
+
+int SET_initial_CONDITION_velocity_fixed_value(void)
+{
+	printf("Set the initial condition for velocity with fixed value for all calculation domain\n");
+	int i, j, k, p;
+	double fixed_value = 0;
+	for (p = 0; p < 3; p++) {
+		for (k = 0; k < nz; k++) {
+			for (i = 0; i < nx; i++) {
+				for (j = 0; j < ny; j++) {
+					if (ind_cell_multipl[i * ny + j] != -1) {
+						B_prev[B_IND(p, i, j, k)] = fixed_value;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int SET_initial_CONDITION_phase_fraction_ascii_map(void)
+{
+	printf("Set the initial condition for phase fraction with values token from the ASCII map\n");
+	int i, j, k;
+	for (k = 0; k < nz; k++) {
+		for (i = 0; i < nx; i++) {
+			for (j = 0; j < ny; j++) {
+				if (ind_boundary_cells[i * ny + j] != -1) {
+					if (snow_region[(i / kx) * ncols + j / ky] == 1) {
+						if ((double) (k + 1) * (cellsize / kz) <= depth) {
+							B_prev[B_IND(3, i, j, k)] = 1;
+						} else if (((double) (k + 1) * (cellsize / kz) > depth) && ((double) k * (cellsize / kz)) < depth) {
+							B_prev[B_IND(3, i, j, k)] = (depth - (double) k * (cellsize / kz)) / (double) (cellsize / kz);
+						} else {
+							B_prev[B_IND(3, i, j, k)] = 0;
+						}
+					} else {
+						B_prev[B_IND(3, i, j, k)] = 0;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int SET_initial_CONDITION_pressure_fixed_value_with_hydrostatic_pressure(void)
+{
+	printf("Set the initial condition for pressure with fixed value atmosphere pressure in respect hydrostatic pressire\n");
+	int i, j, k;
+	for (k = 0; k < nz; k++) {
+		for (i = 0; i < nx; i++) {
+			for (j = 0; j < ny; j++) {
+				if (ind_boundary_cells[i * ny + j] != -1) {
+					if (snow_region[(i / kx) * ncols + j / ky] == 1) {
+						if ((double) (k + 1) * (cellsize / kz) <= depth) {
+							B_prev[B_IND(4, i, j, k)] = pressure_atmosphere + density_snow * g[2] * (depth - (double) (k * (cellsize / kz)));
+						} else if (((double) (k - stencil_size + 1) * (cellsize / kz) > depth) && ((double) k * (cellsize / kz)) < depth) {
+							B_prev[B_IND(4, i, j, k)] = pressure_atmosphere + density_snow * g[2] * (depth - (double) k * (cellsize / kz));
+						} else {
+							B_prev[B_IND(4, i, j, k)] = pressure_atmosphere;
+						}
+					} else {
+						B_prev[B_IND(4, i, j, k)] = pressure_atmosphere;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low(void)
+{
+	printf("Set the boundary condition for velosity with zero gradient on upper and sides boundaries and no slip condition on the lower boundary\n");
+	int i, j, k, p, l, m, fl_tmp;
+	int search[2 * stencil_size + 1];
+	search[0] = 0;
+	for (i = 1; i <= stencil_size; i++) {
+		search[i * 2 - 1] = i;
+		search[i * 2] = -i;
+	}
+	for (p = 0; p < 3; p++) {
+		for (k = -stencil_size; k < nz + stencil_size; k++) {
+			for (i = -stencil_size; i < nx + stencil_size; i++) {
+				for (j = -stencil_size; j < ny + stencil_size; j++) {
+					if ((ind_boundary_cells[(i + stencil_size) * (ny + 2 * stencil_size) + j + stencil_size] != -1) &&
+						((!((i >= 0) && (i < nx) &&
+						   (j >= 0) && (j < ny) && 
+						   (ind_cell_multipl[i * ny + j] != -1))) ||
+						 (k < 0) || (k >= nz))) {
+							if (k < 0) {
+								B_prev[B_IND(p, i, j, k)] = 0;
+							} else if (k >= nz) {
+								fl_tmp = 0;
+								for (l = 0; l < 2 * stencil_size + 1; l++) {
+									for (m = 0; m < 2 * stencil_size + 1; m++) {
+										if ((i + search[l] >= 0) &&
+											(i + search[l] < nx) &&
+											(j + search[m] >= 0) &&
+											(j + search[m] < ny) &&
+											(ind_cell_multipl[(i + search[l]) * ny + j + search[m]] != -1)) {
+												B_prev[B_IND(p, i, j, k)] = B_prev[B_IND(p, i + search[l], j + search[m], nz - 1)];
+												fl_tmp = 1;
+												break;
+										}
+									}
+									if (fl_tmp) break;
+								}
+							} else {
+								fl_tmp = 0;
+								for (l = 0; l < 2 * stencil_size + 1; l++) {
+									for (m = 0; m < 2 * stencil_size + 1; m++) {
+										if ((i + search[l] >= 0) &&
+											(i + search[l] < nx) &&
+											(j + search[m] >= 0) &&
+											(j + search[m] < ny) &&
+											(ind_cell_multipl[(i + search[l]) * ny + j + search[m]] != -1)) {
+												B_prev[B_IND(p, i, j, k)] = B_prev[B_IND(p, i + search[l], j + search[m], k)];
+												fl_tmp = 1;
+												break;
+										}
+									}
+									if (fl_tmp) break;
+								}
+							}
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int SET_boundary_CONDITION_phase_fraction_zero_gradient_on_all(void)
+{
+	printf("Set the boundary condition for volume snow fraction with zero gradient on all boundaries\n");
+	int i, j, k, p, l, m, fl_tmp;
+	int search[2 * stencil_size + 1];
+	search[0] = 0;
+	for (i = 1; i <= stencil_size; i++) {
+		search[i * 2 - 1] = i;
+		search[i * 2] = -i;
+	}
+	p = 3;
+	for (k = -stencil_size; k < nz + stencil_size; k++) {
+		for (i = -stencil_size; i < nx + stencil_size; i++) {
+			for (j = -stencil_size; j < ny + stencil_size; j++) {
+				if ((ind_boundary_cells[(i + stencil_size) * (ny + 2 * stencil_size) + j + stencil_size] != -1) &&
+					((!((i >= 0) && (i < nx) &&
+					   (j >= 0) && (j < ny) && 
+					   (ind_cell_multipl[i * ny + j] != -1))) ||
+					 (k < 0) || (k >= nz))) {
+						if (k < 0) {
+							fl_tmp = 0;
+							for (l = 0; l < 2 * stencil_size + 1; l++) {
+								for (m = 0; m < 2 * stencil_size + 1; m++) {
+									if ((i + search[l] >= 0) &&
+										(i + search[l] < nx) &&
+										(j + search[m] >= 0) &&
+										(j + search[m] < ny) &&
+										(ind_cell_multipl[(i + search[l]) * ny + j + search[m]] != -1)) {
+											B_prev[B_IND(p, i, j, k)] = B_prev[B_IND(p, i + search[l], j + search[m], 0)];
+											fl_tmp = 1;
+											break;
+									}
+								}
+								if (fl_tmp) break;
+							}
+						} else if (k >= nz) {
+							fl_tmp = 0;
+							for (l = 0; l < 2 * stencil_size + 1; l++) {
+								for (m = 0; m < 2 * stencil_size + 1; m++) {
+									if ((i + search[l] >= 0) &&
+										(i + search[l] < nx) &&
+										(j + search[m] >= 0) &&
+										(j + search[m] < ny) &&
+										(ind_cell_multipl[(i + search[l]) * ny + j + search[m]] != -1)) {
+											B_prev[B_IND(p, i, j, k)] = B_prev[B_IND(p, i + search[l], j + search[m], nz - 1)];
+											fl_tmp = 1;
+											break;
+									}
+								}
+								if (fl_tmp) break;
+							}
+						} else {
+							fl_tmp = 0;
+							for (l = 0; l < 2 * stencil_size + 1; l++) {
+								for (m = 0; m < 2 * stencil_size + 1; m++) {
+									if ((i + search[l] >= 0) &&
+										(i + search[l] < nx) &&
+										(j + search[m] >= 0) &&
+										(j + search[m] < ny) &&
+										(ind_cell_multipl[(i + search[l]) * ny + j + search[m]] != -1)) {
+											B_prev[B_IND(p, i, j, k)] = B_prev[B_IND(p, i + search[l], j + search[m], k)];
+											fl_tmp = 1;
+											break;
+									}
+								}
+								if (fl_tmp) break;
+							}
+						}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int SET_boundary_CONDITION_pressure_fixed_value_on_up_and_sides_zero_gradient_on_low(void)
+{
+	printf("Set the boundary condition for pressure with fixed value of atmospheric pressure on upper and sides boundaries, zero gradient condition for lower boundary\n");
+	int i, j, k, p, l, m, fl_tmp;
+	int search[2 * stencil_size + 1];
+	search[0] = 0;
+	for (i = 1; i <= stencil_size; i++) {
+		search[i * 2 - 1] = i;
+		search[i * 2] = -i;
+	}
+	p = 4;
+	for (k = -stencil_size; k < nz + stencil_size; k++) {
+		for (i = -stencil_size; i < nx + stencil_size; i++) {
+			for (j = -stencil_size; j < ny + stencil_size; j++) {
+				if ((ind_boundary_cells[(i + stencil_size) * (ny + 2 * stencil_size) + j + stencil_size] != -1) &&
+					((!((i >= 0) && (i < nx) &&
+					   (j >= 0) && (j < ny) && 
+					   (ind_cell_multipl[i * ny + j] != -1))) ||
+					 (k < 0) || (k >= nz))) {
+						if (k < 0) {
+							fl_tmp = 0;
+							for (l = 0; l < 2 * stencil_size + 1; l++) {
+								for (m = 0; m < 2 * stencil_size + 1; m++) {
+									if ((i + search[l] >= 0) &&
+										(i + search[l] < nx) &&
+										(j + search[m] >= 0) &&
+										(j + search[m] < ny) &&
+										(ind_cell_multipl[(i + search[l]) * ny + j + search[m]] != -1)) {
+											B_prev[B_IND(p, i, j, k)] = B_prev[B_IND(p, i + search[l], j + search[m], 0)];
+											fl_tmp = 1;
+											break;
+									}
+								}
+								if (fl_tmp) break;
+							}
+						} else if (k >= nz) {
+							B_prev[B_IND(p, i, j, k)] = pressure_atmosphere;
+						} else {
+							B_prev[B_IND(p, i, j, k)] = pressure_atmosphere;
+						}
+				}
+			}
+		}
+	}
 	return 0;
 }
 
@@ -813,63 +1164,42 @@ int print_vtk(int n)
 	fprintf(f, "CELL_DATA %d\n", n_cells_multipl * nz);
 	fprintf(f, "VECTORS velocity double\n");
 	for (i = 0; i < n_cells_multipl * nz; i++)
-		fprintf(f, "%20.10f\t%20.10f\t%20.10f\n", velocity[i * 3 + 0], velocity[i * 3 + 1], velocity[i * 3 + 2]);
+		fprintf(f, "%20.10f\t%20.10f\t%20.10f\n", B[i * num_parameters + 0], B[i * num_parameters + 1], B[i * num_parameters + 2]);
 	fprintf(f, "SCALARS pressure double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
 	for (i = 0; i < n_cells_multipl * nz; i++)
-		fprintf(f, "%20.10f\n", pressure[i]);
+		fprintf(f, "%20.10f\n", B[i * num_parameters + 4]);
 	fprintf(f, "SCALARS snow_volume_fraction double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
 	for (i = 0; i < n_cells_multipl * nz; i++)
-		fprintf(f, "%20.10f\n", phase_fraction[i]);
+		fprintf(f, "%20.10f\n", B[i * num_parameters + 3]);
 	fclose(f);
 	return 0;
 }
 
 int free_massives(void)
 {
-	printf("free(B);\n");
 	free(B);
-	printf("free(area);\n");
 	free(area);
-	printf("free(normal);\n");
 	free(normal);
-	printf("free(volume);\n");
 	free(volume);
-	printf("free(pressure);\n");
-	free(pressure);
-	printf("free(velocity);\n");
-	free(velocity);
-	printf("free(phase_fraction);\n");
-	free(phase_fraction);
-	printf("free(ind_cell_multipl);\n");
 	free(ind_cell_multipl);
-	printf("free(mass1);\n");
 	free(mass1);
-	printf("free(ind_multipl);\n");
 	free(ind_multipl);
-	printf("free(snow_region);\n");
 	free(snow_region);
-	printf("free(bl_cond);\n");
 	free(bl_cond);
-	printf("free(ind);\n");
 	free(ind);
-	printf("free(mass);\n");
 	free(mass);
-	//printf("free(Aelem_csr);\n");
-	//free(Aelem_csr);
-	//printf("free(Ajptr_csr);\n");
-	//free(Ajptr_csr);
-	//printf("free(Aiptr_csr);\n");
-	//free(Aiptr_csr);
+	free(Aelem_csr);
+	free(Ajptr_csr);
+	free(Aiptr_csr);
+	free(B_prev);
 	return 0;
 }
 
 double density(int i, int j, int k)
 {
-	double x;
-	x = (phase_fraction[PHASE_IND(i, j, k)] * density_snow + (1 - phase_fraction[PHASE_IND(i, j, k)]) * density_air);
-	return x;
+	return phase_fraction(i, j, k) * density_snow + (1 - phase_fraction(i, j, k)) * density_air;
 }
 
 void print_mass(void)
@@ -885,87 +1215,21 @@ void print_mass(void)
 	return;
 }
 
-/*
-numbering faces of cells is so
-0 face - from end of x-axis
-1 face - from beginning of x-axis
-2 face - from end of y-axis
-3 face - from beginning of y-axis
-4 face - from end of z-axis
-5 face - from beginning of z-axis
-*/
-
 int set_arrays(void)
 {
-	printf("Set arrays function\n");
+	printf("Set arrays of volume, normales and areas for mesh\n");
 	time_start();
 	int i, j, k, l, m;
-	phase_fraction_len = n_cells_multipl * nz;
-	if ((phase_fraction = (double *) malloc(n_cells_multipl * nz * sizeof(double))) == NULL) {
-		printf("Memory error\n");
-		return 1;
-	}
-	memset((void *) phase_fraction, 0, n_cells_multipl * nz * sizeof(double));
-	velocity_len = 3 * n_cells_multipl * nz;
-	if ((velocity = (double *) malloc(3 * n_cells_multipl * nz * sizeof(double))) == NULL) {
-		printf("Memory error\n");
-		return 1;
-	}
-	memset((void *) velocity, 0, 3 * n_cells_multipl * nz * sizeof(double));
-	pressure_len = n_cells_multipl * nz;
-	if ((pressure = (double *) malloc(n_cells_multipl * nz * sizeof(double))) == NULL) {
-		printf("Memory error\n");
-		return 1;
-	}
-	memset((void *) pressure, 0, n_cells_multipl * nz * sizeof(double));
-	//printf("Setting arrays\n");
-	for (k = 0; k < nz; k++) {
-		for (i = 0; i < nrows - 1; i++) {
-			for (l = 0; l < kx; l++) {
-				for (j = 0; j < ncols - 1; j++) {
-					for (m = 0; m < ky; m++) {
-						if (bl_cond[i * (ncols - 1) + j] != -1) {
-							//printf("k = %d, i = %d, l = %d, j = %d, m = %d\n", k, i, l, j, m);
-							//printf("snow_region[0] = %d", snow_region[0]);
-							//printf("snow_region[i * ncols + j] = %d", snow_region[i * ncols + j]);
-							if (snow_region[i * ncols + j] == 1) {
-								if ((double) (k + 1) * cellsize <= depth) {
-									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 1;
-									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										pressure_atmosphere + density_snow * g[2] * (depth - (double) (k * cellsize));
-								} else if (((double) (k + 1) * cellsize > depth) && ((double) k * cellsize) < depth) {
-									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										(depth - (double) k * cellsize) / (double) cellsize;
-									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										pressure_atmosphere + density_snow * g[2] * (depth - (double) (k * cellsize));
-								} else {
-									phase_fraction[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] = 0;
-									pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-										pressure_atmosphere;
-								}
-							} else {
-								pressure[k * n_cells_multipl + ind_cell_multipl[i * (ncols - 1) * ky + j * ky + m]] =
-									pressure_atmosphere;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	volume_len = n_cells_multipl;
 	if ((volume = (double *) malloc(n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) volume, 0, n_cells_multipl * sizeof(double));
-	normal_len = 6 * 3 * n_cells_multipl;
 	if ((normal = (double *) malloc(6 * 3 * n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
 	memset((void *) normal, 0, 6 * 3 * n_cells_multipl * sizeof(double));
-	area_len = 6 * n_cells_multipl;
 	if ((area = (double *) malloc(6 * n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -1057,47 +1321,6 @@ int conformity(int i, int j)
 	}
 }
 
-/*
-matrix A and vector B structure:
-velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, 0, 0]
-velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, 1, 0]
-.....................................................................
-velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, ny - 1, 0]
-velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [1, ny - 1, 0]
-.....................................................................
-velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, 0]
-velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, 1]
-.....................................................................
-velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, nz - 1]
-*/
-
-/*
-list of objects
-   density_velocity
-   density_velocity_velocity
-   pressure
-   shear_stress
-   gravity_force
-   grad_pressure
-   div_density_velocity_velocity
-   density_snow_volume_fraction
-   density_snow_volume_fraction_velocity
-*/
-
-/*
-list of numerical_schemes
-	crank_nikolson
-	half_forward_euler
-	half_backward_euler
-	forward_euler
-*/
-
-/*
-list of boundary condition modes
-	zero_gradient
-	no_slip
-*/
-
 int check_for_corrupt_cell(int i, int j, int k)
 {
 	if ((i >= nx) || (i < 0) ||
@@ -1110,65 +1333,75 @@ int check_for_corrupt_cell(int i, int j, int k)
 	return 0;
 }
 
-int write_to_A_csr(int row, int column, double value)
+int write_to_A_csr(int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, int j, int k, int s, double value)
 {
-	int i, j;
-	if (flag_first_time_step) {
-		if (Aiptr_csr[row] > A_ind_current)
-			printf("pizdeca ma\n");
-		for (i = Aiptr_csr[row]; i <= A_ind_current; i++) {
-			if (Ajptr_csr[i] == -1) {
-				Aelem_csr[i] = value;
-				Ajptr_csr[i] = column;
-				break;
-			} else if (Ajptr_csr[i] == column) {
-				Aelem_csr[i] += value;
-				break;
-			} else if (Ajptr_csr[i] > column) {
-				A_ind_current++;
-				if (A_ind_current == non_zero_elem) {
-					non_zero_elem++;
-					if ((Aelem_csr = (double *) realloc(Aelem_csr, non_zero_elem * sizeof(double))) == NULL) {
-						printf("Memory error\n");
-						return 1;
+	if ((i >= 0) && (i < nx) && (j >= 0) && (j < ny) && (k >= 0) && (k < nz) && (ind_cell_multipl[i * ny + j] != -1)) {
+		int l, m, column, row;
+		if (s == -1) {
+			column = A_IND(p, i, j, k);
+		} else {
+			column = A_IND_S(p, i, j, k, s);
+		}
+		row = A_IND(p_eq, i_eq, j_eq, k_eq);
+		if (flag_first_time_step) {
+			if (Aiptr_csr[row] > A_ind_current)
+				printf("pizdeca ma\n");
+			for (l = Aiptr_csr[row]; l <= A_ind_current; l++) {
+				if (Ajptr_csr[l] == -1) {
+					Aelem_csr[l] = value;
+					Ajptr_csr[l] = column;
+					break;
+				} else if (Ajptr_csr[l] == column) {
+					Aelem_csr[l] += value;
+					break;
+				} else if (Ajptr_csr[l] > column) {
+					A_ind_current++;
+					if (A_ind_current == non_zero_elem) {
+						non_zero_elem++;
+						if ((Aelem_csr = (double *) realloc(Aelem_csr, non_zero_elem * sizeof(double))) == NULL) {
+							printf("Memory error\n");
+							return 1;
+						}
+						if ((Ajptr_csr = (int *) realloc(Ajptr_csr, non_zero_elem * sizeof(int))) == NULL) {
+							printf("Memory error\n");
+							return 1;
+						}
 					}
-					if ((Ajptr_csr = (int *) realloc(Ajptr_csr, non_zero_elem * sizeof(int))) == NULL) {
-						printf("Memory error\n");
-						return 1;
+					for (m = A_ind_current; m > l; m--) {
+						Aelem_csr[m] = Aelem_csr[m - 1];
+						Ajptr_csr[m] = Ajptr_csr[m - 1];
 					}
+					Aelem_csr[l] = value;
+					Ajptr_csr[l] = column;
+					break;
+				} else if (l == A_ind_current) {
+					A_ind_current++;
+					if (A_ind_current == non_zero_elem) {
+						non_zero_elem++;
+						if ((Aelem_csr = (double *) realloc(Aelem_csr, non_zero_elem * sizeof(double))) == NULL) {
+							printf("Memory error\n");
+							return 1;
+						}
+						if ((Ajptr_csr = (int *) realloc(Ajptr_csr, non_zero_elem * sizeof(int))) == NULL) {
+							printf("Memory error\n");
+							return 1;
+						}
+					}
+					Aelem_csr[A_ind_current] = value;
+					Ajptr_csr[A_ind_current] = column;
+					break;
 				}
-				for (j = A_ind_current; j > i; j--) {
-					Aelem_csr[j] = Aelem_csr[j - 1];
-					Ajptr_csr[j] = Ajptr_csr[j - 1];
+			}
+		} else {
+			for (l = Aiptr_csr[row]; l < Aiptr_csr[row + 1]; l++) {
+				if (Ajptr_csr[l] == column) {
+					Aelem_csr[l] += value;
+					break;
 				}
-				Aelem_csr[i] = value;
-				Ajptr_csr[i] = column;
-				break;
-			} else if (i == A_ind_current) {
-				A_ind_current++;
-				if (A_ind_current == non_zero_elem) {
-					non_zero_elem++;
-					if ((Aelem_csr = (double *) realloc(Aelem_csr, non_zero_elem * sizeof(double))) == NULL) {
-						printf("Memory error\n");
-						return 1;
-					}
-					if ((Ajptr_csr = (int *) realloc(Ajptr_csr, non_zero_elem * sizeof(int))) == NULL) {
-						printf("Memory error\n");
-						return 1;
-					}
-				}
-				Aelem_csr[A_ind_current] = value;
-				Ajptr_csr[A_ind_current] = column;
-				break;
 			}
 		}
 	} else {
-		for (i = Aiptr_csr[row]; i < Aiptr_csr[row + 1]; i++) {
-			if (Ajptr_csr[i] == column) {
-				Aelem_csr[i] += value;
-				break;
-			}
-		}
+		B[A_IND(p_eq, i_eq, j_eq, k_eq)] -= value * B_prev[B_IND(p_eq, i_eq, j_eq, k_eq)];
 	}
 	return 0;
 }
@@ -1177,191 +1410,77 @@ int A_IND_S(int p, int i, int j, int k, int s)
 {
 	switch (s) {
 		case 0:
-			return A_IND_LIN(p, i + 1, j, k);
+			return A_IND(p, i + 1, j, k);
 		case 1:
-			return A_IND_LIN(p, i - 1, j, k);
+			return A_IND(p, i - 1, j, k);
 		case 2:
-			return A_IND_LIN(p, i, j + 1, k);
+			return A_IND(p, i, j + 1, k);
 		case 3:
-			return A_IND_LIN(p, i, j - 1, k);
+			return A_IND(p, i, j - 1, k);
 		case 4:
-			return A_IND_LIN(p, i, j, k + 1);
+			return A_IND(p, i, j, k + 1);
 		case 5:
-			return A_IND_LIN(p, i, j, k - 1);
-	}
-}
-
-int A_IND_S_SWITCH(int i, int j, int k, int s)
-{
-	if (check_for_corrupt_cell(i, j, k)) return -1;
-	switch (s) {
-		case 0:
-			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
-				return 0;
-			else
-				return 1;
-		case 1:
-			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-				return 0;
-			else
-				return 1;
-		case 2:
-			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
-				return 0;
-			else
-				return 1;
-		case 3:
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-				return 0;
-			else
-				return 1;
-		case 4:
-			if (k + 1 >= nz)
-				return 0;
-			else
-				return 1;
-		case 5:
-			if (k - 1 < 0)
-				return 0;
-			else
-				return 1;
+			return A_IND(p, i, j, k - 1);
 	}
 }
 
 double velocity_on_face(int p, int i, int j, int k, int s)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 0;
 	int a, b;
 	switch (s) {
 		case 0:
-			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
-				return velocity[VEL_IND(p, i, j, k)];
-			else
-				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i + 1, j, k)]) / 2;
+			return (velocity(p, i, j, k) + velocity(p, i + 1, j, k)) / 2;
 		case 1:
-			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-				return velocity[VEL_IND(p, i, j, k)];
-			else
-				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i - 1, j, k)]) / 2;
+			return (velocity(p, i, j, k) + velocity(p, i - 1, j, k)) / 2;
 		case 2:
-			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
-				return velocity[VEL_IND(p, i, j, k)];
-			else
-				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i, j + 1, k)]) / 2;
+			return (velocity(p, i, j, k) + velocity(p, i, j + 1, k)) / 2;
 		case 3:
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-				return velocity[VEL_IND(p, i, j, k)];
-			else
-				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i, j - 1, k)]) / 2;
+			return (velocity(p, i, j, k) + velocity(p, i, j - 1, k)) / 2;
 		case 4:
-			if (k + 1 >= nz)
-				return velocity[VEL_IND(p, i, j, k)];
-			else
-				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i, j, k + 1)]) / 2;
+			return (velocity(p, i, j, k) + velocity(p, i, j, k + 1)) / 2;
 		case 5:
-			if (k - 1 < 0)
-				return 0;
-			else
-				return (velocity[VEL_IND(p, i, j, k)] + velocity[VEL_IND(p, i, j, k - 1)]) / 2;
+			return (velocity(p, i, j, k) + velocity(p, i, j, k - 1)) / 2;
 	}
 }
 
 double density_on_face(int i, int j, int k, int s)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 0;
 	switch (s) {
 		case 0:
-			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
-				return density(i, j, k);
-			else
-				return (density(i, j, k) + density(i + 1, j, k)) / 2;
+			return (density(i, j, k) + density(i + 1, j, k)) / 2;
 		case 1:
-			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-				return density(i, j, k);
-			else
-				return (density(i, j, k) + density(i - 1, j, k)) / 2;
+			return (density(i, j, k) + density(i - 1, j, k)) / 2;
 		case 2:
-			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
-				return density(i, j, k);
-			else
-				return (density(i, j, k) + density(i, j + 1, k)) / 2;
+			return (density(i, j, k) + density(i, j + 1, k)) / 2;
 		case 3:
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-				return density(i, j, k);
-			else
-				return (density(i, j, k) + density(i, j - 1, k)) / 2;
+			return (density(i, j, k) + density(i, j - 1, k)) / 2;
 		case 4:
-			if (k + 1 >= nz)
-				return density(i, j, k);
-			else
-				return (density(i, j, k) + density(i, j, k + 1)) / 2;
+			return (density(i, j, k) + density(i, j, k + 1)) / 2;
 		case 5:
-			if (k - 1 < 0)
-				return density(i, j, k);
-				//return 0;
-			else
-				return (density(i, j, k) + density(i, j, k - 1)) / 2;
+			return (density(i, j, k) + density(i, j, k - 1)) / 2;
 	}
 }
 
 double strain_rate_on_face(int i, int j, int k, int s, int m, int n)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 0;
 	switch (m + n + m * n) {
 		case 0:
-			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-				return 0;
-			else
-				return (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
+			return (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
 		case 1:
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-				if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-					return 0;
-				else
-					return 0.5 * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i - 1, j, k, s)) / dx;
-			else
-				if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-					return 0.5 * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j - 1, k, s)) / dy;
-				else
-					return 0.5 * ((velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j - 1, k, s)) / dy + (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i - 1, j, k, s)) / dx);
+			return 0.5 * ((velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j - 1, k, s)) / dy + (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i - 1, j, k, s)) / dx);
 		case 2:
-			if (k - 1 < 0)
-				if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-					return 0.5 * velocity_on_face(0, i, j, k, s) / dz;
-				else
-					return 0.5 * (velocity_on_face(0, i, j, k, s) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i - 1, j, k, s)) / dx);
-			else
-				if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-					return 0.5 * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j, k - 1, s)) / dz;
-				else
-					return 0.5 * ((velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j, k - 1, s)) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i - 1, j, k, s)) / dx);
+			return 0.5 * ((velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i, j, k - 1, s)) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i - 1, j, k, s)) / dx);
 		case 3:
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-				return 0;
-			else
-				return (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dx;
+			return (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dx;
 		case 5:
-			if (k - 1 < 0)
-				if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-					return 0.5 * velocity_on_face(1, i, j, k, s) / dz;
-				else
-					return 0.5 * (velocity_on_face(1, i, j, k, s) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j - 1, k, s)) / dy);
-			else
-				if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-					return 0.5 * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j, k - 1, s)) / dz;
-				else
-					return 0.5 * ((velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j, k - 1, s)) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j - 1, k, s)) / dy);
+			return 0.5 * ((velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j, k - 1, s)) / dz + (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j - 1, k, s)) / dy);
 		case 8:
-			if (k <= 0)
-				return velocity_on_face(2, i, j, k, s) / dx;
-			else
-				return (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dx;
+			return (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dx;
 	}
 }
 
 double shear_rate_on_face(int i, int j, int k, int s)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 0;
 	int m, n;
 	double x = 0;
 	for (m = 0; m < 3; m++) {
@@ -1374,44 +1493,24 @@ double shear_rate_on_face(int i, int j, int k, int s)
 
 double phase_fraction_on_face(int i, int j, int k, int s)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
 	switch (s) {
 		case 0:
-			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
-				return phase_fraction[PHASE_IND(i, j, k)];
-			else
-				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i + 1, j, k)]) / 2;
+			return (phase_fraction(i, j, k) + phase_fraction(i + 1, j, k)) / 2;
 		case 1:
-			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-				return phase_fraction[PHASE_IND(i, j, k)];
-			else
-				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i - 1, j, k)]) / 2;
+			return (phase_fraction(i, j, k) + phase_fraction(i - 1, j, k)) / 2;
 		case 2:
-			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
-				return phase_fraction[PHASE_IND(i, j, k)];
-			else
-				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i, j + 1, k)]) / 2;
+			return (phase_fraction(i, j, k) + phase_fraction(i, j + 1, k)) / 2;
 		case 3:
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-				return phase_fraction[PHASE_IND(i, j, k)];
-			else
-				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i, j - 1, k)]) / 2;
+			return (phase_fraction(i, j, k) + phase_fraction(i, j - 1, k)) / 2;
 		case 4:
-			if (k + 1 >= nz)
-				return phase_fraction[PHASE_IND(i, j, k)];
-			else
-				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i, j, k + 1)]) / 2;
+			return (phase_fraction(i, j, k) + phase_fraction(i, j, k + 1)) / 2;
 		case 5:
-			if (k - 1 < 0)
-				return 1;
-			else
-				return (phase_fraction[PHASE_IND(i, j, k)] + phase_fraction[PHASE_IND(i, j, k - 1)]) / 2;
+			return (phase_fraction(i, j, k) + phase_fraction(i, j, k - 1)) / 2;
 	}
 }
 
 double effective_viscosity_on_face(int i, int j, int k, int s)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 0;
 	double phase_fraction_on_face_tmp = phase_fraction_on_face(i, j, k, s);
 	double shear_rate_on_face_tmp = shear_rate_on_face(i, j, k, s);
 	double x = k_viscosity_air * (1 - phase_fraction_on_face_tmp);
@@ -1425,38 +1524,19 @@ double effective_viscosity_on_face(int i, int j, int k, int s)
 
 double pressure_on_face(int i, int j, int k, int s)
 {
-	if (check_for_corrupt_cell(i, j, k)) return 1;
 	switch (s) {
 		case 0:
-			if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
-				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
-			else
-				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i + 1, j, k)]) / 2;
+			return (pressure(i, j, k) + pressure(i + 1, j, k)) / 2;
 		case 1:
-			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
-			else
-				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i - 1, j, k)]) / 2;
+			return (pressure(i, j, k) + pressure(i - 1, j, k)) / 2;
 		case 2:
-			if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
-				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
-			else
-				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i, j + 1, k)]) / 2;
+			return (pressure(i, j, k) + pressure(i, j + 1, k)) / 2;
 		case 3:
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
-			else
-				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i, j - 1, k)]) / 2;
+			return (pressure(i, j, k) + pressure(i, j - 1, k)) / 2;
 		case 4:
-			if (k + 1 >= nz)
-				return (pressure[PRESS_IND(i, j, k)] + pressure_atmosphere) / 2;
-			else
-				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i, j, k + 1)]) / 2;
+			return (pressure(i, j, k) + pressure(i, j, k + 1)) / 2;
 		case 5:
-			if (k - 1 < 0)
-				return pressure[PRESS_IND(i, j, k)];
-			else
-				return (pressure[PRESS_IND(i, j, k)] + pressure[PRESS_IND(i, j, k - 1)]) / 2;
+			return (pressure(i, j, k) + pressure(i, j, k - 1)) / 2;
 	}
 }
 
@@ -1465,11 +1545,8 @@ int DDT_density_velocity_first(int p, int i, int j, int k)
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value;
 	A_value = density(i, j, k) / dt;
-	if (write_to_A_csr(A_IND_LIN(p, i, j, k), A_IND_LIN(p ,i, j, k), A_value)) {
-		printf("Error writing matrix A\n");
-		return 1;
-	}
-	B[B_IND(p, i, j, k)] += density(i, j, k) * velocity[VEL_IND(p, i, j, k)] / dt;
+	WRITE_TO_A(p, i, j, k, -1);
+	B[A_IND(p, i, j, k)] += density(i, j, k) * velocity(p, i, j, k) / dt;
 	return 0;
 }
 
@@ -1479,7 +1556,7 @@ int DIV_density_velocity_velocity_half_forward_euler_first(int p, int i, int j, 
 	int s, pr;
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
-			B[B_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
+			B[A_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
 				velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)]);
 		}
 	}
@@ -1495,22 +1572,10 @@ int DIV_density_velocity_velocity_half_backward_euler_first(int p, int i, int j,
 		for (pr = 0; pr < 3; pr++) {
 			A_value = area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
 				normal[NORMAL_IND(pr, i, j, k, s)] / ( 2 * 2 * volume[VOLUME_IND(i, j, k)]);
-			if (write_to_A_csr(A_IND_LIN(p, i, j, k), A_IND_LIN(pr ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s))
-			{
-				A_value = area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
-					normal[NORMAL_IND(pr, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
-				if (write_to_A_csr(A_IND_LIN(p, i, j, k), A_IND_S(pr ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(p, i, j, k)] -= area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
-					velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
-			}
+			WRITE_TO_A(pr, i, j, k, -1);
+			A_value = area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) *
+				normal[NORMAL_IND(pr, i, j, k, s)] / (2 * 2 * volume[VOLUME_IND(i, j, k)]);
+			WRITE_TO_A(pr, i, j, k, s);
 		}
 	}
 	return 0;
@@ -1528,23 +1593,13 @@ int GRAD_pressure_forward_euler_first(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	if (p == 0) {
-		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
-			B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / dx;
-		} else {
-			B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / dx;
-		}
+		B[A_IND(0, i, j, k)] -= (pressure(i, j, k) - pressure(i - 1, j, k)) / dx;
 	}
 	if (p == 1) {
-		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
-			B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / dy;
-		} else {
-			B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j - 1, k)]) / dy;
-		}
+		B[A_IND(1, i, j, k)] -= (pressure(i, j, k) - pressure(i, j - 1, k)) / dy;
 	}
 	if (p == 2) {
-		if (k - 1 >= 0) {
-			B[B_IND(2, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j, k - 1)]) / dz;
-		}
+		B[A_IND(2, i, j, k)] -= (pressure(i, j, k) - pressure(i, j, k - 1)) / dz;
 	}
 	return 0;
 }
@@ -1561,23 +1616,13 @@ int GRAD_pressure_half_forward_euler_first(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	if (p == 0) {
-		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
-			B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / (2 * dx);
-		} else {
-			B[B_IND(0, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i - 1, j, k)]) / (2 * dx);
-		}
+		B[A_IND(0, i, j, k)] -= (pressure(i, j, k) - pressure(i - 1, j, k)) / (2 * dx);
 	}
 	if (p == 1) {
-		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
-			B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure_atmosphere) / (2 * dy);
-		} else {
-			B[B_IND(1, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j - 1, k)]) / (2 * dy);
-		}
+		B[A_IND(1, i, j, k)] -= (pressure(i, j, k) - pressure(i, j - 1, k)) / (2 * dy);
 	}
 	if (p == 2) {
-		if (k - 1 >= 0) {
-			B[B_IND(2, i, j, k)] -= (pressure[PRESS_IND(i, j, k)] - pressure[PRESS_IND(i, j, k - 1)]) / (2 * dz);
-		}
+		B[A_IND(2, i, j, k)] -= (pressure(i, j, k) - pressure(i, j, k - 1)) / (2 * dz);
 	}
 	return 0;
 }
@@ -1587,60 +1632,22 @@ int GRAD_pressure_half_backward_euler_first(int p, int i, int j, int k)
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value;
 	if (p == 0) {
-		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
-			A_value = 1 / (2 * dx);
-			if (write_to_A_csr(A_IND_LIN(0, i, j, k), A_IND_LIN(4, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			B[B_IND(0, i, j, k)] += pressure_atmosphere / (2 * dx);
-		} else {
-			A_value = 1 / (2 * dx);
-			if (write_to_A_csr(A_IND_LIN(0, i, j, k), A_IND_LIN(4, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - 1 / (2 * dx);
-			if (write_to_A_csr(A_IND_LIN(0, i, j, k), A_IND_LIN(4 ,i - 1, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-		}
+		A_value = 1 / (2 * dx);
+		WRITE_TO_A(4, i, j, k, -1);
+		A_value = - 1 / (2 * dx);
+		WRITE_TO_A(4, i - 1, j, k, -1);
 	}
 	if (p == 1) {
-		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
-			A_value = 1 / (2 * dy);
-			if (write_to_A_csr(A_IND_LIN(1, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			B[B_IND(1, i, j, k)] += pressure_atmosphere / (2 * dy);
-		} else {
-			A_value = 1 / (2 * dy);
-			if (write_to_A_csr(A_IND_LIN(1, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - 1 / (2 * dy);
-			if (write_to_A_csr(A_IND_LIN(1, i, j, k), A_IND_LIN(4 ,i, j - 1, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-		}
+		A_value = 1 / (2 * dy);
+		WRITE_TO_A(4, i, j, k, -1);
+		A_value = - 1 / (2 * dy);
+		WRITE_TO_A(4, i, j - 1, k, -1);
 	}
 	if (p == 2) {
-		if (k - 1 >= 0) {
-			A_value = 1 / (2 * dz);
-			if (write_to_A_csr(A_IND_LIN(2, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - 1 / (2 * dz);
-			if (write_to_A_csr(A_IND_LIN(2, i, j, k), A_IND_LIN(4 ,i, j, k - 1), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-		}
+		A_value = 1 / (2 * dz);
+		WRITE_TO_A(4, i, j, k, -1);
+		A_value = - 1 / (2 * dz);
+		WRITE_TO_A(4, i, j, k - 1, -1);
 	}
 	return 0;
 }
@@ -1648,7 +1655,7 @@ int GRAD_pressure_half_backward_euler_first(int p, int i, int j, int k)
 int VECT_gravity_force_half_forward_euler_first(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	B[B_IND(p, i, j, k)] += density_snow * g[p] * phase_fraction[PHASE_IND(i, j, k)] / 2 + density_air * g[p] * (1 - phase_fraction[PHASE_IND(i, j, k)]) / 2;
+	B[A_IND(p, i, j, k)] += density_snow * g[p] * phase_fraction(i, j, k) / 2 + density_air * g[p] * (1 - phase_fraction(i, j, k)) / 2;
 	return 0;
 }
 
@@ -1657,11 +1664,8 @@ int VECT_gravity_force_half_backward_euler_first(int p, int i, int j, int k)
 	double A_value;
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	A_value = - density_snow * g[p] / 2 + density_air * g[p] / 2;
-	if (write_to_A_csr(A_IND_LIN(p, i, j, k), A_IND_LIN(3 ,i, j, k), A_value)) {
-		printf("Error writing matrix A\n");
-		return 1;
-	}
-	B[B_IND(p, i, j, k)] += density_air * g[p] / 2;
+	WRITE_TO_A(3, i, j, k, -1);
+	B[A_IND(p, i, j, k)] += density_air * g[p] / 2;
 	return 0;
 }
 
@@ -1679,7 +1683,8 @@ int DIV_shear_stress_forward_euler_first(int p, int i, int j, int k)
 	int s, pr;
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
-			B[B_IND(p, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * 2 * effective_viscosity_on_face(i, j, k, s) * strain_rate_on_face(i, j, k, s, p, pr) * normal[NORMAL_IND(pr, i, j, k, s)];
+			B[A_IND(p, i, j, k)] += (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * 2 * effective_viscosity_on_face(i, j, k, s) * strain_rate_on_face(i, j, k, s, p, pr) *
+				normal[NORMAL_IND(pr, i, j, k, s)];
 		}
 	}
 	return 0;
@@ -1698,16 +1703,9 @@ int DIV_grad_pressure_half_forward_euler_first(int p, int i, int j, int k)
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	int s;
 	for (s = 0; s < 6; s++) {
-		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_atmosphere) * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-		else
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i - 1, j, k, s)) * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_atmosphere) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-		else
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-		if (k > 0)
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i - 1, j, k, s)) * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / dz;
 	}
 	return 0;
 }
@@ -1718,122 +1716,30 @@ int DIV_grad_pressure_half_backward_euler_first(int p, int i, int j, int k)
 	int s;
 	double A_value;
 	for (s = 0; s < 6; s++) {
-		if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			B[B_IND(4, i, j, k)] += (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-		} else {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i - 1, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-			if (A_IND_S_SWITCH(i - 1, j, k, s)) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i - 1, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else
-				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-		}
-		if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			B[B_IND(4, i, j, k)] += (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-		} else {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j - 1, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-			if (A_IND_S_SWITCH(i, j - 1, k, s)) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j - 1, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else
-				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-		}
-		if (k > 0) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k - 1), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			}
-			if (A_IND_S_SWITCH(i, j, k - 1, s)) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k - 1, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / dz;
-			}
-		}
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+		WRITE_TO_A(4, i, j, k, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+		WRITE_TO_A(4, i - 1, j, k, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+		WRITE_TO_A(4, i, j, k, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+		WRITE_TO_A(4, i - 1, j, k, s);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		WRITE_TO_A(4, i, j, k, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		WRITE_TO_A(4, i, j - 1, k, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		WRITE_TO_A(4, i, j, k, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		WRITE_TO_A(4, i, j - 1, k, s);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		WRITE_TO_A(4, i, j, k, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		WRITE_TO_A(4, i, j, k - 1, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		WRITE_TO_A(4, i, j, k, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		WRITE_TO_A(4, i, j, k - 1, s);
 	}
 	return 0;
 }
@@ -1851,28 +1757,12 @@ int DIV_grad_pressure_half_forward_euler_second(int p, int i, int j, int k)
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	int s;
 	for (s = 0; s < 6; s++) {
-		if (!(((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) && ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1)))) {
-			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))
-				B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i + 1, j, k, s) - pressure_atmosphere) * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-			else if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1))
-				B[B_IND(4, i, j, k)] += (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_atmosphere - pressure_on_face(i - 1, j, k, s)) * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-			else
-				B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i + 1, j, k, s) - pressure_on_face(i - 1, j, k, s)) * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-		}
-		if (!(((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) && ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1)))) {
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))
-				B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j + 1, k, s) - pressure_atmosphere) * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-			else if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1))
-				B[B_IND(4, i, j, k)] += (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_atmosphere - pressure_on_face(i, j-1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-			else
-				B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j + 1, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-		}
-		if ((k > 0) && (k + 1 < nz)) {
-			if (k + 1 >= nz)
-				B[B_IND(4, i, j, k)] += (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_atmosphere - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-			else if (k > 0)
-				B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k + 1, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-		}
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i + 1, j, k, s) - pressure_on_face(i - 1, j, k, s)) *
+			normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j + 1, k, s) - pressure_on_face(i, j - 1, k, s)) *
+			normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k + 1, s) - pressure_on_face(i, j, k - 1, s)) *
+			normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
 	}
 	return 0;
 }
@@ -1883,174 +1773,30 @@ int DIV_grad_pressure_half_backward_euler_second(int p, int i, int j, int k)
 	int s;
 	double A_value;
 	for (s = 0; s < 6; s++) {
-		if (!(((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) && ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1)))) {
-			if ((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4, i + 1, j, k), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				if (A_IND_S_SWITCH(i + 1, j, k, s)) {
-					A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4, i + 1, j, k, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else
-					B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-				B[B_IND(4, i, j, k)] += (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-			} else if ((i + 1 >= nx) || (ind_cell_multipl[(i + 1) * ny + j] == -1)) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4, i - 1, j, k), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				if (A_IND_S_SWITCH(i - 1, j, k, s)) {
-					A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4, i - 1, j, k, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else
-					B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-				B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-			} else {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4, i + 1, j, k), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4, i - 1, j, k), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				if (A_IND_S_SWITCH(i + 1, j, k, s)) {
-					A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4, i + 1, j, k, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else
-					B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-				if (A_IND_S_SWITCH(i - 1, j, k, s)) {
-					A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i - 1, j, k, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else
-					B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
-			}
-		}
-		if (!(((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) && ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1)))) {
-			if ((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j + 1, k), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				if (A_IND_S_SWITCH(i, j + 1, k, s)) {
-					A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j + 1, k, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else
-					B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-				B[B_IND(4, i, j, k)] += (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-			} else if ((j + 1 >= ny) || (ind_cell_multipl[i * ny + j + 1] == -1)) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j - 1, k), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				if (A_IND_S_SWITCH(i, j - 1, k, s)) {
-					A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j - 1, k, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else
-					B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-				B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-			} else {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j + 1, k), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j - 1, k), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				if (A_IND_S_SWITCH(i, j + 1, k, s)) {
-					A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j + 1, k, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else
-					B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-				if (A_IND_S_SWITCH(i, j - 1, k, s)) {
-					A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j - 1, k, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else
-					B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
-			}
-		}
-		if ((k > 0) && (k + 1 < nz)) {
-			if (k + 1 >= nz) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k - 1), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				if (A_IND_S_SWITCH(i, j, k - 1, s)) {
-					A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k - 1, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else {
-					B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-				}
-				B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-			} else if (k > 0) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k + 1), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(4 ,i, j, k - 1), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-				if (A_IND_S_SWITCH(i, j, k + 1, s)) {
-					A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k + 1, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else {
-					B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-				}
-				if (A_IND_S_SWITCH(i, j, k - 1, s)) {
-					A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-					if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(4 ,i, j, k - 1, s), A_value)) {
-						printf("Error writing matrix A\n");
-						return 1;
-					}
-				} else {
-					B[B_IND(4, i, j, k)] += (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * pressure_atmosphere * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
-				}
-			}
-		}
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
+		WRITE_TO_A(4, i + 1, j, k, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
+		WRITE_TO_A(4, i - 1, j, k, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
+		WRITE_TO_A(4, i + 1, j, k, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
+		WRITE_TO_A(4, i - 1, j, k, s);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
+		WRITE_TO_A(4, i, j + 1, k, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
+		WRITE_TO_A(4, i, j - 1, k, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
+		WRITE_TO_A(4, i, j + 1, k, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
+		WRITE_TO_A(4, i, j - 1, k, s);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
+		WRITE_TO_A(4, i, j, k + 1, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
+		WRITE_TO_A(4, i, j, k - 1, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
+		WRITE_TO_A(4, i, j, k + 1, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
+		WRITE_TO_A(4, i, j, k - 1, s);
 	}
 	return 0;
 }
@@ -2060,22 +1806,15 @@ int DIV_div_density_velocity_velocity_forward_euler_first(int p, int i, int j, i
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	int s;
 	for (s = 0; s < 6; s++) {
-		if (!((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)))
-			B[B_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
-		if (!((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)))
-			B[B_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
-		if (k == 0)
-			B[B_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(2, i, j, k, s) / dz;
-		else	
-			B[B_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
+		B[A_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
+		B[A_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
+		B[A_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
 	}
 	return 0;
 }
@@ -2093,22 +1832,15 @@ int DIV_div_density_velocity_velocity_half_forward_euler_first(int p, int i, int
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	int s;
 	for (s = 0; s < 6; s++) {
-		if (!((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1)))
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
-		if (!((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1)))
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
-		if (k == 0)
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(2, i, j, k, s) / dz;
-		else	
-			B[B_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
 	}
 	return 0;
 }
@@ -2119,150 +1851,54 @@ int DIV_div_density_velocity_velocity_half_backward_euler_first(int p, int i, in
 	int s;
 	double A_value;
 	for (s = 0; s < 6; s++) {
-		if (!((i - 1 < 0) || (ind_cell_multipl[(i - 1) * ny + j] == -1))) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(0, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(0, i - 1, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s)) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(0, i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(0, i, j, k, s) / dx;
-			}
-			if (A_IND_S_SWITCH(i - 1, j, k, s) == 1) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(0, i - 1, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (- velocity_on_face(0, i - 1, j, k, s)) / dx;
-			}
-		}
-		if (!((j - 1 < 0) || (ind_cell_multipl[i * ny + j - 1] == -1))) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(1, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(1, i, j - 1, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(1, i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(1, i, j, k, s) / dy;
-			}
-			if (A_IND_S_SWITCH(i, j - 1, k, s) == 1) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(1, i, j - 1, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * ( - velocity_on_face(1, i, j - 1, k, s)) / dy;
-			}
-		}
-		if (k == 0) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(2, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(2, i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			}
-		}
-		if (k > 0) {
-			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(2, i, j, k), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-			if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_LIN(2, i, j, k - 1), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
-			}
-			if (A_IND_S_SWITCH(i, j, k, s) == 1) {
-				A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(2, i, j, k, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * velocity_on_face(2, i, j, k, s) / dz;
-			}
-			if (A_IND_S_SWITCH(i, j, k - 1, s) == 1) {
-				A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
-				if (write_to_A_csr(A_IND_LIN(4, i, j, k), A_IND_S(2, i, j, k - 1, s), A_value)) {
-					printf("Error writing matrix A\n");
-					return 1;
-				}
-			} else {
-				B[B_IND(4, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
-					(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-					velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (- velocity_on_face(2, i, j, k - 1, s)) / dz;
-			}
-		}
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+		WRITE_TO_A(0, i, j, k, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+		WRITE_TO_A(0, i - 1, j, k, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+		WRITE_TO_A(0, i, j, k, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+		WRITE_TO_A(0, i - 1, j, k, s);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+		WRITE_TO_A(1, i, j, k, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+		WRITE_TO_A(1, i, j - 1, k, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+		WRITE_TO_A(1, i, j, k, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+		WRITE_TO_A(1, i, j - 1, k, s);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+		WRITE_TO_A(2, i, j, k, -1);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+		WRITE_TO_A(2, i, j, k - 1, -1);
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+		WRITE_TO_A(2, i, j, k, s);
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+		WRITE_TO_A(2, i, j, k - 1, s);
 	}
 	return 0;
 }
@@ -2272,11 +1908,8 @@ int DDT_density_snow_volume_fraction_first(int p, int i, int j, int k)
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value;
 	A_value = density(i, j, k) / dt;
-	if (write_to_A_csr(A_IND_LIN(3, i, j, k), A_IND_LIN(3, i, j, k), A_value)) {
-		printf("Error writing matrix A\n");
-		return 1;
-	}
-	B[B_IND(3, i, j, k)] += density(i, j, k) * phase_fraction[PHASE_IND(i, j, k)] / dt;
+	WRITE_TO_A(3, i, j, k, -1);
+	B[A_IND(3, i, j, k)] += density(i, j, k) * phase_fraction(i, j, k) / dt;
 	return 0;
 }
 
@@ -2293,7 +1926,7 @@ int DIV_density_snow_volume_fraction_velocity_half_forward_euler_first(int p, in
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	int s;
 	for (s = 0; s < 6; s++) {
-		B[B_IND(3, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+		B[A_IND(3, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * phase_fraction_on_face(i, j, k, s);
 	}
@@ -2309,22 +1942,40 @@ int DIV_density_snow_volume_fraction_velocity_half_backward_euler_first(int p, i
 		A_value = (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
-		if (write_to_A_csr(A_IND_LIN(3, i, j, k), A_IND_LIN(3, i, j, k), A_value)) {
-			printf("Error writing matrix A\n");
-			return 1;
-		}
-		if (A_IND_S_SWITCH(i, j, k, s)) {
-			A_value = (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
-			if (write_to_A_csr(A_IND_LIN(3, i, j, k), A_IND_S(3, i, j, k, s), A_value)) {
-				printf("Error writing matrix A\n");
-				return 1;
+		WRITE_TO_A(3, i, j, k, -1);
+		A_value = (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
+			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
+			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (1 / 4);
+		WRITE_TO_A(3, i, j, k, s);
+	}
+	return 0;
+}
+
+int write_B_to_B_prev(void)
+{
+	int i, j, k, p;
+	for (p = 0; p < num_parameters; p++) {
+		for (k = 0; k < nz; k++) {
+			for (i = 0; i < nx; i++) {
+				for (j = 0; j < ny; j++) {
+					B_prev[B_IND(p, i + stencil_size, j + stencil_size, k + stencil_size)] = B[A_IND(p, i, j, k)];
+				}
 			}
-		} else {
-			B[B_IND(3, i, j, k)] -= (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) *
-				(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-				 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * phase_fraction_on_face(i, j, k, s);
+		}
+	}
+	return 0;
+}
+
+int write_B_prev_to_B(void)
+{
+	int i, j, k, p;
+	for (p = 0; p < num_parameters; p++) {
+		for (k = 0; k < nz; k++) {
+			for (i = 0; i < nx; i++) {
+				for (j = 0; j < ny; j++) {
+					B[A_IND(p, i, j, k)] = B_prev[B_IND(p, i + stencil_size, j + stencil_size, k + stencil_size)];
+				}
+			}
 		}
 	}
 	return 0;
@@ -2336,14 +1987,11 @@ int create_Ab(void)
 	time_start();
 	int i, j, k, p;
 	if (flag_first_time_step) {
-		num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
-		system_dimension = n_cells_multipl * nz * num_parameters;
 		if ((B = (double *) malloc(system_dimension * sizeof(double))) == NULL) {
 			printf("Memory error\n");
 			return 1;
 		}
 		memset((void *) B, 0, system_dimension * sizeof(double));
-		set_arrays();
 		int num_el_in_row = 100; // it is inaccurate value
 		non_zero_elem = num_el_in_row * system_dimension;
 		if ((Aelem_csr = (double *) malloc(non_zero_elem * sizeof(double))) == NULL) {
@@ -2378,7 +2026,7 @@ int create_Ab(void)
 						if (flag_first_time_step) {
 							if (Ajptr_csr[A_ind_current] != -1)
 								A_ind_current++;
-							Aiptr_csr[A_IND_LIN(p, i, j, k)] = A_ind_current;
+							Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
 						}
 						if (DDT(p, i, j, k, density_velocity, first)) return 1;
 						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson, first)) return 1;
@@ -2392,7 +2040,7 @@ int create_Ab(void)
 					if (flag_first_time_step) {
 						if (Ajptr_csr[A_ind_current] != -1)
 							A_ind_current++;
-						Aiptr_csr[A_IND_LIN(p, i, j, k)] = A_ind_current;
+						Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
 					}
 					if (DDT(p, i, j, k, density_snow_volume_fraction, first)) return 1;
 					if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, crank_nikolson, first)) return 1;
@@ -2401,7 +2049,7 @@ int create_Ab(void)
 					if (flag_first_time_step) {
 						if (Ajptr_csr[A_ind_current] != -1)
 							A_ind_current++;
-						Aiptr_csr[A_IND_LIN(p, i, j, k)] = A_ind_current;
+						Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
 					}
 					if (DIV(p, i, j, k, grad_pressure, crank_nikolson, first)) return 1;
 					//if (DIV(p, i, j, k, grad_pressure, crank_nikolson, second)) return 1;
@@ -2566,12 +2214,8 @@ int solve_matrix(void)
 	if ( info == 0 ) {
 		/* This is how you could access the solution matrix. */
 		double *sol = (double*) ((DNformat*) B_csr.Store)->nzval; 
-		for (i = 0; i < n_cells_multipl * nz; i++) {
-			velocity[i * 3 + 0] = sol[i * num_parameters + 0];
-			velocity[i * 3 + 1] = sol[i * num_parameters + 1];
-			velocity[i * 3 + 2] = sol[i * num_parameters + 2];
-			phase_fraction[i] = sol[i * num_parameters + 3];
-			pressure[i] = sol[i * num_parameters + 4];
+		for (i = 0; i < n_cells_multipl * nz * num_parameters; i++) {
+			B[i] = sol[i];
 		}
 		/* Compute the infinity norm of the error. */
 //		dinf_norm_error(nrhs, &B, xact);
@@ -2650,6 +2294,8 @@ int main(int argc, char **argv)
 	g[0] = g[1] = 0;
 	g[2] = 9,81;
 	//g[2] = 0;
+	stencil_size = 2;
+	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	static const char *optString = "m:r:H:D:x:y:z:a:s:p:v:k:i:l:S:t:h?";
 	while ((opt = getopt(argc, argv, optString)) != -1) {
 		switch (opt) {
@@ -2715,13 +2361,29 @@ int main(int argc, char **argv)
 
 	if (read_asc_and_declare_variables() == 1) goto error;
 	if (do_interpolation() == 1) goto error;
+	system_dimension = n_cells_multipl * nz * num_parameters;
+	system_dimension_with_boundary = n_boundary_cells * (nz + 2 * stencil_size) * num_parameters;
+	if ((B_prev = (double *) malloc(system_dimension_with_boundary * sizeof(double))) == NULL) {
+		printf("Memory error\n");
+		return 1;
+	}
+	memset((void *) B_prev, 0, system_dimension_with_boundary * sizeof(double));
+	make_boundary();
+	SET_CONDITION(initial, velocity, fixed_value);
+	SET_CONDITION(initial, phase_fraction, ascii_map);
+	SET_CONDITION(initial, pressure, fixed_value_with_hydrostatic_pressure);
+	set_arrays();
 	dt = 0.01;//we need to set dt!!!
 	flag_first_time_step = 1;
 	time_steps = end_time / dt;
 	for (i = 0; i <= time_steps; i++) {
+		SET_CONDITION(boundary, velocity, zero_gradient_on_up_and_sides_no_slip_on_low);
+		SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
+		SET_CONDITION(boundary, pressure, fixed_value_on_up_and_sides_zero_gradient_on_low);
 		if (create_Ab() == 1) goto error;
 		if (i == 0) {
 			flag_first_time_step = 0;
+			write_B_prev_to_B();
 			if (print_vtk(0) == 1) {
 				printf("Error printing vtk file\n");
 				goto error;
@@ -2730,13 +2392,13 @@ int main(int argc, char **argv)
 			}
 		}
 		if (solve_matrix() == 1) goto error;
-		//print_A_csr();
 		if (print_vtk(i + 1) == 1) {
 			printf("Error printing vtk file\n");
 			goto error;
 		} else {
 			printf("Result printed to vtk file\n");
 		}
+		write_B_to_B_prev();
 	}
 	if (free_massives() == 1) goto error;
 
