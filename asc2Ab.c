@@ -68,12 +68,12 @@ list of initial conditions
 
 /*
 numbering faces of cells is so
-0 face - from end of x-axis
-1 face - from beginning of x-axis
-2 face - from end of y-axis
-3 face - from beginning of y-axis
-4 face - from end of z-axis
-5 face - from beginning of z-axis
+0 face - from beginning of x-axis
+1 face - from end of x-axis
+2 face - from beginning of y-axis
+3 face - from end of y-axis
+4 face - from beginning of z-axis
+5 face - from end of z-axis
 */
 
 #include <stdio.h>
@@ -232,7 +232,7 @@ int A_IND(int p, int i, int j, int k)
 
 int B_IND(int p, int i, int j, int k)
 {
-	return (num_parameters * ((k + stencil_size) * n_boundary_cells + ind_boundary_cells[(i + stencil_size) * ny + j + stencil_size]) + p);
+	return (num_parameters * ((k + stencil_size) * n_boundary_cells + ind_boundary_cells[(i + stencil_size) * (ny + 2 * stencil_size) + j + stencil_size]) + p);
 }
 
 int AREA_IND(int i, int j, int k, int s)
@@ -936,7 +936,7 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low
 		search[i * 2 - 1] = i;
 		search[i * 2] = -i;
 	}
-	for (p = 0; p < 3; p++) {
+	/*for (p = 0; p < 3; p++) {
 		for (k = -stencil_size; k < nz + stencil_size; k++) {
 			for (i = -stencil_size; i < nx + stencil_size; i++) {
 				for (j = -stencil_size; j < ny + stencil_size; j++) {
@@ -1000,7 +1000,7 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low
 				}
 			}
 		}
-	}
+	}*/
 	for (p = 0; p < 3; p++) {
 		for (k = -stencil_size; k < nz + stencil_size; k++) {
 			for (i = -stencil_size; i < nx + stencil_size; i++) {
@@ -1010,7 +1010,9 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low
 						   (j >= 0) && (j < ny) && 
 						   (ind_cell_multipl[i * ny + j] != -1))) ||
 						 (k < 0) || (k >= nz))) {
-							if (k < 0)
+								//printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
+								//printf("B_IND(p, i, j, k) = %d\n", B_IND(p, i, j, k));
+							//if (k < 0)
 								B_prev[B_IND(p, i, j, k)] = 0;
 					}
 				}
@@ -1104,8 +1106,6 @@ int SET_boundary_CONDITION_pressure_fixed_value_on_up_and_sides_zero_gradient_on
 	for (k = nz + stencil_size - 1; k >= - stencil_size; k--) {
 		for (i = -stencil_size; i < nx + stencil_size; i++) {
 			for (j = -stencil_size; j < ny + stencil_size; j++) {
-				if ((i == 1) && (j == -2) && (k == -2))
-					printf("fucking sheet\n");
 				if ((ind_boundary_cells[(i + stencil_size) * (ny + 2 * stencil_size) + j + stencil_size] != -1) &&
 					((!((i >= 0) && (i < nx) &&
 					   (j >= 0) && (j < ny) && 
@@ -1218,7 +1218,8 @@ int print_vtk(int n)
 			fprintf(f, "k = %d\n", k);
 			for (i = -stencil_size; i < nx + stencil_size; i++) {
 				for (j = -stencil_size; j < ny + stencil_size; j++) {
-					fprintf(f, "%20.10lf\t", B_prev[B_IND(p, i, j, k)]);
+					if (ind_boundary_cells[(i + stencil_size) * (ny + 2 * stencil_size) + j + stencil_size] != -1)
+						fprintf(f, "%20.10lf\t", B_prev[B_IND(p, i, j, k)]);
 				}
 				fprintf(f, "\n");
 			}
@@ -1326,9 +1327,9 @@ int set_arrays(void)
 				normal[k * 18 + 4 * 3 + 0] /= d;
 				normal[k * 18 + 4 * 3 + 1] /= d;
 				normal[k * 18 + 4 * 3 + 2] /= d;
-				normal[k * 18 + 5 * 3 + 0] = - normal[k * 18 + 0 * 3 + 0];
-				normal[k * 18 + 5 * 3 + 1] = - normal[k * 18 + 0 * 3 + 1];
-				normal[k * 18 + 5 * 3 + 2] = - normal[k * 18 + 0 * 3 + 2];
+				normal[k * 18 + 5 * 3 + 0] = - normal[k * 18 + 4 * 3 + 0];
+				normal[k * 18 + 5 * 3 + 1] = - normal[k * 18 + 4 * 3 + 1];
+				normal[k * 18 + 5 * 3 + 2] = - normal[k * 18 + 4 * 3 + 2];
 				normal[k * 18 + 2 * 3 + 0] = 0;
 				normal[k * 18 + 2 * 3 + 1] = 1;
 				normal[k * 18 + 2 * 3 + 2] = 0;
@@ -1351,6 +1352,36 @@ int set_arrays(void)
 			}
 		}
 	}
+	FILE *f = fopen("volume", "w");
+	for (i = 0; i < nx; i++) {
+		for (j = 0; j < ny; j++) {
+			if (ind_cell_multipl[i * ny + j] != -1) {
+				fprintf(f, "%20.10lf\t", volume[VOLUME_IND(i, j, k)]);
+			}
+		}
+		fprintf(f, "\n");
+	}
+	fclose(f);
+	f = fopen("area", "w");
+	for (i = 0; i < nx; i++) {
+		for (j = 0; j < ny; j++) {
+			if (ind_cell_multipl[i * ny + j] != -1) {
+				fprintf(f, "%20.10lf %20.10lf %20.10lf %20.10lf %20.10lf %20.10lf\t", area[AREA_IND(i, j, k, 0)], area[AREA_IND(i, j, k, 1)], area[AREA_IND(i, j, k, 2)], area[AREA_IND(i, j, k, 3)], area[AREA_IND(i, j, k, 4)], area[AREA_IND(i, j, k, 5)]);
+			}
+		}
+		fprintf(f, "\n");
+	}
+	fclose(f);
+	f = fopen("normal", "w");
+	for (i = 0; i < n_cells_multipl; i++) {
+		for (j = 0; j < 18; j++) {
+			if (normal[i * 18 + j] != normal[j])
+				fprintf(f, "pizda\n");
+		}
+	}
+	for (i = 0; i < 18; i++)
+		fprintf(f, "%20.10lf ", normal[i]);
+	fclose(f);
 	printf("Time: %ld\n", time_stop());
 	return 0;
 }
@@ -2092,7 +2123,8 @@ int write_B_to_B_prev(void)
 		for (k = 0; k < nz; k++) {
 			for (i = 0; i < nx; i++) {
 				for (j = 0; j < ny; j++) {
-					B_prev[B_IND(p, i, j, k)] = B[A_IND(p, i, j, k)];
+					if (ind_cell_multipl[i * ny + j] != -1)
+						B_prev[B_IND(p, i, j, k)] = B[A_IND(p, i, j, k)];
 				}
 			}
 		}
@@ -2107,7 +2139,8 @@ int write_B_prev_to_B(void)
 		for (k = 0; k < nz; k++) {
 			for (i = 0; i < nx; i++) {
 				for (j = 0; j < ny; j++) {
-					B[A_IND(p, i, j, k)] = B_prev[B_IND(p, i, j, k)];
+					if (ind_cell_multipl[i * ny + j] != -1)
+						B[A_IND(p, i, j, k)] = B_prev[B_IND(p, i, j, k)];
 				}
 			}
 		}
@@ -2496,6 +2529,7 @@ int main(int argc, char **argv)
 
 	if (read_asc_and_declare_variables() == 1) goto error;
 	if (do_interpolation() == 1) goto error;
+	set_arrays();
 	make_boundary();
 	system_dimension = n_cells_multipl * nz * num_parameters;
 	system_dimension_with_boundary = n_boundary_cells * (nz + 2 * stencil_size) * num_parameters;
