@@ -2198,8 +2198,8 @@ int create_Ab(void)
 						if (DDT(p, i, j, k, density_velocity, first)) return 1;
 						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson, first)) return 1;
 						if (VECT(p, i, j, k, gravity_force, crank_nikolson, first)) return 1;
-						if (GRAD(p, i, j, k, pressure, crank_nikolson, first)) return 1;
-						//if (GRAD(p, i, j, k, pressure, forward_euler, first)) return 1;
+						//if (GRAD(p, i, j, k, pressure, crank_nikolson, first)) return 1;
+						if (GRAD(p, i, j, k, pressure, forward_euler, first)) return 1;
 						//if (DIV(p, i, j, k, shear_stress, forward_euler, first)) return 1;
 						if (DIV(p, i, j, k, shear_stress, crank_nikolson, first)) return 1;
 					}
@@ -2221,8 +2221,8 @@ int create_Ab(void)
 					}
 					if (DIV(p, i, j, k, grad_pressure, crank_nikolson, first)) return 1;
 					//if (DIV(p, i, j, k, grad_pressure, crank_nikolson, second)) return 1;
-					if (DIV(p, i, j, k, div_density_velocity_velocity, crank_nikolson, first)) return 1;
-					//if (DIV(p, i, j, k, div_density_velocity_velocity, forward_euler, first)) return 1;
+					//if (DIV(p, i, j, k, div_density_velocity_velocity, crank_nikolson, first)) return 1;
+					if (DIV(p, i, j, k, div_density_velocity_velocity, forward_euler, first)) return 1;
 				}
 			}
 		}
@@ -2460,8 +2460,8 @@ int main(int argc, char **argv)
 {
 	int opt = 0, i, time_steps;
 	g[0] = g[1] = 0;
-	g[2] = 9,81;
-	//g[2] = 0;
+	//g[2] = 9,81;
+	g[2] = 0;
 	stencil_size = 2;
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	static const char *optString = "m:r:H:D:x:y:z:a:s:p:v:k:i:l:S:t:h?";
