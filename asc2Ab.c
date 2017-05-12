@@ -4032,9 +4032,14 @@ void display_usage(void)
 int main(int argc, char **argv)
 {
 	int opt = 0, i, time_steps;
-	g[0] = g[1] = 0;
-	//g[2] = 9,81;
-	g[2] = - 100;
+	double alpha = 30;
+	alpha = alpha * 3.14 / 180.;
+	//g[0] = g[1] = 0;
+	//g[2] = - 9.81;
+	g[0] = sin(alpha) * 9.81;
+	g[1] = 0;
+	g[2] = - cos(alpha) * 9.81;
+	//g[2] = - 100;
 	stencil_size = 2;
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	static const char *optString = "m:r:H:D:x:y:z:a:s:p:v:k:i:l:S:t:h?";
