@@ -69,6 +69,7 @@ list of boundary condition modes
 	zero_gradient_on_up_and_sides_no_slip_on_low
 	zero_gradient_on_all
 	fixed_value_on_up_and_sides_zero_gradient_on_low
+	fixed value_on_all
 */
 
 /*
@@ -76,6 +77,7 @@ list of initial conditions
 	fixed_value
 	ascii_map
 	fixed_value_with_hydrostatic_pressure
+	mass_is_mooving
 */
 
 /*
@@ -121,7 +123,7 @@ double pressure_atmosphere;
 double g[3];
 double k_viscosity_snow, k_viscosity_air;
 double *normal, *volume, *area;
-double dt, dx, dy, dz;
+double dt, dx[3];
 double *B, *Aelem_csr, *B_prev;
 int *Ajptr_csr, *Aiptr_csr;
 int num_parameters;
@@ -135,6 +137,7 @@ int flag_first_time_step;
 double end_time;
 int stencil_size;
 int *ind_boundary_cells, n_boundary_cells;
+double mass_quantity;
 
 int read_asc_and_declare_variables(void);
 int do_interpolation(void);
@@ -240,6 +243,7 @@ int DIV_div_density_velocity_velocity_half_forward_euler_second_ultra_combined_F
 int DIV_div_density_velocity_velocity_half_backward_euler_second_ultra_combined_FDM(int p, int i, int j, int k);
 int DDT_density_snow_volume_fraction_first_combined_VOF(int p, int i, int j, int k);
 int DDT_density_snow_volume_fraction_second_separated_VOF(int p, int i, int j, int k);
+int DDT_density_snow_volume_fraction_second_combined_VOF(int p, int i, int j, int k);
 int DDT_density_snow_volume_fraction_second_separated_FDM(int p, int i, int j, int k);
 int DDT_density_snow_volume_fraction_second_combined_FDM(int p, int i, int j, int k);
 int DDT_density_snow_volume_fraction_second_ultra_combined_FDM(int p, int i, int j, int k);
@@ -260,6 +264,25 @@ int DIV_density_snow_volume_fraction_velocity_half_backward_euler_second_ultra_c
 int DIV_grad_snow_volume_fraction_crank_nikolson_second_ultra_combined_FDM(int p, int i, int j, int k);
 int DIV_grad_snow_volume_fraction_half_forward_euler_second_ultra_combined_FDM(int p, int i, int j, int k);
 int DIV_grad_snow_volume_fraction_half_backward_euler_second_ultra_combined_FDM(int p, int i, int j, int k);
+int DDT_density_velocity_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_density_velocity_velocity_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_density_velocity_velocity_half_forward_euler_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_density_velocity_velocity_half_backward_euler_second_ultra_combined_VOF(int p, int i, int j, int k);
+int GRAD_pressure_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k);
+int VECT_gravity_force_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_shear_stress_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_grad_pressure_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_div_density_velocity_velocity_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_div_density_velocity_velocity_half_forward_euler_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_div_density_velocity_velocity_half_backward_euler_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DDT_density_snow_volume_fraction_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_density_snow_volume_fraction_velocity_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_density_snow_volume_fraction_velocity_half_forward_euler_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_density_snow_volume_fraction_velocity_half_backward_euler_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_velocity_cont_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_velocity_cont_half_forward_euler_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_velocity_cont_half_backward_euler_second_ultra_combined_VOF(int p, int i, int j, int k);
+int DIV_velocity_cont_crank_nikolson_second_combined_VOF(int p, int i, int j, int k);
 int create_Ab(void);
 void display_usage(void);
 int A_IND_S(int p, int i, int j, int k, int s);
@@ -277,21 +300,31 @@ void time_start(void);
 long time_stop(void);
 int make_boundary(void);
 int SET_initial_CONDITION_velocity_fixed_value(void);
+int SET_initial_CONDITION_velocity_mass_is_mooving(void);
 int SET_initial_CONDITION_phase_fraction_ascii_map(void);
 int SET_initial_CONDITION_pressure_fixed_value_with_hydrostatic_pressure(void);
 int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low(void);
+int SET_boundary_CONDITION_velocity_fixed_value_on_all(void);
 int SET_boundary_CONDITION_phase_fraction_zero_gradient_on_all(void);
+int SET_boundary_CONDITION_phase_fraction_fixed_value_on_all(void);
 int SET_boundary_CONDITION_pressure_fixed_value_on_up_and_sides_zero_gradient_on_low(void);
 int write_B_to_B_prev(void);
 int write_B_prev_to_B(void);
 double velocity(int p, int i, int j, int k);
 double phase_fraction(int i, int j, int k);
 double pressure(int i, int j, int k);
+int check_conservation_of_mass(void);
 
 /* modes of matrix creating */
 #define PATTERN 0
 #define MATRIX 1
 
+//#define Meth VOF
+//#define SolM ultra_combined
+//#define AppOrd second
+//#define NumSch crank_nikolson
+
+//#define DDT(p, i, j, k, object) DDT_##object##_##App_Ord##_##SolM##_##Meth(p, i, j, k)
 #define DDT(p, i, j, k, object, approximation_order, solution_mode, method) DDT_##object##_##approximation_order##_##solution_mode##_##method(p, i, j, k)
 #define DIV(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) DIV_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(p, i, j, k)
 #define GRAD(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) GRAD_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(p, i, j, k)
@@ -662,7 +695,7 @@ int read_asc_and_declare_variables(void)
 	nx = (nrows - 1) * kx;
 	ny = (ncols - 1) * ky;
 	nz = (int) hight / cellsize * kz;
-	dx = dy = dz = cellsize;
+	dx[0] = dx[1] = dx[2] = cellsize;
 	printf("Maps entered correctly.\n");
 	return 0;
 }
@@ -902,9 +935,9 @@ int do_interpolation(void)
 		}
 	}
 
-	dx /= (double) kx;
-	dy /= (double) ky;
-	dz /= (double) kz;
+	dx[0] /= (double) kx;
+	dx[1] /= (double) ky;
+	dx[2] /= (double) kz;
 	return 0;
 }
 
@@ -968,6 +1001,29 @@ int SET_initial_CONDITION_velocity_fixed_value(void)
 	return 0;
 }
 
+int SET_initial_CONDITION_velocity_mass_is_mooving(void)
+{
+	printf("Set the initial condition for velocity with fixed value for all calculation domain\n");
+	int i, j, k;
+	double fixed_value[3];
+	fixed_value[0] = 1;
+	fixed_value[1] = 0;
+	fixed_value[2] = 0;
+	for (k = 0; k < nz; k++) {
+		for (i = 0; i < nx; i++) {
+			for (j = 0; j < ny; j++) {
+				if ((ind_cell_multipl[i * ny + j] != -1) &&
+					(phase_fraction(i, j, k) != 0)) {
+						B_prev[B_IND(0, i, j, k)] = fixed_value[0];
+						B_prev[B_IND(1, i, j, k)] = fixed_value[1];
+						B_prev[B_IND(2, i, j, k)] = fixed_value[2];
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 int SET_initial_CONDITION_phase_fraction_ascii_map(void)
 {
 	printf("Set the initial condition for phase fraction with values token from the ASCII map\n");
@@ -979,8 +1035,10 @@ int SET_initial_CONDITION_phase_fraction_ascii_map(void)
 					if (snow_region[(i / kx) * ncols + j / ky] == 1) {
 						if ((double) (k + 1) * (cellsize / kz) <= depth) {
 							B_prev[B_IND(3, i, j, k)] = 1;
+							mass_quantity += B_prev[B_IND(3, i, j, k)];
 						} else if (((double) (k + 1) * (cellsize / kz) > depth) && ((double) k * (cellsize / kz)) < depth) {
 							B_prev[B_IND(3, i, j, k)] = (depth - (double) k * (cellsize / kz)) / (double) (cellsize / kz);
+							mass_quantity += B_prev[B_IND(3, i, j, k)];
 						} else {
 							B_prev[B_IND(3, i, j, k)] = 0;
 						}
@@ -1032,7 +1090,7 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low
 		search[i * 2 - 1] = i;
 		search[i * 2] = -i;
 	}
-	/*for (p = 0; p < 3; p++) {
+	for (p = 0; p < 3; p++) {
 		for (k = -stencil_size; k < nz + stencil_size; k++) {
 			for (i = -stencil_size; i < nx + stencil_size; i++) {
 				for (j = -stencil_size; j < ny + stencil_size; j++) {
@@ -1096,7 +1154,14 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low
 				}
 			}
 		}
-	}*/
+	}
+	return 0;
+}
+
+int SET_boundary_CONDITION_velocity_fixed_value_on_all(void)
+{
+	printf("Set the boundary condition for velosity with fixed value on all boundaries\n");
+	int i, j, k, p, l, m, fl_tmp;
 	for (p = 0; p < 3; p++) {
 		for (k = -stencil_size; k < nz + stencil_size; k++) {
 			for (i = -stencil_size; i < nx + stencil_size; i++) {
@@ -1106,9 +1171,6 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low
 						   (j >= 0) && (j < ny) && 
 						   (ind_cell_multipl[i * ny + j] != -1))) ||
 						 (k < 0) || (k >= nz))) {
-								//printf("p = %d, i = %d, j = %d, k = %d\n", p, i, j, k);
-								//printf("B_IND(p, i, j, k) = %d\n", B_IND(p, i, j, k));
-							//if (k < 0)
 								B_prev[B_IND(p, i, j, k)] = 0;
 					}
 				}
@@ -1137,7 +1199,7 @@ int SET_boundary_CONDITION_phase_fraction_zero_gradient_on_all(void)
 					   (j >= 0) && (j < ny) && 
 					   (ind_cell_multipl[i * ny + j] != -1))) ||
 					 (k < 0) || (k >= nz))) {
-						/*if (k < 0) {
+						if (k < 0) {
 							fl_tmp = 0;
 							for (l = 0; l < 2 * stencil_size + 1; l++) {
 								for (m = 0; m < 2 * stencil_size + 1; m++) {
@@ -1185,7 +1247,27 @@ int SET_boundary_CONDITION_phase_fraction_zero_gradient_on_all(void)
 								}
 								if (fl_tmp) break;
 							}
-						}*/
+						}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int SET_boundary_CONDITION_phase_fraction_fixed_value_on_all(void)
+{
+	printf("Set the boundary condition for volume snow fraction with fixed values on all boundaries\n");
+	int i, j, k, p, l, m, fl_tmp;
+	p = 3;
+	for (k = -stencil_size; k < nz + stencil_size; k++) {
+		for (i = -stencil_size; i < nx + stencil_size; i++) {
+			for (j = -stencil_size; j < ny + stencil_size; j++) {
+				if ((ind_boundary_cells[(i + stencil_size) * (ny + 2 * stencil_size) + j + stencil_size] != -1) &&
+					((!((i >= 0) && (i < nx) &&
+					   (j >= 0) && (j < ny) && 
+					   (ind_cell_multipl[i * ny + j] != -1))) ||
+					 (k < 0) || (k >= nz))) {
 					B_prev[B_IND(p, i, j, k)] = 0;
 				}
 			}
@@ -1682,20 +1764,20 @@ double strain_rate_on_face(int i, int j, int k, int s, int m, int n)
 {
 	switch (m + n + m * n) {
 		case 0:
-			return (velocity_on_face(0, i + 1, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / (2 * dx);
+			return (velocity_on_face(0, i + 1, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / (2 * dx[0]);
 		case 1:
-			return 0.5 * ((velocity_on_face(0, i, j + 1, k, s) - velocity_on_face(0, i, j - 1, k, s)) / (2 * dy) +
-					(velocity_on_face(1, i + 1, j, k, s) - velocity_on_face(1, i - 1, j, k, s)) / (2 * dx));
+			return 0.5 * ((velocity_on_face(0, i, j + 1, k, s) - velocity_on_face(0, i, j - 1, k, s)) / (2 * dx[1]) +
+					(velocity_on_face(1, i + 1, j, k, s) - velocity_on_face(1, i - 1, j, k, s)) / (2 * dx[0]));
 		case 2:
-			return 0.5 * ((velocity_on_face(0, i, j, k + 1, s) - velocity_on_face(0, i, j, k - 1, s)) / (2 * dz) +
-					(velocity_on_face(2, i + 1, j, k, s) - velocity_on_face(2, i - 1, j, k, s)) / (2 * dx));
+			return 0.5 * ((velocity_on_face(0, i, j, k + 1, s) - velocity_on_face(0, i, j, k - 1, s)) / (2 * dx[2]) +
+					(velocity_on_face(2, i + 1, j, k, s) - velocity_on_face(2, i - 1, j, k, s)) / (2 * dx[0]));
 		case 3:
-			return (velocity_on_face(1, i, j + 1, k, s) - velocity_on_face(1, i, j - 1, k, s)) / (2 * dy);
+			return (velocity_on_face(1, i, j + 1, k, s) - velocity_on_face(1, i, j - 1, k, s)) / (2 * dx[1]);
 		case 5:
-			return 0.5 * ((velocity_on_face(1, i, j, k + 1, s) - velocity_on_face(1, i, j, k - 1, s)) / (2 * dz) +
-					(velocity_on_face(2, i, j + 1, k, s) - velocity_on_face(2, i, j - 1, k, s)) / (2 * dy));
+			return 0.5 * ((velocity_on_face(1, i, j, k + 1, s) - velocity_on_face(1, i, j, k - 1, s)) / (2 * dx[2]) +
+					(velocity_on_face(2, i, j + 1, k, s) - velocity_on_face(2, i, j - 1, k, s)) / (2 * dx[1]));
 		case 8:
-			return (velocity_on_face(2, i, j, k + 1, s) - velocity_on_face(2, i, j, k - 1, s)) / (2 * dz);
+			return (velocity_on_face(2, i, j, k + 1, s) - velocity_on_face(2, i, j, k - 1, s)) / (2 * dx[2]);
 	}
 }
 
@@ -1771,20 +1853,20 @@ double strain_rate(int i, int j, int k, int m, int n)
 {
 	switch (m + n + m * n) {
 		case 0:
-			return (velocity(0, i + 1, j, k) - velocity(0, i - 1, j, k)) / (2 * dx);
+			return (velocity(0, i + 1, j, k) - velocity(0, i - 1, j, k)) / (2 * dx[0]);
 		case 1:
-			return 0.5 * ((velocity(0, i, j + 1, k) - velocity(0, i, j - 1, k)) / (2 * dy) +
-					(velocity(1, i + 1, j, k) - velocity(1, i - 1, j, k)) / (2 * dx));
+			return 0.5 * ((velocity(0, i, j + 1, k) - velocity(0, i, j - 1, k)) / (2 * dx[1]) +
+					(velocity(1, i + 1, j, k) - velocity(1, i - 1, j, k)) / (2 * dx[0]));
 		case 2:
-			return 0.5 * ((velocity(0, i, j, k + 1) - velocity(0, i, j, k - 1)) / (2 * dz) +
-					(velocity(2, i + 1, j, k) - velocity(2, i - 1, j, k)) / (2 * dx));
+			return 0.5 * ((velocity(0, i, j, k + 1) - velocity(0, i, j, k - 1)) / (2 * dx[2]) +
+					(velocity(2, i + 1, j, k) - velocity(2, i - 1, j, k)) / (2 * dx[0]));
 		case 3:
-			return (velocity(1, i, j + 1, k) - velocity(1, i, j - 1, k)) / (2 * dy);
+			return (velocity(1, i, j + 1, k) - velocity(1, i, j - 1, k)) / (2 * dx[1]);
 		case 5:
-			return 0.5 * ((velocity(1, i, j, k + 1) - velocity(1, i, j, k - 1)) / (2 * dz) +
-					(velocity(2, i, j + 1, k) - velocity(2, i, j - 1, k)) / (2 * dy));
+			return 0.5 * ((velocity(1, i, j, k + 1) - velocity(1, i, j, k - 1)) / (2 * dx[2]) +
+					(velocity(2, i, j + 1, k) - velocity(2, i, j - 1, k)) / (2 * dx[1]));
 		case 8:
-			return (velocity(2, i, j, k + 1) - velocity(2, i, j, k - 1)) / (2 * dz);
+			return (velocity(2, i, j, k + 1) - velocity(2, i, j, k - 1)) / (2 * dx[2]);
 	}
 }
 
@@ -1845,6 +1927,19 @@ int DDT_density_velocity_second_combined_FDM(int p, int i, int j, int k)
 }
 
 int DDT_density_velocity_second_ultra_combined_FDM(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	double A_value;
+	A_value = density(i, j, k) / dt;
+	WRITE_TO_A(p, i, j, k, -1);
+	A_value = (density_snow - density_air) * velocity(p, i, j, k) / dt;
+	WRITE_TO_A(3, i, j, k, -1);
+	B[A_IND(p, i, j, k)] -= density_air * velocity(p, i, j, k) / dt;
+	B[A_IND(p, i, j, k)] += density(i, j, k) * velocity(p, i, j, k) / dt;
+	return 0;
+}
+
+int DDT_density_velocity_second_ultra_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value;
@@ -1949,27 +2044,15 @@ int DIV_density_velocity_velocity_crank_nikolson_second_separated_FDM(int p, int
 int DIV_density_velocity_velocity_half_forward_euler_second_separated_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	double d_pr;
 	for (pr = 0; pr < 3; pr++) {
-		if (pr == 0) {
-			d_pr = dx;
-			i_pr = 1;
-			j_pr = k_pr = 0;
-		}
-		if (pr == 1) {
-			d_pr = dy;
-			j_pr = 1;
-			i_pr = k_pr = 0;
-		}
-		if (pr == 2) {
-			d_pr = dz;
-			k_pr = 1;
-			j_pr = i_pr = 0;
-		}
+		d_pr = dx[pr];
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
 		B[A_IND(p, i, j, k)] -= 0.5 *
-			(density(i + i_pr, j + j_pr, k + k_pr) * velocity(p, i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i + i_pr, j + j_pr, k + k_pr) -
-			 density(i - i_pr, j - j_pr, k - k_pr) * velocity(p, i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i - i_pr, j - j_pr, k - k_pr)) / (2 * d_pr);
+			(density(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
+			 density(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * d_pr);
 	}
 	return 0;
 }
@@ -1978,28 +2061,16 @@ int DIV_density_velocity_velocity_half_backward_euler_second_separated_FDM(int p
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	double d_pr;
 	for (pr = 0; pr < 3; pr++) {
-		if (pr == 0) {
-			d_pr = dx;
-			i_pr = 1;
-			j_pr = k_pr = 0;
-		}
-		if (pr == 1) {
-			d_pr = dy;
-			j_pr = 1;
-			i_pr = k_pr = 0;
-		}
-		if (pr == 2) {
-			d_pr = dz;
-			k_pr = 1;
-			j_pr = i_pr = 0;
-		}
-		A_value = 0.5 * density(i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i + i_pr, j + j_pr, k + k_pr) / (2 * d_pr);
-		WRITE_TO_A(p, i + i_pr, j + j_pr, k + k_pr, -1);
-		A_value = - 0.5 * density(i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i - i_pr, j - j_pr, k - k_pr) / (2 * d_pr);
-		WRITE_TO_A(p, i - i_pr, j - j_pr, k - k_pr, -1);
+		d_pr = dx[pr];
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		A_value = 0.5 * density(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * d_pr);
+		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		A_value = - 0.5 * density(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * d_pr);
+		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 	}
 	return 0;
 }
@@ -2030,38 +2101,74 @@ int DIV_density_velocity_velocity_half_backward_euler_second_ultra_combined_FDM(
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	double d_pr;
 	for (pr = 0; pr < 3; pr++) {
-		if (pr == 0) {
-			d_pr = dx;
-			i_pr = 1;
-			j_pr = k_pr = 0;
+		d_pr = dx[pr];
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		A_value = 0.5 * density(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * d_pr);
+		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		A_value = - 0.5 * density(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * d_pr);
+		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		A_value = 0.5 * density(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * d_pr);
+		WRITE_TO_A(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		A_value = - 0.5 * density(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * d_pr);
+		WRITE_TO_A(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		A_value = 0.5 * (density_snow - density_air) * velocity(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * d_pr);
+		WRITE_TO_A(3, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		A_value = - 0.5 * (density_snow - density_air) * velocity(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * d_pr);
+		WRITE_TO_A(3, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		B[A_IND(p, i, j, k)] -= 0.5 * density_air * velocity(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * d_pr);
+		B[A_IND(p, i, j, k)] += 0.5 * density_air * velocity(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * d_pr);
+	}
+	return 0;
+}
+
+int DIV_density_velocity_velocity_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, density_velocity_velocity, half_forward_euler, second, ultra_combined, VOF)) return 1;
+	if (DIV(p, i, j, k, density_velocity_velocity, half_backward_euler, second, ultra_combined, VOF)) return 1;
+	return 0;
+}
+
+int DIV_density_velocity_velocity_half_forward_euler_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	int pr, s;
+	double d_pr;
+	for (s = 0; s < 6; s++) {
+		for (pr = 0; pr < 3; pr++) {
+			B[A_IND(p, i, j, k)] -= 0.5 * (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] *
+				density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)];
 		}
-		if (pr == 1) {
-			d_pr = dy;
-			j_pr = 1;
-			i_pr = k_pr = 0;
+	}
+	return 0;
+}
+
+int DIV_density_velocity_velocity_half_backward_euler_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	double A_value;
+	int pr, s;
+	for (s = 0; s < 6; s++) {
+		for (pr = 0; pr < 3; pr++) {
+			A_value = 0.5 * 0.5 * (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] *
+				(density_snow - density_air) * velocity_on_face(p, i, j, k, s) * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)];
+			WRITE_TO_A(3, i, j, k, -1);
+			WRITE_TO_A(3, i, j, k, s);
+			B[A_IND(p, i, j, k)] -= 0.5 * 0.5 * (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] *
+				density_air * velocity_on_face(p, i, j, k, s) * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)];
+			A_value = 0.5 * 0.5 * (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] *
+				density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)];
+			WRITE_TO_A(p, i, j, k, -1);
+			WRITE_TO_A(p, i, j, k, s);
+			A_value = 0.5 * 0.5 * (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] *
+				density_on_face(i, j, k, s) * velocity_on_face(p, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)];
+			WRITE_TO_A(pr, i, j, k, -1);
+			WRITE_TO_A(pr, i, j, k, s);
 		}
-		if (pr == 2) {
-			d_pr = dz;
-			k_pr = 1;
-			j_pr = i_pr = 0;
-		}
-		A_value = 0.5 * density(i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i + i_pr, j + j_pr, k + k_pr) / (2 * d_pr);
-		WRITE_TO_A(p, i + i_pr, j + j_pr, k + k_pr, -1);
-		A_value = - 0.5 * density(i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i - i_pr, j - j_pr, k - k_pr) / (2 * d_pr);
-		WRITE_TO_A(p, i - i_pr, j - j_pr, k - k_pr, -1);
-		A_value = 0.5 * density(i + i_pr, j + j_pr, k + k_pr) * velocity(p, i + i_pr, j + j_pr, k + k_pr) / (2 * d_pr);
-		WRITE_TO_A(pr, i + i_pr, j + j_pr, k + k_pr, -1);
-		A_value = - 0.5 * density(i - i_pr, j - j_pr, k - k_pr) * velocity(p, i - i_pr, j - j_pr, k - k_pr) / (2 * d_pr);
-		WRITE_TO_A(pr, i - i_pr, j - j_pr, k - k_pr, -1);
-		A_value = 0.5 * (density_snow - density_air) * velocity(p, i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i + i_pr, j + j_pr, k + k_pr) / (2 * d_pr);
-		WRITE_TO_A(3, i + i_pr, j + j_pr, k + k_pr, -1);
-		A_value = - 0.5 * (density_snow - density_air) * velocity(p, i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i - i_pr, j - j_pr, k - k_pr) / (2 * d_pr);
-		WRITE_TO_A(3, i - i_pr, j - j_pr, k - k_pr, -1);
-		B[A_IND(p, i, j, k)] -= 0.5 * density_air * velocity(p, i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i + i_pr, j + j_pr, k + k_pr) / (2 * d_pr);
-		B[A_IND(p, i, j, k)] += 0.5 * density_air * velocity(p, i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i - i_pr, j - j_pr, k - k_pr) / (2 * d_pr);
 	}
 	return 0;
 }
@@ -2069,15 +2176,10 @@ int DIV_density_velocity_velocity_half_backward_euler_second_ultra_combined_FDM(
 int GRAD_pressure_forward_euler_first_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (p == 0) {
-		B[A_IND(0, i, j, k)] -= (pressure(i, j, k) - pressure(i - 1, j, k)) / dx;
-	}
-	if (p == 1) {
-		B[A_IND(1, i, j, k)] -= (pressure(i, j, k) - pressure(i, j - 1, k)) / dy;
-	}
-	if (p == 2) {
-		B[A_IND(2, i, j, k)] -= (pressure(i, j, k) - pressure(i, j, k - 1)) / dz;
-	}
+	int ind_p[3];
+	ind_p[0] = ind_p[1] = ind_p[2] = 0;
+	ind_p[p] = 1;
+	B[A_IND(p, i, j, k)] -= (pressure(i, j, k) - pressure(i - ind_p[0], j - ind_p[1], k - ind_p[2])) / dx[p];
 	return 0;
 }
 
@@ -2092,15 +2194,10 @@ int GRAD_pressure_crank_nikolson_first_combined_VOF(int p, int i, int j, int k)
 int GRAD_pressure_half_forward_euler_first_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (p == 0) {
-		B[A_IND(0, i, j, k)] -= (pressure(i, j, k) - pressure(i - 1, j, k)) / (2 * dx);
-	}
-	if (p == 1) {
-		B[A_IND(1, i, j, k)] -= (pressure(i, j, k) - pressure(i, j - 1, k)) / (2 * dy);
-	}
-	if (p == 2) {
-		B[A_IND(2, i, j, k)] -= (pressure(i, j, k) - pressure(i, j, k - 1)) / (2 * dz);
-	}
+	int ind_p[3];
+	ind_p[0] = ind_p[1] = ind_p[2] = 0;
+	ind_p[p] = 1;
+	B[A_IND(p, i, j, k)] -= (pressure(i, j, k) - pressure(i - ind_p[0], j - ind_p[1], k - ind_p[2])) / (2 * dx[p]);
 	return 0;
 }
 
@@ -2108,24 +2205,13 @@ int GRAD_pressure_half_backward_euler_first_combined_VOF(int p, int i, int j, in
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value;
-	if (p == 0) {
-		A_value = 1 / (2 * dx);
-		WRITE_TO_A(4, i, j, k, -1);
-		A_value = - 1 / (2 * dx);
-		WRITE_TO_A(4, i - 1, j, k, -1);
-	}
-	if (p == 1) {
-		A_value = 1 / (2 * dy);
-		WRITE_TO_A(4, i, j, k, -1);
-		A_value = - 1 / (2 * dy);
-		WRITE_TO_A(4, i, j - 1, k, -1);
-	}
-	if (p == 2) {
-		A_value = 1 / (2 * dz);
-		WRITE_TO_A(4, i, j, k, -1);
-		A_value = - 1 / (2 * dz);
-		WRITE_TO_A(4, i, j, k - 1, -1);
-	}
+	int ind_p[3];
+	ind_p[0] = ind_p[1] = ind_p[2] = 0;
+	ind_p[p] = 1;
+	A_value = 1 / (2 * dx[0]);
+	WRITE_TO_A(4, i, j, k, -1);
+	A_value = - 1 / (2 * dx[0]);
+	WRITE_TO_A(4, i - ind_p[0], j - ind_p[1], k - ind_p[2], -1);
 	return 0;
 }
 
@@ -2140,15 +2226,10 @@ int GRAD_pressure_crank_nikolson_second_combined_VOF(int p, int i, int j, int k)
 int GRAD_pressure_half_forward_euler_second_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (p == 0) {
-		B[A_IND(0, i, j, k)] -= (pressure(i + 1, j, k) - pressure(i - 1, j, k)) / (4 * dx);
-	}
-	if (p == 1) {
-		B[A_IND(1, i, j, k)] -= (pressure(i, j + 1, k) - pressure(i, j - 1, k)) / (4 * dy);
-	}
-	if (p == 2) {
-		B[A_IND(2, i, j, k)] -= (pressure(i, j, k + 1) - pressure(i, j, k - 1)) / (4 * dz);
-	}
+	int ind_p[3];
+	ind_p[0] = ind_p[1] = ind_p[2] = 0;
+	ind_p[p] = 1;
+	B[A_IND(p, i, j, k)] -= (pressure(i + ind_p[0], j + ind_p[1], k + ind_p[2]) - pressure(i - ind_p[0], j - ind_p[1], k - ind_p[2])) / dx[p];
 	return 0;
 }
 
@@ -2156,39 +2237,23 @@ int GRAD_pressure_half_backward_euler_second_combined_VOF(int p, int i, int j, i
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value;
-	if (p == 0) {
-		A_value = 1 / (4 * dx);
-		WRITE_TO_A(4, i + 1, j, k, -1);
-		A_value = - A_value;
-		WRITE_TO_A(4, i - 1, j, k, -1);
-	}
-	if (p == 1) {
-		A_value = 1 / (4 * dy);
-		WRITE_TO_A(4, i, j + 1, k, -1);
-		A_value = - A_value;
-		WRITE_TO_A(4, i, j - 1, k, -1);
-	}
-	if (p == 2) {
-		A_value = 1 / (4 * dz);
-		WRITE_TO_A(4, i, j, k + 1, -1);
-		A_value = - A_value;
-		WRITE_TO_A(4, i, j, k - 1, -1);
-	}
+	int ind_p[3];
+	ind_p[0] = ind_p[1] = ind_p[2] = 0;
+	ind_p[p] = 1;
+	A_value = 1 / (4 * dx[p]);
+	WRITE_TO_A(4, i + ind_p[0], j + ind_p[1], k + ind_p[2], -1);
+	A_value = - A_value;
+	WRITE_TO_A(4, i - ind_p[0], j - ind_p[1], k - ind_p[2], -1);
 	return 0;
 }
 
 int GRAD_pressure_crank_nikolson_second_separated_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	if (p == 0) {
-		B[A_IND(0, i, j, k)] -= (pressure(i + 1, j, k) - pressure(i - 1, j, k)) / (2 * dx);
-	}
-	if (p == 1) {
-		B[A_IND(1, i, j, k)] -= (pressure(i, j + 1, k) - pressure(i, j - 1, k)) / (2 * dy);
-	}
-	if (p == 2) {
-		B[A_IND(2, i, j, k)] -= (pressure(i, j, k + 1) - pressure(i, j, k - 1)) / (2 * dz);
-	}
+	int ind_p[3];
+	ind_p[0] = ind_p[1] = ind_p[2] = 0;
+	ind_p[p] = 1;
+	B[A_IND(p, i, j, k)] -= (pressure(i + ind_p[0], j + ind_p[1], k + ind_p[2]) - pressure(i - ind_p[0], j - ind_p[1], k - ind_p[2])) / (2 * dx[p]);
 	return 0;
 }
 
@@ -2207,6 +2272,13 @@ int GRAD_pressure_crank_nikolson_second_combined_FDM(int p, int i, int j, int k)
 }
 
 int GRAD_pressure_crank_nikolson_second_ultra_combined_FDM(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF)) return 1;
+	return 0;
+}
+
+int GRAD_pressure_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF)) return 1;
@@ -2298,6 +2370,13 @@ int VECT_gravity_force_crank_nikolson_second_ultra_combined_FDM(int p, int i, in
 	return 0;
 }
 
+int VECT_gravity_force_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (VECT(p, i, j, k, gravity_force, crank_nikolson, second, combined, VOF)) return 1;
+	return 0;
+}
+
 int DIV_shear_stress_forward_euler_first_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
@@ -2335,49 +2414,28 @@ int DIV_shear_stress_half_forward_euler_first_combined_VOF(int p, int i, int j, 
 int DIV_shear_stress_half_backward_euler_first_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int s, pr, i_p = i, j_p = j, k_p = k, i_pr, j_pr, k_pr;
+	int s, pr, ind_p[3], ind_pr[3];
 	double d_p, d_pr, A_value;
-	if (p == 0) {
-		d_p = dx;
-		i_p = i - 1;
-	}
-	if (p == 1) {
-		d_p = dy;
-		j_p = j - 1;
-	}
-	if (p == 2) {
-		d_p = dz;
-		k_p = k - 1;
-	}
+	ind_p[0] = ind_p[1] = ind_p[2] = 0;
+	ind_p[p] = 1;
+	d_p = dx[p];
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
-			i_pr = i;
-			j_pr = j;
-			k_pr = k;
-			if (pr == 0) {
-				d_pr = dx;
-				i_pr = i - 1;
-			}
-			if (pr == 1) {
-				d_pr = dy;
-				j_pr = j - 1;
-			}
-			if (pr == 2) {
-				d_pr = dz;
-				k_pr = k - 1;
-			}
+			ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+			ind_pr[pr] = 1;
+			d_pr = dx[pr];
 			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * 2 * effective_viscosity_on_face(i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)] * (1 / (2 * d_pr));
 			WRITE_TO_A(p, i, j, k, -1);
 			WRITE_TO_A(p, i, j, k, s);
 			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * 2 * effective_viscosity_on_face(i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)] * (1 / (2 * d_pr));
-			WRITE_TO_A(p, i_pr, j_pr, k_pr, -1);
-			WRITE_TO_A(p, i_pr, j_pr, k_pr, s);
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], s);
 			A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * 2 * effective_viscosity_on_face(i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)] * (1 / (2 * d_p));
 			WRITE_TO_A(pr, i, j, k, -1);
 			WRITE_TO_A(pr, i, j, k, s);
 			A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * 2 * effective_viscosity_on_face(i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)] * (1 / (2 * d_p));
-			WRITE_TO_A(pr, i_p, j_p, k_p, -1);
-			WRITE_TO_A(pr, i_p, j_p, k_p, s);
+			WRITE_TO_A(pr, i - ind_p[0], j - ind_p[1], k - ind_p[2], -1);
+			WRITE_TO_A(pr, i - ind_p[0], j - ind_p[1], k - ind_p[2], s);
 		}
 	}
 	return 0;
@@ -2407,51 +2465,30 @@ int DIV_shear_stress_half_forward_euler_second_combined_VOF(int p, int i, int j,
 int DIV_shear_stress_half_backward_euler_second_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int s, pr, i_p = 0, j_p = 0, k_p = 0, i_pr, j_pr, k_pr;
+	int s, pr, ind_p[3], ind_pr[3];
 	double d_p, d_pr, A_value;
-	if (p == 0) {
-		d_p = dx;
-		i_p = 1;
-	}
-	if (p == 1) {
-		d_p = dy;
-		j_p = 1;
-	}
-	if (p == 2) {
-		d_p = dz;
-		k_p = 1;
-	}
+	ind_p[0] = ind_p[1] = ind_p[2] = 0;
+	ind_p[p] = 1;
+	d_p = dx[p];
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
-			i_pr = 0;
-			j_pr = 0;
-			k_pr = 0;
-			if (pr == 0) {
-				d_pr = dx;
-				i_pr = 1;
-			}
-			if (pr == 1) {
-				d_pr = dy;
-				j_pr = 1;
-			}
-			if (pr == 2) {
-				d_pr = dz;
-				k_pr = 1;
-			}
+			ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+			ind_pr[pr] = 1;
+			d_pr = dx[pr];
 			A_value = - (area[AREA_IND(i, j, k, s)] / (4 * volume[VOLUME_IND(i, j, k)])) * 2 * effective_viscosity_on_face(i, j, k, s) *
 				normal[NORMAL_IND(pr, i, j, k, s)] / (4 * d_pr);
-			WRITE_TO_A(p, i + i_pr, j + j_pr, k + k_pr, -1);
-			WRITE_TO_A(p, i + i_pr, j + j_pr, k + k_pr, s);
+			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], s);
 			A_value = - A_value;
-			WRITE_TO_A(p, i - i_pr, j - j_pr, k - k_pr, -1);
-			WRITE_TO_A(p, i - i_pr, j - j_pr, k - k_pr, s);
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], s);
 			A_value = - (area[AREA_IND(i, j, k, s)] / (4 * volume[VOLUME_IND(i, j, k)])) * 2 * effective_viscosity_on_face(i, j, k, s) *
 				normal[NORMAL_IND(pr, i, j, k, s)] / (4 * d_p);
-			WRITE_TO_A(pr, i + i_p, j + j_p, k + k_p, -1);
-			WRITE_TO_A(pr, i + i_p, j + j_p, k + k_p, s);
+			WRITE_TO_A(pr, i + ind_p[0], j + ind_p[1], k + ind_p[2], -1);
+			WRITE_TO_A(pr, i + ind_p[0], j + ind_p[1], k + ind_p[2], s);
 			A_value = - A_value;
-			WRITE_TO_A(pr, i - i_p, j - j_p, k - k_p, -1);
-			WRITE_TO_A(pr, i - i_p, j - j_p, k - k_p, s);
+			WRITE_TO_A(pr, i - ind_p[0], j - ind_p[1], k - ind_p[2], -1);
+			WRITE_TO_A(pr, i - ind_p[0], j - ind_p[1], k - ind_p[2], s);
 		}
 	}
 	return 0;
@@ -2475,64 +2512,34 @@ int DIV_shear_stress_crank_nikolson_second_separated_FDM(int p, int i, int j, in
 int DIV_shear_stress_half_forward_euler_second_separated_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int s, pr, i_p, j_p, k_p, i_pr, j_pr, k_pr;
+	int s, pr, ind_p[3], ind_pr[3];
 	double d;
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx * dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy * dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz * dz;
-			k_pr = 1;
-		}
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr] * dx[pr];
 		B[A_IND(p, i, j, k)] += 0.5 * 2 * 0.5 *
-			(effective_viscosity(i + i_pr, j + j_pr, k + k_pr) * velocity(p, i + i_pr, j + j_pr, k + k_pr) -
+			(effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
 			 2 * effective_viscosity(i, j, k) * velocity(p, i, j, k) +
-			 effective_viscosity(i - i_pr, j - j_pr, k - k_pr) * velocity(p, i - i_pr, j - j_pr, k - k_pr)) / d;
+			 effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / d;
 		if (p == pr) {
 			B[A_IND(p, i, j, k)] += 0.5 * 2 * 0.5 *
-				(effective_viscosity(i + i_pr, j + j_pr, k + k_pr) * velocity(p, i + i_pr, j + j_pr, k + k_pr) -
+				(effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
 				 2 * effective_viscosity(i, j, k) * velocity(p, i, j, k) +
-				 effective_viscosity(i - i_pr, j - j_pr, k - k_pr) * velocity(p, i - i_pr, j - j_pr, k - k_pr)) / d;
+				 effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / d;
 		} else {
 			d = 1;
-			i_pr = j_pr = k_pr = 0;
-			if (pr == 0) {
-				d *= dx;
-				i_pr = 1;
-			}
-			if (pr == 1) {
-				d *= dy;
-				j_pr = 1;
-			}
-			if (pr == 2) {
-				d *= dz;
-				k_pr = 1;
-			}
-			i_p = j_p = k_p = 0;
-			if (p == 0) {
-				d *= dx;
-				i_p = 1;
-			}
-			if (p == 1) {
-				d *= dy;
-				j_p = 1;
-			}
-			if (p == 2) {
-				d *= dz;
-				k_p = 1;
-			}
+			ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+			ind_pr[pr] = 1;
+			d *= dx[pr];
+			ind_p[0] = ind_p[1] = ind_p[2] = 0;
+			ind_p[p] = 1;
+			d *= dx[p];
 			B[A_IND(p, i, j, k)] += 0.5 * 2 * 0.5 *
-				(effective_viscosity(i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i + i_p + i_pr, j + j_p + j_pr, k + k_p + k_pr) -
-				 effective_viscosity(i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i - i_p + i_pr, j - j_p + j_pr, k - k_p + k_pr) -
-				 effective_viscosity(i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i + i_p - i_pr, j + j_p - j_pr, k + k_p - k_pr) +
-				 effective_viscosity(i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i - i_p - i_pr, j - j_p - j_pr, k - k_p - k_pr)) / (4 * d);
+				(effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i + ind_p[0] + ind_pr[0], j + ind_p[1] + ind_pr[1], k + ind_p[2] + ind_pr[2]) -
+				 effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i - ind_p[0] + ind_pr[0], j - ind_p[1] + ind_pr[1], k - ind_p[2] + ind_pr[2]) -
+				 effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i + ind_p[0] - ind_pr[0], j + ind_p[1] - ind_pr[1], k + ind_p[2] - ind_pr[2]) +
+				 effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i - ind_p[0] - ind_pr[0], j - ind_p[1] - ind_pr[1], k - ind_p[2] - ind_pr[2])) / (4 * d);
 		}
 	}
 	return 0;
@@ -2541,68 +2548,38 @@ int DIV_shear_stress_half_forward_euler_second_separated_FDM(int p, int i, int j
 int DIV_shear_stress_half_backward_euler_second_separated_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int s, pr, i_p, j_p, k_p, i_pr, j_pr, k_pr;
+	int s, pr, ind_p[3], ind_pr[3];
 	double d, A_value;
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx * dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy * dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz * dz;
-			k_pr = 1;
-		}
-		A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + i_pr, j + j_pr, k + k_pr) / d;
-		WRITE_TO_A(p, i + i_pr, j + j_pr, k + k_pr, -1);
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr] * dx[pr];
+		A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / d;
+		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 		A_value = 0.5 * 2 * 0.5 * 2 * effective_viscosity(i, j, k) / d;
 		WRITE_TO_A(p, i, j, k, -1);
-		A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - i_pr, j - j_pr, k - k_pr) / d;
-		WRITE_TO_A(p, i - i_pr, j - j_pr, k - k_pr, -1);
+		A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / d;
+		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 		if (p == pr) {
-			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + i_pr, j + j_pr, k + k_pr) / d;
-			WRITE_TO_A(p, i + i_pr, j + j_pr, k + k_pr, -1);
+			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / d;
+			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 			A_value = 0.5 * 2 * 0.5 * 2 * effective_viscosity(i, j, k) / d;
 			WRITE_TO_A(p, i, j, k, -1);
-			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - i_pr, j - j_pr, k - k_pr) / d;
-			WRITE_TO_A(p, i - i_pr, j - j_pr, k - k_pr, -1);
+			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / d;
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 		} else {
 			d = 1;
-			i_pr = j_pr = k_pr = 0;
-			if (pr == 0) {
-				d *= dx;
-				i_pr = 1;
-			}
-			if (pr == 1) {
-				d *= dy;
-				j_pr = 1;
-			}
-			if (pr == 2) {
-				d *= dz;
-				k_pr = 1;
-			}
-			i_p = j_p = k_p = 0;
-			if (p == 0) {
-				d *= dx;
-				i_p = 1;
-			}
-			if (p == 1) {
-				d *= dy;
-				j_p = 1;
-			}
-			if (p == 2) {
-				d *= dz;
-				k_p = 1;
-			}
+			ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+			ind_pr[pr] = 1;
+			d *= dx[pr];
+			ind_p[0] = ind_p[1] = ind_p[2] = 0;
+			ind_p[p] = 1;
+			d *= dx[p];
 			B[A_IND(p, i, j, k)] += 0.5 * 2 * 0.5 *
-				(effective_viscosity(i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i + i_p + i_pr, j + j_p + j_pr, k + k_p + k_pr) -
-				 effective_viscosity(i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i - i_p + i_pr, j - j_p + j_pr, k - k_p + k_pr) -
-				 effective_viscosity(i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i + i_p - i_pr, j + j_p - j_pr, k + k_p - k_pr) +
-				 effective_viscosity(i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i - i_p - i_pr, j - j_p - j_pr, k - k_p - k_pr)) / (4 * d);
+				(effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i + ind_p[0] + ind_pr[0], j + ind_p[1] + ind_pr[1], k + ind_p[2] + ind_pr[2]) -
+				 effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i - ind_p[0] + ind_pr[0], j - ind_p[1] + ind_pr[1], k - ind_p[2] + ind_pr[2]) -
+				 effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i + ind_p[0] - ind_pr[0], j + ind_p[1] - ind_pr[1], k + ind_p[2] - ind_pr[2]) +
+				 effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i - ind_p[0] - ind_pr[0], j - ind_p[1] - ind_pr[1], k - ind_p[2] - ind_pr[2])) / (4 * d);
 		}
 	}
 	return 0;
@@ -2633,73 +2610,50 @@ int DIV_shear_stress_half_forward_euler_second_ultra_combined_FDM(int p, int i, 
 int DIV_shear_stress_half_backward_euler_second_ultra_combined_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int s, pr, i_p, j_p, k_p, i_pr, j_pr, k_pr;
+	int s, pr, ind_p[3], ind_pr[3];
 	double d, A_value;
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx * dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy * dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz * dz;
-			k_pr = 1;
-		}
-		A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + i_pr, j + j_pr, k + k_pr) / d;
-		WRITE_TO_A(p, i + i_pr, j + j_pr, k + k_pr, -1);
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr] * dx[pr];
+		A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / d;
+		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 		A_value = 0.5 * 2 * 0.5 * 2 * effective_viscosity(i, j, k) / d;
 		WRITE_TO_A(p, i, j, k, -1);
-		A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - i_pr, j - j_pr, k - k_pr) / d;
-		WRITE_TO_A(p, i - i_pr, j - j_pr, k - k_pr, -1);
+		A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / d;
+		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 		if (p == pr) {
-			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + i_pr, j + j_pr, k + k_pr) / d;
-			WRITE_TO_A(p, i + i_pr, j + j_pr, k + k_pr, -1);
+			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / d;
+			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 			A_value = 0.5 * 2 * 0.5 * 2 * effective_viscosity(i, j, k) / d;
 			WRITE_TO_A(p, i, j, k, -1);
-			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - i_pr, j - j_pr, k - k_pr) / d;
-			WRITE_TO_A(p, i - i_pr, j - j_pr, k - k_pr, -1);
+			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / d;
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 		} else {
 			d = 1;
-			i_pr = j_pr = k_pr = 0;
-			if (pr == 0) {
-				d *= dx;
-				i_pr = 1;
-			}
-			if (pr == 1) {
-				d *= dy;
-				j_pr = 1;
-			}
-			if (pr == 2) {
-				d *= dz;
-				k_pr = 1;
-			}
-			i_p = j_p = k_p = 0;
-			if (p == 0) {
-				d *= dx;
-				i_p = 1;
-			}
-			if (p == 1) {
-				d *= dy;
-				j_p = 1;
-			}
-			if (p == 2) {
-				d *= dz;
-				k_p = 1;
-			}
-			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + i_pr, j + j_pr, k + k_pr) / (4 * d);
-			WRITE_TO_A(pr, i + i_p + i_pr, j + j_p + j_pr, k + k_p + k_pr, -1);
-			A_value = 0.5 * 2 * 0.5 * effective_viscosity(i + i_pr, j + j_pr, k + k_pr) / (4 * d);
-			WRITE_TO_A(pr, i - i_p + i_pr, j - j_p + j_pr, k - k_p + k_pr, -1);
-			A_value = 0.5 * 2 * 0.5 * effective_viscosity(i - i_pr, j - j_pr, k - k_pr) / (4 * d);
-			WRITE_TO_A(pr, i + i_p - i_pr, j + j_p - j_pr, k + k_p - k_pr, -1);
-			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - i_pr, j - j_pr, k - k_pr) / (4 * d);
-			WRITE_TO_A(pr, i - i_p - i_pr, j - j_p - j_pr, k - k_p - k_pr, -1);
+			ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+			ind_pr[pr] = 1;
+			d *= dx[pr];
+			ind_p[0] = ind_p[1] = ind_p[2] = 0;
+			ind_p[p] = 1;
+			d *= dx[p];
+			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (4 * d);
+			WRITE_TO_A(pr, i + ind_p[0] + ind_pr[0], j + ind_p[1] + ind_pr[1], k + ind_p[2] + ind_pr[2], -1);
+			A_value = 0.5 * 2 * 0.5 * effective_viscosity(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (4 * d);
+			WRITE_TO_A(pr, i - ind_p[0] + ind_pr[0], j - ind_p[1] + ind_pr[1], k - ind_p[2] + ind_pr[2], -1);
+			A_value = 0.5 * 2 * 0.5 * effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (4 * d);
+			WRITE_TO_A(pr, i + ind_p[0] - ind_pr[0], j + ind_p[1] - ind_pr[1], k + ind_p[2] - ind_pr[2], -1);
+			A_value = - 0.5 * 2 * 0.5 * effective_viscosity(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (4 * d);
+			WRITE_TO_A(pr, i - ind_p[0] - ind_pr[0], j - ind_p[1] - ind_pr[1], k - ind_p[2] - ind_pr[2], -1);
 		}
 	}
+	return 0;
+}
+
+int DIV_shear_stress_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF)) return 1;
 	return 0;
 }
 
@@ -2716,9 +2670,9 @@ int DIV_grad_pressure_half_forward_euler_first_combined_VOF(int p, int i, int j,
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	int s;
 	for (s = 0; s < 6; s++) {
-		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i - 1, j, k, s)) * normal[NORMAL_IND(0, i, j, k, s)] / dx;
-		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / dy;
-		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i - 1, j, k, s)) * normal[NORMAL_IND(0, i, j, k, s)] / dx[0];
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / dx[1];
+		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * (pressure_on_face(i, j, k, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / dx[2];
 	}
 	return 0;
 }
@@ -2729,22 +2683,22 @@ int DIV_grad_pressure_half_backward_euler_first_combined_VOF(int p, int i, int j
 	int s;
 	double A_value;
 	for (s = 0; s < 6; s++) {
-		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx[0];
 		WRITE_TO_A(4, i, j, k, -1);
 		WRITE_TO_A(4, i, j, k, s);
-		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx;
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(0, i, j, k, s)] / dx[0];
 		WRITE_TO_A(4, i - 1, j, k, -1);
 		WRITE_TO_A(4, i - 1, j, k, s);
-		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dx[1];
 		WRITE_TO_A(4, i, j, k, -1);
 		WRITE_TO_A(4, i, j, k, s);
-		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dy;
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(1, i, j, k, s)] / dx[1];
 		WRITE_TO_A(4, i, j - 1, k, -1);
 		WRITE_TO_A(4, i, j - 1, k, s);
-		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dx[2];
 		WRITE_TO_A(4, i, j, k, -1);
 		WRITE_TO_A(4, i, j, k, s);
-		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dz;
+		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * normal[NORMAL_IND(2, i, j, k, s)] / dx[2];
 		WRITE_TO_A(4, i, j, k - 1, -1);
 		WRITE_TO_A(4, i, j, k - 1, s);
 	}
@@ -2765,9 +2719,9 @@ int DIV_grad_pressure_half_forward_euler_second_combined_VOF(int p, int i, int j
 	int s;
 	for (s = 0; s < 6; s++) {
 		B[A_IND(4, i, j, k)] -=  (area[AREA_IND(i, j, k, s)] / 2) * (
-				(pressure_on_face(i + 1, j, k, s) - pressure_on_face(i - 1, j, k, s)) * normal[0, i, j, k, s] / (2 * dx) +
-				(pressure_on_face(i, j + 1, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy) +
-				(pressure_on_face(i, j, k + 1, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz));
+				(pressure_on_face(i + 1, j, k, s) - pressure_on_face(i - 1, j, k, s)) * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx[0]) +
+				(pressure_on_face(i, j + 1, k, s) - pressure_on_face(i, j - 1, k, s)) * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dx[1]) +
+				(pressure_on_face(i, j, k + 1, s) - pressure_on_face(i, j, k - 1, s)) * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dx[2]));
 	}
 	return 0;
 }
@@ -2778,25 +2732,32 @@ int DIV_grad_pressure_half_backward_euler_second_combined_VOF(int p, int i, int 
 	int s;
 	double A_value;
 	for (s = 0; s < 6; s++) {
-		A_value = (area[AREA_IND(i, j, k, s)] / 4) * normal[NORMAL_IND(0, i, j, k, s)] / (2 * dx);
+		A_value = (area[AREA_IND(i, j, k, s)] / 4.) * normal[NORMAL_IND(0, i, j, k, s)] / (2. * dx[0]);
 		WRITE_TO_A(4, i + 1, j, k, -1);
 		WRITE_TO_A(4, i + 1, j, k, s);
 		A_value = - A_value;
 		WRITE_TO_A(4, i - 1, j, k, -1);
 		WRITE_TO_A(4, i - 1, j, k, s);
-		A_value = (area[AREA_IND(i, j, k, s)] / 4) * normal[NORMAL_IND(1, i, j, k, s)] / (2 * dy);
+		A_value = (area[AREA_IND(i, j, k, s)] / 4.) * normal[NORMAL_IND(1, i, j, k, s)] / (2. * dx[1]);
 		WRITE_TO_A(4, i, j + 1, k, -1);
 		WRITE_TO_A(4, i, j + 1, k, s);
 		A_value = - A_value;
 		WRITE_TO_A(4, i, j - 1, k, -1);
 		WRITE_TO_A(4, i, j - 1, k, s);
-		A_value = (area[AREA_IND(i, j, k, s)] / 4) * normal[NORMAL_IND(2, i, j, k, s)] / (2 * dz);
+		A_value = (area[AREA_IND(i, j, k, s)] / 4.) * normal[NORMAL_IND(2, i, j, k, s)] / (2. * dx[2]);
 		WRITE_TO_A(4, i, j, k + 1, -1);
 		WRITE_TO_A(4, i, j, k + 1, s);
 		A_value = - A_value;
 		WRITE_TO_A(4, i, j, k - 1, -1);
 		WRITE_TO_A(4, i, j, k - 1, s);
 	}
+	return 0;
+}
+
+int DIV_grad_pressure_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, grad_pressure, crank_nikolson, second, combined, VOF)) return 1;
 	return 0;
 }
 
@@ -2818,23 +2779,13 @@ int DIV_grad_pressure_crank_nikolson_second_separated_FDM(int p, int i, int j, i
 int DIV_grad_pressure_half_forward_euler_second_separated_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	double d;
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx * dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy * dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz * dz;
-			k_pr = 1;
-		}
-		B[A_IND(4, i, j, k)] -= 0.5 * (pressure(i + i_pr, j + j_pr, k + k_pr) - 2 * pressure(i, j, k) + pressure(i - i_pr, j - j_pr, k - k_pr)) / d;
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr] * dx[pr];
+		B[A_IND(4, i, j, k)] -= 0.5 * (pressure(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - 2 * pressure(i, j, k) + pressure(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / d;
 	}
 	return 0;
 }
@@ -2843,27 +2794,17 @@ int DIV_grad_pressure_half_backward_euler_second_separated_FDM(int p, int i, int
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value, d;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx * dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy * dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz * dz;
-			k_pr = 1;
-		}
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr] * dx[pr];
 		A_value = 1. / (2 * d);
-		WRITE_TO_A(4, i + i_pr, j + j_pr, k + k_pr, -1);
+		WRITE_TO_A(4, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 		A_value = - 1. / d;
 		WRITE_TO_A(4, i, j, k, -1);
 		A_value = 1. / (2 * d);
-		WRITE_TO_A(4, i - i_pr, j - j_pr, k - k_pr, -1);
+		WRITE_TO_A(4, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 	}
 	return 0;
 }
@@ -2889,13 +2830,13 @@ int DIV_div_density_velocity_velocity_forward_euler_first_combined_VOF(int p, in
 	for (s = 0; s < 6; s++) {
 		B[A_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx[0];
 		B[A_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dx[1];
 		B[A_IND(4, i, j, k)] -= (1 / volume[VOLUME_IND(i, j, k)]) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dx[2];
 	}
 	return 0;
 }
@@ -2915,13 +2856,13 @@ int DIV_div_density_velocity_velocity_half_forward_euler_first_combined_VOF(int 
 	for (s = 0; s < 6; s++) {
 		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(0, i, j, k, s) - velocity_on_face(0, i - 1, j, k, s)) / dx[0];
 		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dy;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(1, i, j, k, s) - velocity_on_face(1, i, j - 1, k, s)) / dx[1];
 		B[A_IND(4, i, j, k)] -= (1 / (2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dz;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) * (velocity_on_face(2, i, j, k, s) - velocity_on_face(2, i, j, k - 1, s)) / dx[2];
 	}
 	return 0;
 }
@@ -2934,32 +2875,32 @@ int DIV_div_density_velocity_velocity_half_backward_euler_first_combined_VOF(int
 	for (s = 0; s < 6; s++) {
 		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx[0];
 		WRITE_TO_A(0, i, j, k, -1);
 		WRITE_TO_A(0, i, j, k, s);
 		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx[0];
 		WRITE_TO_A(0, i - 1, j, k, -1);
 		WRITE_TO_A(0, i - 1, j, k, s);
 		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx[1];
 		WRITE_TO_A(1, i, j, k, -1);
 		WRITE_TO_A(1, i, j, k, s);
 		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dy;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx[1];
 		WRITE_TO_A(1, i, j - 1, k, -1);
 		WRITE_TO_A(1, i, j - 1, k, s);
 		A_value = (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx[2];
 		WRITE_TO_A(2, i, j, k, -1);
 		WRITE_TO_A(2, i, j, k, s);
 		A_value = - (1 / (2 * 2 * volume[VOLUME_IND(i, j, k)])) * area[AREA_IND(i, j, k, s)] * density_on_face(i, j, k, s) * 
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] + velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
-			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dz;
+			velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]) / dx[2];
 		WRITE_TO_A(2, i, j, k - 1, -1);
 		WRITE_TO_A(2, i, j, k - 1, s);
 	}
@@ -2982,11 +2923,11 @@ int DIV_div_density_velocity_velocity_half_forward_euler_second_combined_VOF(int
 		for (pr = 0; pr < 3; pr++) {
 			B[A_IND(4, i, j, k)] -= (area[AREA_IND(i, j, k, s)] / 2) *
 				(((density_on_face(i + 1, j, k, s) * velocity_on_face(pr, i + 1, j, k, s) * velocity_on_face(0, i + 1, j, k, s) -
-				   density_on_face(i - 1, j, k, s) * velocity_on_face(pr, i - 1, j, k, s) * velocity_on_face(0, i - 1, j, k, s)) / (2 * dx)) +
+				   density_on_face(i - 1, j, k, s) * velocity_on_face(pr, i - 1, j, k, s) * velocity_on_face(0, i - 1, j, k, s)) / (2 * dx[0])) +
 				 ((density_on_face(i, j + 1, k, s) * velocity_on_face(pr, i, j + 1, k, s) * velocity_on_face(1, i, j + 1, k, s) -
-				   density_on_face(i, j - 1, k, s) * velocity_on_face(pr, i, j - 1, k, s) * velocity_on_face(1, i, j - 1, k, s)) / (2 * dy)) +
+				   density_on_face(i, j - 1, k, s) * velocity_on_face(pr, i, j - 1, k, s) * velocity_on_face(1, i, j - 1, k, s)) / (2 * dx[1])) +
 				 ((density_on_face(i, j, k + 1, s) * velocity_on_face(pr, i, j, k + 1, s) * velocity_on_face(2, i, j, k + 1, s) -
-				   density_on_face(i, j, k - 1, s) * velocity_on_face(pr, i, j, k - 1, s) * velocity_on_face(2, i, j, k - 1, s)) / (2 * dz))) * normal[NORMAL_IND(pr, i, j, k, s)];
+				   density_on_face(i, j, k - 1, s) * velocity_on_face(pr, i, j, k - 1, s) * velocity_on_face(2, i, j, k - 1, s)) / (2 * dx[2]))) * normal[NORMAL_IND(pr, i, j, k, s)];
 		}
 	}
 	return 0;
@@ -2996,31 +2937,70 @@ int DIV_div_density_velocity_velocity_half_backward_euler_second_combined_VOF(in
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	int s, pr, pp;
-	double A_value, d_pr, i_pr, j_pr, k_pr;
+	double A_value, d_pr, ind_pr[3];
 	for (s = 0; s < 6; s++) {
 		for (pp = 0; pp < 3; pp++) {
 			for (pr = 0; pr < 3; pr++) {
-				if (pr == 0) {
-					d_pr = dx;
-					i_pr = 1;
-					j_pr = k_pr = 0;
-				}
-				if (pr == 1) {
-					d_pr = dy;
-					j_pr = 1;
-					i_pr = k_pr = 0;
-				}
-				if (pr == 2) {
-					d_pr = dz;
-					k_pr = 1;
-					j_pr = i_pr = 0;
-				}
+				ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+				ind_pr[pr] = 1;
+				d_pr = dx[pr];
 				A_value = (area[AREA_IND(i, j, k, s)] / 4) * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pp, i, j, k, s)] / (2 * d_pr);
-				WRITE_TO_A(pp, i + i_pr, j + j_pr, k + k_pr, -1);
-				WRITE_TO_A(pp, i + i_pr, j + j_pr, k + k_pr, s);
+				WRITE_TO_A(pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+				WRITE_TO_A(pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], s);
 				A_value = - A_value;
-				WRITE_TO_A(pp, i - i_pr, j - j_pr, k - k_pr, -1);
-				WRITE_TO_A(pp, i - i_pr, j - j_pr, k - k_pr, s);
+				WRITE_TO_A(pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+				WRITE_TO_A(pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], s);
+			}
+		}
+	}
+	return 0;
+}
+
+int DIV_div_density_velocity_velocity_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, div_density_velocity_velocity, half_forward_euler, second, ultra_combined, VOF)) return 1;
+	if (DIV(p, i, j, k, div_density_velocity_velocity, half_backward_euler, second, ultra_combined, VOF)) return 1;
+	return 0;
+}
+
+int DIV_div_density_velocity_velocity_half_forward_euler_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, div_density_velocity_velocity, half_forward_euler, second, combined, VOF)) return 1;
+	return 0;
+}
+
+int DIV_div_density_velocity_velocity_half_backward_euler_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	int s, pr, pp;
+	double A_value, d_pr, ind_pr[3];
+	for (s = 0; s < 6; s++) {
+		for (pp = 0; pp < 3; pp++) {
+			for (pr = 0; pr < 3; pr++) {
+				ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+				ind_pr[pr] = 1;
+				d_pr = dx[pr];
+				A_value = (area[AREA_IND(i, j, k, s)] / 4) * density_on_face(i, j, k, s) * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pp, i, j, k, s)] / (2 * d_pr);
+				WRITE_TO_A(pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+				WRITE_TO_A(pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], s);
+				A_value = - A_value;
+				WRITE_TO_A(pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+				WRITE_TO_A(pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], s);
+				A_value = (area[AREA_IND(i, j, k, s)] / 4) * density_on_face(i, j, k, s) * velocity_on_face(pp, i, j, k, s) * normal[NORMAL_IND(pp, i, j, k, s)] / (2 * d_pr);
+				WRITE_TO_A(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+				WRITE_TO_A(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], s);
+				A_value = - A_value;
+				WRITE_TO_A(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+				WRITE_TO_A(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], s);
+				A_value = (area[AREA_IND(i, j, k, s)] / 4) * (density_snow - density_air) * velocity_on_face(pp, i, j, k, s) * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pp, i, j, k, s)] / (2 * d_pr);
+				WRITE_TO_A(3, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+				WRITE_TO_A(3, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], s);
+				A_value = - A_value;
+				WRITE_TO_A(3, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+				WRITE_TO_A(3, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], s);
+				B[A_IND(4, i, j, k)] -= (area[AREA_IND(i, j, k, s)] / 4) * density_air * velocity_on_face(pp, i, j, k, s) * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pp, i, j, k, s)] / (2 * d_pr);
 			}
 		}
 	}
@@ -3035,11 +3015,11 @@ int DIV_div_density_velocity_velocity_crank_nikolson_second_separated_VOF(int p,
 		for (pr = 0; pr < 3; pr++) {
 			B[A_IND(4, i, j, k)] -= area[AREA_IND(i, j, k, s)] *
 				(((density_on_face(i + 1, j, k, s) * velocity_on_face(pr, i + 1, j, k, s) * velocity_on_face(0, i + 1, j, k, s) -
-				   density_on_face(i - 1, j, k, s) * velocity_on_face(pr, i - 1, j, k, s) * velocity_on_face(0, i - 1, j, k, s)) / (2 * dx)) +
+				   density_on_face(i - 1, j, k, s) * velocity_on_face(pr, i - 1, j, k, s) * velocity_on_face(0, i - 1, j, k, s)) / (2 * dx[0])) +
 				 ((density_on_face(i, j + 1, k, s) * velocity_on_face(pr, i, j + 1, k, s) * velocity_on_face(1, i, j + 1, k, s) -
-				   density_on_face(i, j - 1, k, s) * velocity_on_face(pr, i, j - 1, k, s) * velocity_on_face(1, i, j - 1, k, s)) / (2 * dy)) +
+				   density_on_face(i, j - 1, k, s) * velocity_on_face(pr, i, j - 1, k, s) * velocity_on_face(1, i, j - 1, k, s)) / (2 * dx[1])) +
 				 ((density_on_face(i, j, k + 1, s) * velocity_on_face(pr, i, j, k + 1, s) * velocity_on_face(2, i, j, k + 1, s) -
-				   density_on_face(i, j, k - 1, s) * velocity_on_face(pr, i, j, k - 1, s) * velocity_on_face(2, i, j, k - 1, s)) / (2 * dz))) * normal[NORMAL_IND(pr, i, j, k, s)];
+				   density_on_face(i, j, k - 1, s) * velocity_on_face(pr, i, j, k - 1, s) * velocity_on_face(2, i, j, k - 1, s)) / (2 * dx[2]))) * normal[NORMAL_IND(pr, i, j, k, s)];
 		}
 	}
 	return 0;
@@ -3048,64 +3028,34 @@ int DIV_div_density_velocity_velocity_crank_nikolson_second_separated_VOF(int p,
 int DIV_div_density_velocity_velocity_crank_nikolson_second_separated_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int pp, pr, i_pp, j_pp, k_pp, i_pr, j_pr, k_pr;
+	int pp, pr, ind_pp[3], ind_pr[3];
 	double d;
 	for (pp = 0; pp < 3; pp++) {
 		for (pr = 0; pr < 3; pr++) {
 			if (pp == pr) {
-				i_pp = j_pp = k_pp = 0;
-				if (pp == 0) {
-					d = dx * dx;
-					i_pp = 1;
-				}
-				if (pp == 1) {
-					d = dy * dy;
-					j_pp = 1;
-				}
-				if (pp == 2) {
-					d = dz * dz;
-					k_pp = 1;
-				}
-				B[A_IND(4, i, j, k)] -= (density(i + i_pp, j + j_pp, k + k_pp) * velocity(pp, i + i_pp, j+ j_pp, k + k_pp) * velocity(pp, i + i_pp, j + j_pp, k + k_pp) -
+				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+				ind_pp[pp] = 1;
+				d = dx[pp] * dx[pp];
+				B[A_IND(4, i, j, k)] -= (density(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j+ ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) -
 						2 * density(i, j, k) * velocity(pp, i, j, k) * velocity(pp, i, j, k) +
-						density(i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp)) / d;
+						density(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) / d;
 			} else {
 				d = 1;
-				i_pp = j_pp = k_pp = 0;
-				if (pp == 0) {
-					d *= dx;
-					i_pp = 1;
-				}
-				if (pp == 1) {
-					d *= dy;
-					j_pp = 1;
-				}
-				if (pp == 2) {
-					d *= dz;
-					k_pp = 1;
-				}
-				i_pr = j_pr = k_pr = 0;
-				if (pr == 0) {
-					d *= dx;
-					i_pr = 1;
-				}
-				if (pr == 1) {
-					d *= dy;
-					j_pr = 1;
-				}
-				if (pr == 2) {
-					d *= dz;
-					k_pr = 1;
-				}
+				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+				ind_pp[pp] = 1;
+				d *= dx[pp];
+				ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+				ind_pr[pr] = 1;
+				d *= dx[pr];
 				B[A_IND(4, i, j, k)] -=
-					(density(i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) * velocity(pp, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) *
-					 	velocity(pr, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) -
-					 density(i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) * velocity(pp, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) *
-					 	velocity(pr, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) -
-					 density(i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) * velocity(pp, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) *
-					 	velocity(pr, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) +
-					 density(i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) * velocity(pp, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) *
-					 	velocity(pr, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr)) /
+					(density(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) * velocity(pp, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) *
+					 	velocity(pr, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) -
+					 density(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) * velocity(pp, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) *
+					 	velocity(pr, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) -
+					 density(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) * velocity(pp, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) *
+					 	velocity(pr, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) +
+					 density(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) * velocity(pp, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) *
+					 	velocity(pr, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) /
 					(4 * d);
 			}
 		}
@@ -3124,64 +3074,34 @@ int DIV_div_density_velocity_velocity_crank_nikolson_second_combined_FDM(int p, 
 int DIV_div_density_velocity_velocity_half_forward_euler_second_combined_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int pp, pr, i_pp, j_pp, k_pp, i_pr, j_pr, k_pr;
+	int pp, pr, ind_pp[3], ind_pr[3];
 	double d;
 	for (pp = 0; pp < 3; pp++) {
 		for (pr = 0; pr < 3; pr++) {
 			if (pp == pr) {
-				i_pp = j_pp = k_pp = 0;
-				if (pp == 0) {
-					d = dx * dx;
-					i_pp = 1;
-				}
-				if (pp == 1) {
-					d = dy * dy;
-					j_pp = 1;
-				}
-				if (pp == 2) {
-					d = dz * dz;
-					k_pp = 1;
-				}
-				B[A_IND(4, i, j, k)] -= 0.5 * (density(i + i_pp, j + j_pp, k + k_pp) * velocity(pp, i + i_pp, j+ j_pp, k + k_pp) * velocity(pp, i + i_pp, j + j_pp, k + k_pp) -
+				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+				ind_pp[pp] = 1;
+				d = dx[pp] * dx[pp];
+				B[A_IND(4, i, j, k)] -= 0.5 * (density(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j+ ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) -
 						2 * density(i, j, k) * velocity(pp, i, j, k) * velocity(pp, i, j, k) +
-						density(i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp)) / d;
+						density(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) / d;
 			} else {
 				d = 1;
-				i_pp = j_pp = k_pp = 0;
-				if (pp == 0) {
-					d *= dx;
-					i_pp = 1;
-				}
-				if (pp == 1) {
-					d *= dy;
-					j_pp = 1;
-				}
-				if (pp == 2) {
-					d *= dz;
-					k_pp = 1;
-				}
-				i_pr = j_pr = k_pr = 0;
-				if (pr == 0) {
-					d *= dx;
-					i_pr = 1;
-				}
-				if (pr == 1) {
-					d *= dy;
-					j_pr = 1;
-				}
-				if (pr == 2) {
-					d *= dz;
-					k_pr = 1;
-				}
+				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+				ind_pp[pp] = 1;
+				d *= dx[pp];
+				ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+				ind_pr[pr] = 1;
+				d *= dx[pr];
 				B[A_IND(4, i, j, k)] -= 0.5 *
-					(density(i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) * velocity(pp, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) *
-					 	velocity(pr, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) -
-					 density(i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) * velocity(pp, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) *
-					 	velocity(pr, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) -
-					 density(i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) * velocity(pp, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) *
-					 	velocity(pr, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) +
-					 density(i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) * velocity(pp, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) *
-					 	velocity(pr, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr)) /
+					(density(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) * velocity(pp, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) *
+					 	velocity(pr, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) -
+					 density(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) * velocity(pp, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) *
+					 	velocity(pr, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) -
+					 density(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) * velocity(pp, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) *
+					 	velocity(pr, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) +
+					 density(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) * velocity(pp, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) *
+					 	velocity(pr, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) /
 					(4 * d);
 			}
 		}
@@ -3192,66 +3112,36 @@ int DIV_div_density_velocity_velocity_half_forward_euler_second_combined_FDM(int
 int DIV_div_density_velocity_velocity_half_backward_euler_second_combined_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int pp, pr, i_pp, j_pp, k_pp, i_pr, j_pr, k_pr;
+	int pp, pr, ind_pp[3], ind_pr[3];
 	double d, A_value;
 	for (pp = 0; pp < 3; pp++) {
 		for (pr = 0; pr < 3; pr++) {
 			if (pp == pr) {
-				i_pp = j_pp = k_pp = 0;
-				if (pp == 0) {
-					d = dx * dx;
-					i_pp = 1;
-				}
-				if (pp == 1) {
-					d = dy * dy;
-					j_pp = 1;
-				}
-				if (pp == 2) {
-					d = dz * dz;
-					k_pp = 1;
-				}
-				A_value = 0.5 * density(i + i_pp, j + j_pp, k + k_pp) * velocity(pp, i + i_pp, j+ j_pp, k + k_pp) / d;
-				WRITE_TO_A(pp, i + i_pp, j + j_pp, k + k_pp, -1);
+				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+				ind_pp[pp] = 1;
+				d = dx[pp] * dx[pp];
+				A_value = 0.5 * density(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j+ ind_pp[1], k + ind_pp[2]) / d;
+				WRITE_TO_A(pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2], -1);
 				A_value = - 0.5 * 2 * density(i, j, k) * velocity(pp, i, j, k) / d;
 				WRITE_TO_A(pp, i, j, k, -1);
-				A_value = 0,5 * density(i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp) / d;
-				WRITE_TO_A(pp, i - i_pp, j - j_pp, k - k_pp, -1);
+				A_value = 0,5 * density(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) / d;
+				WRITE_TO_A(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2], -1);
 			} else {
 				d = 1;
-				i_pp = j_pp = k_pp = 0;
-				if (pp == 0) {
-					d *= dx;
-					i_pp = 1;
-				}
-				if (pp == 1) {
-					d *= dy;
-					j_pp = 1;
-				}
-				if (pp == 2) {
-					d *= dz;
-					k_pp = 1;
-				}
-				i_pr = j_pr = k_pr = 0;
-				if (pr == 0) {
-					d *= dx;
-					i_pr = 1;
-				}
-				if (pr == 1) {
-					d *= dy;
-					j_pr = 1;
-				}
-				if (pr == 2) {
-					d *= dz;
-					k_pr = 1;
-				}
-				A_value = 0.5 * density(i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) * velocity(pr, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) / (4 * d);
-				WRITE_TO_A(pp, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr, -1);
-				A_value = - 0.5 * density(i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) * velocity(pr, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) / (4 * d);
-				WRITE_TO_A(pp, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr, -1);
-				A_value = - 0.5 * density(i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) * velocity(pr, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) / (4 * d);
-				WRITE_TO_A(pp, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr, -1);
-				A_value = 0.5 * density(i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) * velocity(pr, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) / (4 * d);
-				WRITE_TO_A(pp, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr, -1);
+				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+				ind_pp[pp] = 1;
+				d *= dx[pp];
+				ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+				ind_pr[pr] = 1;
+				d *= dx[pr];
+				A_value = 0.5 * density(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) * velocity(pr, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pp, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2], -1);
+				A_value = - 0.5 * density(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) * velocity(pr, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pp, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2], -1);
+				A_value = - 0.5 * density(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) * velocity(pr, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pp, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2], -1);
+				A_value = 0.5 * density(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) * velocity(pr, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pp, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2], -1);
 			}
 		}
 	}
@@ -3276,103 +3166,73 @@ int DIV_div_density_velocity_velocity_half_forward_euler_second_ultra_combined_F
 int DIV_div_density_velocity_velocity_half_backward_euler_second_ultra_combined_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int pp, pr, i_pp, j_pp, k_pp, i_pr, j_pr, k_pr;
+	int pp, pr, ind_pp[3], ind_pr[3];
 	double d, A_value;
 	for (pp = 0; pp < 3; pp++) {
 		for (pr = 0; pr < 3; pr++) {
 			if (pp == pr) {
-				i_pp = j_pp = k_pp = 0;
-				if (pp == 0) {
-					d = dx * dx;
-					i_pp = 1;
-				}
-				if (pp == 1) {
-					d = dy * dy;
-					j_pp = 1;
-				}
-				if (pp == 2) {
-					d = dz * dz;
-					k_pp = 1;
-				}
-				A_value = 0.5 * density(i + i_pp, j + j_pp, k + k_pp) * velocity(pp, i + i_pp, j+ j_pp, k + k_pp) / d;
-				WRITE_TO_A(pp, i + i_pp, j + j_pp, k + k_pp, -1);
+				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+				ind_pp[pp] = 1;
+				d = dx[pp] * dx[pp];
+				A_value = 0.5 * density(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j+ ind_pp[1], k + ind_pp[2]) / d;
+				WRITE_TO_A(pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2], -1);
 				A_value = - 0.5 * 2 * density(i, j, k) * velocity(pp, i, j, k) / d;
 				WRITE_TO_A(pp, i, j, k, -1);
-				A_value = 0,5 * density(i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp) / d;
-				WRITE_TO_A(pp, i - i_pp, j - j_pp, k - k_pp, -1);
-				A_value = 0.5 * density(i + i_pp, j + j_pp, k + k_pp) * velocity(pp, i + i_pp, j+ j_pp, k + k_pp) / d;
-				WRITE_TO_A(pp, i + i_pp, j + j_pp, k + k_pp, -1);
+				A_value = 0,5 * density(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) / d;
+				WRITE_TO_A(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2], -1);
+				A_value = 0.5 * density(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j+ ind_pp[1], k + ind_pp[2]) / d;
+				WRITE_TO_A(pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2], -1);
 				A_value = - 0.5 * 2 * density(i, j, k) * velocity(pp, i, j, k) / d;
 				WRITE_TO_A(pp, i, j, k, -1);
-				A_value = 0,5 * density(i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp) / d;
-				WRITE_TO_A(pp, i - i_pp, j - j_pp, k - k_pp, -1);
-				A_value = 0.5 * (density_snow - density_air) * velocity(pp, i + i_pp, j + j_pp, k + k_pp) * velocity(pp, i + i_pp, j+ j_pp, k + k_pp) / d;
-				B[A_IND(p, i, j, k)] -= 0.5 * density_air * velocity(pp, i + i_pp, j + j_pp, k + k_pp) * velocity(pp, i + i_pp, j+ j_pp, k + k_pp) / d;
-				WRITE_TO_A(3, i + i_pp, j + j_pp, k + k_pp, -1);
+				A_value = 0,5 * density(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) / d;
+				WRITE_TO_A(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2], -1);
+				A_value = 0.5 * (density_snow - density_air) * velocity(pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j+ ind_pp[1], k + ind_pp[2]) / d;
+				B[A_IND(p, i, j, k)] -= 0.5 * density_air * velocity(pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) * velocity(pp, i + ind_pp[0], j+ ind_pp[1], k + ind_pp[2]) / d;
+				WRITE_TO_A(3, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2], -1);
 				A_value = - 0.5 * 2 * (density_snow - density_air) * velocity(pp, i, j, k) * velocity(pp, i, j, k) / d;
 				B[A_IND(p, i, j, k)] += 0.5 * 2 * density_air * velocity(pp, i, j, k) * velocity(pp, i, j, k) / d;
 				WRITE_TO_A(3, i, j, k, -1);
-				A_value = 0,5 * (density_snow - density_air) * velocity(pp, i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp) / d;
-				B[A_IND(p, i, j, k)] -= 0,5 * density_air * velocity(pp, i - i_pp, j - j_pp, k - k_pp) * velocity(pp, i - i_pp, j - j_pp, k - k_pp) / d;
-				WRITE_TO_A(3, i - i_pp, j - j_pp, k - k_pp, -1);
+				A_value = 0,5 * (density_snow - density_air) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) / d;
+				B[A_IND(p, i, j, k)] -= 0,5 * density_air * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) * velocity(pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) / d;
+				WRITE_TO_A(3, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2], -1);
 			} else {
 				d = 1;
-				i_pp = j_pp = k_pp = 0;
-				if (pp == 0) {
-					d *= dx;
-					i_pp = 1;
-				}
-				if (pp == 1) {
-					d *= dy;
-					j_pp = 1;
-				}
-				if (pp == 2) {
-					d *= dz;
-					k_pp = 1;
-				}
-				i_pr = j_pr = k_pr = 0;
-				if (pr == 0) {
-					d *= dx;
-					i_pr = 1;
-				}
-				if (pr == 1) {
-					d *= dy;
-					j_pr = 1;
-				}
-				if (pr == 2) {
-					d *= dz;
-					k_pr = 1;
-				}
-				A_value = 0.5 * density(i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) * velocity(pr, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) / (4 * d);
-				WRITE_TO_A(pp, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr, -1);
-				A_value = - 0.5 * density(i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) * velocity(pr, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) / (4 * d);
-				WRITE_TO_A(pp, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr, -1);
-				A_value = - 0.5 * density(i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) * velocity(pr, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) / (4 * d);
-				WRITE_TO_A(pp, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr, -1);
-				A_value = 0.5 * density(i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) * velocity(pr, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) / (4 * d);
-				WRITE_TO_A(pp, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr, -1);
+				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+				ind_pp[pp] = 1;
+				d *= dx[pp];
+				ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+				ind_pr[pr] = 1;
+				d *= dx[pr];
+				A_value = 0.5 * density(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) * velocity(pr, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pp, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2], -1);
+				A_value = - 0.5 * density(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) * velocity(pr, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pp, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2], -1);
+				A_value = - 0.5 * density(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) * velocity(pr, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pp, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2], -1);
+				A_value = 0.5 * density(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) * velocity(pr, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pp, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2], -1);
 
-				A_value = 0.5 * density(i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) * velocity(pp, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) / (4 * d);
-				WRITE_TO_A(pr, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr, -1);
-				A_value = - 0.5 * density(i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) * velocity(pp, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) / (4 * d);
-				WRITE_TO_A(pr, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr, -1);
-				A_value = - 0.5 * density(i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) * velocity(pp, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) / (4 * d);
-				WRITE_TO_A(pr, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr, -1);
-				A_value = 0.5 * density(i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) * velocity(pp, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) / (4 * d);
-				WRITE_TO_A(pr, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr, -1);
+				A_value = 0.5 * density(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) * velocity(pp, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pr, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2], -1);
+				A_value = - 0.5 * density(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) * velocity(pp, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pr, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2], -1);
+				A_value = - 0.5 * density(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) * velocity(pp, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pr, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2], -1);
+				A_value = 0.5 * density(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) * velocity(pp, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) / (4 * d);
+				WRITE_TO_A(pr, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2], -1);
 
-				A_value = 0.5 * (density_snow - density_air) * velocity(pp, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) * velocity(pr, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) / (4 * d);
-				B[A_IND(p, i, j, k)] -= 0.5 * density_air * velocity(pp, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) * velocity(pr, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr) / (4 * d);
-				WRITE_TO_A(3, i + i_pp + i_pr, j + j_pp + j_pr, k + k_pp + k_pr, -1);
-				A_value = - 0.5 * (density_snow - density_air) * velocity(pp, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) * velocity(pr, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) / (4 * d);
-				B[A_IND(p, i, j, k)] += 0.5 * density_air * velocity(pp, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) * velocity(pr, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr) / (4 * d);
-				WRITE_TO_A(3, i + i_pp - i_pr, j + j_pp - j_pr, k + k_pp - k_pr, -1);
-				A_value = - 0.5 * (density_snow - density_air) * velocity(pp, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) * velocity(pr, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) / (4 * d);
-				B[A_IND(p, i, j, k)] += 0.5 * density_air * velocity(pp, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) * velocity(pr, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr) / (4 * d);
-				WRITE_TO_A(3, i - i_pp + i_pr, j - j_pp + j_pr, k - k_pp + k_pr, -1);
-				A_value = 0.5 * (density_snow - density_air) * velocity(pp, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) * velocity(pr, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) / (4 * d);
-				B[A_IND(p, i, j, k)] -= 0.5 * density_air * velocity(pp, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) * velocity(pr, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr) / (4 * d);
-				WRITE_TO_A(3, i - i_pp - i_pr, j - j_pp - j_pr, k - k_pp - k_pr, -1);
+				A_value = 0.5 * (density_snow - density_air) * velocity(pp, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) * velocity(pr, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) / (4 * d);
+				B[A_IND(p, i, j, k)] -= 0.5 * density_air * velocity(pp, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) * velocity(pr, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) / (4 * d);
+				WRITE_TO_A(3, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2], -1);
+				A_value = - 0.5 * (density_snow - density_air) * velocity(pp, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) * velocity(pr, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) / (4 * d);
+				B[A_IND(p, i, j, k)] += 0.5 * density_air * velocity(pp, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) * velocity(pr, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) / (4 * d);
+				WRITE_TO_A(3, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2], -1);
+				A_value = - 0.5 * (density_snow - density_air) * velocity(pp, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) * velocity(pr, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) / (4 * d);
+				B[A_IND(p, i, j, k)] += 0.5 * density_air * velocity(pp, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) * velocity(pr, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) / (4 * d);
+				WRITE_TO_A(3, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2], -1);
+				A_value = 0.5 * (density_snow - density_air) * velocity(pp, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) * velocity(pr, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) / (4 * d);
+				B[A_IND(p, i, j, k)] -= 0.5 * density_air * velocity(pp, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) * velocity(pr, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) / (4 * d);
+				WRITE_TO_A(3, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2], -1);
 			}
 		}
 	}
@@ -3396,6 +3256,13 @@ int DDT_density_snow_volume_fraction_second_separated_VOF(int p, int i, int j, i
 	return 0;
 }
 
+int DDT_density_snow_volume_fraction_second_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DDT(p, i, j, k, density_snow_volume_fraction, first, combined, VOF)) return 1;
+	return 0;
+}
+
 int DDT_density_snow_volume_fraction_second_separated_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
@@ -3411,6 +3278,13 @@ int DDT_density_snow_volume_fraction_second_combined_FDM(int p, int i, int j, in
 }
 
 int DDT_density_snow_volume_fraction_second_ultra_combined_FDM(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DDT(p, i, j, k, density_snow_volume_fraction, first, combined, VOF)) return 1;
+	return 0;
+}
+
+int DDT_density_snow_volume_fraction_second_ultra_combined_VOF(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	if (DDT(p, i, j, k, density_snow_volume_fraction, first, combined, VOF)) return 1;
@@ -3479,12 +3353,47 @@ int DIV_density_snow_volume_fraction_velocity_half_backward_euler_second_combine
 	int s;
 	double A_value;
 	for (s = 0; s < 6; s++) {
-		A_value = (area[AREA_IND(i ,j, k, s)] / (2 * volume[VOLUME_IND(i, j, k)])) *
+		A_value = (area[AREA_IND(i ,j, k, s)] / (4 * volume[VOLUME_IND(i, j, k)])) *
 			(velocity_on_face(0, i, j, k, s) * normal[NORMAL_IND(0, i, j, k, s)] +
 			 velocity_on_face(1, i, j, k, s) * normal[NORMAL_IND(1, i, j, k, s)] +
 			 velocity_on_face(2, i, j, k, s) * normal[NORMAL_IND(2, i, j, k, s)]);
 		WRITE_TO_A(3, i, j, k, -1);
 		WRITE_TO_A(3, i, j, k, s);
+	}
+	return 0;
+}
+
+int DIV_density_snow_volume_fraction_velocity_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, half_forward_euler, second, ultra_combined, VOF)) return 1;
+	if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, half_backward_euler, second, ultra_combined, VOF)) return 1;
+	return 0;
+}
+
+int DIV_density_snow_volume_fraction_velocity_half_forward_euler_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, half_forward_euler, second, combined, VOF)) return 1;
+	return 0;
+}
+
+int DIV_density_snow_volume_fraction_velocity_half_backward_euler_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	int s, pr;
+	double A_value;
+	for (s = 0; s < 6; s++) {
+		for (pr = 0; pr < 3; pr ++) {
+			A_value = (area[AREA_IND(i ,j, k, s)] / (4 * volume[VOLUME_IND(i, j, k)])) *
+				velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)];
+			WRITE_TO_A(3, i, j, k, -1);
+			WRITE_TO_A(3, i, j, k, s);
+			A_value = (area[AREA_IND(i ,j, k, s)] / (4 * volume[VOLUME_IND(i, j, k)])) *
+				phase_fraction_on_face(i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)];
+			WRITE_TO_A(pr, i, j, k, -1);
+			WRITE_TO_A(pr, i, j, k, s);
+		}
 	}
 	return 0;
 }
@@ -3508,23 +3417,13 @@ int DIV_density_snow_volume_fraction_velocity_half_forward_euler_second_separate
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double d;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz;
-			k_pr = 1;
-		}
-		B[A_IND(3, i, j, k)] -= 0.5 * (phase_fraction(i + i_pr, j + j_pr, k + k_pr) * velocity(pr, i + i_pr, j + j_pr, k + k_pr) -
-				phase_fraction(i - i_pr, j - j_pr, k - k_pr) * velocity(pr, i - i_pr, j - j_pr, k - k_pr)) / (2 * d);
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr];
+		B[A_IND(3, i, j, k)] -= 0.5 * (phase_fraction(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * velocity(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
+				phase_fraction(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * velocity(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * d);
 	}
 	return 0;
 }
@@ -3533,25 +3432,15 @@ int DIV_density_snow_volume_fraction_velocity_half_backward_euler_second_separat
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value, d;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz;
-			k_pr = 1;
-		}
-		A_value = 0.5 * velocity(pr, i + i_pr, j + j_pr, k + k_pr) / (2 * d);
-		WRITE_TO_A(3, i + i_pr, j + j_pr, k + k_pr, -1);
-		A_value = - 0.5 * velocity(pr, i - i_pr, j - j_pr, k - k_pr) / (2 * d);
-		WRITE_TO_A(3, i - i_pr, j - j_pr, k - k_pr, -1);
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr];
+		A_value = 0.5 * velocity(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * d);
+		WRITE_TO_A(3, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		A_value = - 0.5 * velocity(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * d);
+		WRITE_TO_A(3, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 	}
 	return 0;
 }
@@ -3582,29 +3471,19 @@ int DIV_density_snow_volume_fraction_velocity_half_backward_euler_second_ultra_c
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value, d;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz;
-			k_pr = 1;
-		}
-		A_value = 0.5 * velocity(pr, i + i_pr, j + j_pr, k + k_pr) / (2 * d);
-		WRITE_TO_A(3, i + i_pr, j + j_pr, k + k_pr, -1);
-		A_value = - 0.5 * velocity(pr, i - i_pr, j - j_pr, k - k_pr) / (2 * d);
-		WRITE_TO_A(3, i - i_pr, j - j_pr, k - k_pr, -1);
-		A_value = 0.5 * phase_fraction(i + i_pr, j + j_pr, k + k_pr) / (2 * d);
-		WRITE_TO_A(pr, i + i_pr, j + j_pr, k + k_pr, -1);
-		A_value = - 0.5 * phase_fraction(i - i_pr, j - j_pr, k - k_pr) / (2 * d);
-		WRITE_TO_A(pr, i - i_pr, j - j_pr, k - k_pr, -1);
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr];
+		A_value = 0.5 * velocity(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * d);
+		WRITE_TO_A(3, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		A_value = - 0.5 * velocity(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * d);
+		WRITE_TO_A(3, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		A_value = 0.5 * phase_fraction(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * d);
+		WRITE_TO_A(pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		A_value = - 0.5 * phase_fraction(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * d);
+		WRITE_TO_A(pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 	}
 	return 0;
 }
@@ -3620,23 +3499,13 @@ int DIV_grad_snow_volume_fraction_crank_nikolson_second_ultra_combined_FDM(int p
 int DIV_grad_snow_volume_fraction_half_forward_euler_second_ultra_combined_FDM(int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	double d, D = 100;
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx * dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy * dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz * dz;
-			k_pr = 1;
-		}
-		B[A_IND(3, i, j, k)] += 0.5 * D * (phase_fraction(i + i_pr, j + j_pr, k + k_pr) - 2 * phase_fraction(i, j, k) + phase_fraction(i - i_pr, j - j_pr, k - k_pr)) / d;
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr];
+		B[A_IND(3, i, j, k)] += 0.5 * D * (phase_fraction(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - 2 * phase_fraction(i, j, k) + phase_fraction(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / d;
 	}
 	return 0;
 }
@@ -3645,28 +3514,60 @@ int DIV_grad_snow_volume_fraction_half_backward_euler_second_ultra_combined_FDM(
 {
 	if (check_for_corrupt_cell(i, j, k)) return 1;
 	double A_value, d, D = 100;
-	int pr, i_pr, j_pr, k_pr;
+	int pr, ind_pr[3];
 	for (pr = 0; pr < 3; pr++) {
-		i_pr = j_pr = k_pr = 0;
-		if (pr == 0) {
-			d = dx * dx;
-			i_pr = 1;
-		}
-		if (pr == 1) {
-			d = dy * dy;
-			j_pr = 1;
-		}
-		if (pr == 2) {
-			d = dz * dz;
-			k_pr = 1;
-		}
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		d = dx[pr] * dx[pr];
 		A_value = - D / (2 * d);
-		WRITE_TO_A(3, i + i_pr, j + j_pr, k + k_pr, -1);
+		WRITE_TO_A(3, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 		A_value = D / d;
 		WRITE_TO_A(3, i, j, k, -1);
 		A_value = - D / (2 * d);
-		WRITE_TO_A(3, i - i_pr, j - j_pr, k - k_pr, -1);
+		WRITE_TO_A(3, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 	}
+	return 0;
+}
+
+int DIV_velocity_cont_crank_nikolson_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, velocity_cont, half_forward_euler, second, ultra_combined, VOF)) return 1;
+	if (DIV(p, i, j, k, velocity_cont, half_backward_euler, second, ultra_combined, VOF)) return 1;
+	return 0;
+}
+
+int DIV_velocity_cont_half_forward_euler_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	int pr, s;
+	for (s = 0; s < 6; s++) {
+		for (pr = 0; pr < 3; pr++) {
+			B[A_IND(p, i, j, k)] -= 0.5 * velocity_on_face(pr, i, j, k, s) * normal[NORMAL_IND(pr, i, j, k, s)];
+		}
+	}
+	return 0;
+}
+
+int DIV_velocity_cont_half_backward_euler_second_ultra_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	int pr, s;
+	double A_value;
+	for (s = 0; s < 6; s++) {
+		for (pr = 0; pr < 3; pr++) {
+			A_value = 0.5 * 0.5 * normal[NORMAL_IND(pr, i, j, k, s)];
+			WRITE_TO_A(pr, i, j, k, -1);
+			WRITE_TO_A(pr, i, j, k, s);
+		}
+	}
+	return 0;
+}
+
+int DIV_velocity_cont_crank_nikolson_second_combined_VOF(int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(i, j, k)) return 1;
+	if (DIV(p, i, j, k, velocity_cont, crank_nikolson, second, ultra_combined, VOF)) return 1;
 	return 0;
 }
 
@@ -3700,6 +3601,39 @@ int write_B_prev_to_B(void)
 		}
 	}
 	return 0;
+}
+
+int check_conservation_of_mass(void)
+{
+	int i, j, k;
+	double mass = 0;
+	for (k = -stencil_size; k < nz + stencil_size; k++) {
+		for (i = -stencil_size; i < nx + stencil_size; i++) {
+			for (j = -stencil_size; j < ny + stencil_size; j++) {
+				if ((ind_boundary_cells[(i + stencil_size) * (ny + 2 * stencil_size) + j + stencil_size] != -1) &&
+					((!((i >= 0) && (i < nx) &&
+					   (j >= 0) && (j < ny) && 
+					   (ind_cell_multipl[i * ny + j] != -1))) ||
+					 (k < 0) || (k >= nz))) {
+							mass_quantity -= phase_fraction(i, j, k);
+				}
+			}
+		}
+	}
+	for (k = 0; k < nz; k++) {
+		for (i = 0; i < nx; i++) {
+			for (j = 0; j < ny; j++) {
+				if (ind_cell_multipl[i * ny + j] != -1) {
+					mass += phase_fraction(i, j, k);
+				}
+			}
+		}
+	}
+	if (mass == mass_quantity) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 int create_Ab(void)
@@ -3749,11 +3683,12 @@ int create_Ab(void)
 								A_ind_current++;
 							Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
 						}
-						if (DDT(p, i, j, k, density_velocity, second, ultra_combined, FDM)) return 1;
-						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson, second, ultra_combined, FDM)) return 1;
-						if (VECT(p, i, j, k, gravity_force, crank_nikolson, second, ultra_combined, FDM)) return 1;
-						if (GRAD(p, i, j, k, pressure, crank_nikolson, second, ultra_combined, FDM)) return 1;
-						if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, ultra_combined, FDM)) return 1;
+						if (DDT(p, i, j, k, density_velocity, second, ultra_combined, VOF)) return 1;
+						//if (DDT(p, i, j, k, density_velocity)) return 1;
+						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson, second, combined, VOF)) return 1;
+						if (VECT(p, i, j, k, gravity_force, crank_nikolson, second, combined, VOF)) return 1;
+						if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF)) return 1;
+						if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF)) return 1;
 					}
 					/* transport equation for snow volume fraction */
 					p = 3;
@@ -3762,18 +3697,26 @@ int create_Ab(void)
 							A_ind_current++;
 						Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
 					}
-					if (DDT(p, i, j, k, density_snow_volume_fraction, second, ultra_combined, FDM)) return 1;
-					if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, crank_nikolson, second, ultra_combined,FDM)) return 1;
-					//if (DIV(p, i, j, k, grad_snow_volume_fraction, crank_nikolson, second, ultra_combined, FDM)) return 1;
-					/* poisson equation for pressure */
+					if (DDT(p, i, j, k, density_snow_volume_fraction, second, combined, VOF)) return 1;
+					if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, crank_nikolson, second, combined, VOF)) return 1;
+					//if (DIV(p, i, j, k, grad_snow_volume_fraction, crank_nikolson, second, combined, FDM)) return 1;
+					/* continuity equation */
 					p = 4;
 					if (flag_first_time_step) {
 						if (Ajptr_csr[A_ind_current] != -1)
 							A_ind_current++;
 						Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
 					}
-					if (DIV(p, i, j, k, grad_pressure, crank_nikolson, second, ultra_combined, FDM)) return 1;
-					if (DIV(p, i, j, k, div_density_velocity_velocity, crank_nikolson, second, ultra_combined, FDM)) return 1;
+					if (DIV(p, i, j, k, velocity_cont, crank_nikolson, second, combined, VOF)) return 1;
+					/* poisson equation for pressure */
+					//p = 4;
+					//if (flag_first_time_step) {
+					//	if (Ajptr_csr[A_ind_current] != -1)
+					//		A_ind_current++;
+					//	Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
+					//}
+					//if (DIV(p, i, j, k, grad_pressure, crank_nikolson, second, combined, VOF)) return 1;
+					//if (DIV(p, i, j, k, div_density_velocity_velocity, crank_nikolson, second, combined, VOF)) return 1;
 				}
 			}
 		}
@@ -4036,10 +3979,11 @@ int main(int argc, char **argv)
 	alpha = alpha * 3.14 / 180.;
 	//g[0] = g[1] = 0;
 	//g[2] = - 9.81;
-	g[0] = sin(alpha) * 9.81;
-	g[1] = 0;
-	g[2] = - cos(alpha) * 9.81;
+	//g[0] = sin(alpha) * 9.81;
+	//g[1] = 0;
+	//g[2] = - cos(alpha) * 9.81;
 	//g[2] = - 100;
+	g[0] = g[1] = g[2] = 0;
 	stencil_size = 2;
 	num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	static const char *optString = "m:r:H:D:x:y:z:a:s:p:v:k:i:l:S:t:h?";
@@ -4116,16 +4060,17 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	memset((void *) B_prev, 0, system_dimension_with_boundary * sizeof(double));
-	SET_CONDITION(initial, velocity, fixed_value);
+	mass_quantity = 0;
 	SET_CONDITION(initial, phase_fraction, ascii_map);
 	SET_CONDITION(initial, pressure, fixed_value_with_hydrostatic_pressure);
+	SET_CONDITION(initial, velocity, mass_is_mooving);
 	set_arrays();
-	dt = 0.01;//we need to set dt!!!
+	dt = 0.1;//we need to set dt!!!
 	flag_first_time_step = 1;
 	time_steps = end_time / dt;
 	for (i = 0; i <= time_steps; i++) {
-		SET_CONDITION(boundary, velocity, zero_gradient_on_up_and_sides_no_slip_on_low);
-		SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
+		SET_CONDITION(boundary, velocity, fixed_value_on_all);
+		SET_CONDITION(boundary, phase_fraction, fixed_value_on_all);
 		SET_CONDITION(boundary, pressure, fixed_value_on_up_and_sides_zero_gradient_on_low);
 		if (print_vtk(i) == 1) {
 			printf("Error printing vtk file\n");
@@ -4138,6 +4083,9 @@ int main(int argc, char **argv)
 			flag_first_time_step = 0;
 		if (solve_matrix() == 1) goto error;
 		write_B_to_B_prev();
+		if (check_conservation_of_mass()) {
+			printf("Mass conservation equation failed\n");
+		}
 		if (i == time_steps) {
 			if (print_vtk(i + 1) == 1) {
 				printf("Error printing vtk file\n");
