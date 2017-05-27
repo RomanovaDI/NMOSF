@@ -3683,12 +3683,12 @@ int create_Ab(void)
 								A_ind_current++;
 							Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
 						}
-						if (DDT(p, i, j, k, density_velocity, second, ultra_combined, VOF)) return 1;
+						if (DDT(p, i, j, k, density_velocity, second, combined, VOF)) return 1;
 						//if (DDT(p, i, j, k, density_velocity)) return 1;
 						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson, second, combined, VOF)) return 1;
-						if (VECT(p, i, j, k, gravity_force, crank_nikolson, second, combined, VOF)) return 1;
+						//if (VECT(p, i, j, k, gravity_force, crank_nikolson, second, combined, VOF)) return 1;
 						if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF)) return 1;
-						if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF)) return 1;
+						//if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF)) return 1;
 					}
 					/* transport equation for snow volume fraction */
 					p = 3;
@@ -4064,6 +4064,7 @@ int main(int argc, char **argv)
 	SET_CONDITION(initial, phase_fraction, ascii_map);
 	SET_CONDITION(initial, pressure, fixed_value_with_hydrostatic_pressure);
 	SET_CONDITION(initial, velocity, mass_is_mooving);
+	//SET_CONDITION(initial, velocity, fixed_value);
 	set_arrays();
 	dt = 0.1;//we need to set dt!!!
 	flag_first_time_step = 1;
