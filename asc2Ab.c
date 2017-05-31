@@ -1012,11 +1012,16 @@ int SET_initial_CONDITION_velocity_mass_is_mooving(void)
 	for (k = 0; k < nz; k++) {
 		for (i = 0; i < nx; i++) {
 			for (j = 0; j < ny; j++) {
-				if ((ind_cell_multipl[i * ny + j] != -1) &&
-					(phase_fraction(i, j, k) != 0)) {
+				if (ind_cell_multipl[i * ny + j] != -1) {
+					if (phase_fraction(i, j, k) != 0) {
 						B_prev[B_IND(0, i, j, k)] = fixed_value[0];
 						B_prev[B_IND(1, i, j, k)] = fixed_value[1];
 						B_prev[B_IND(2, i, j, k)] = fixed_value[2];
+					} else {
+						B_prev[B_IND(0, i, j, k)] = 0;
+						B_prev[B_IND(1, i, j, k)] = 0;
+						B_prev[B_IND(2, i, j, k)] = 0;
+					}
 				}
 			}
 		}
@@ -3688,7 +3693,7 @@ int create_Ab(void)
 						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson, second, combined, VOF)) return 1;
 						//if (VECT(p, i, j, k, gravity_force, crank_nikolson, second, combined, VOF)) return 1;
 						if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF)) return 1;
-						//if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF)) return 1;
+						if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF)) return 1;
 					}
 					/* transport equation for snow volume fraction */
 					p = 3;
@@ -4070,7 +4075,7 @@ int main(int argc, char **argv)
 	flag_first_time_step = 1;
 	time_steps = end_time / dt;
 	for (i = 0; i <= time_steps; i++) {
-		SET_CONDITION(boundary, velocity, fixed_value_on_all);
+		SET_CONDITION(boundary, velocity, zero_gradient_on_up_and_sides_no_slip_on_low);
 		SET_CONDITION(boundary, phase_fraction, fixed_value_on_all);
 		SET_CONDITION(boundary, pressure, fixed_value_on_up_and_sides_zero_gradient_on_low);
 		if (print_vtk(i) == 1) {
