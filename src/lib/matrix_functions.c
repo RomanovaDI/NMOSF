@@ -2,14 +2,19 @@
 #include "utils.h"
 #include "boundary_conditions.h"
 #include "initial_conditions.h"
-#include "x_crank_nikolson_second_comined_VOF.h"
-#include "t_second_combine_VOF.h"
+#include "x_crank_nikolson_second_combined_VOF.h"
+#include "t_second_combined_VOF.h"
 #include "slu_ddefs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
+
+#define DDT(p, i, j, k, object, approximation_order, solution_mode, method) DDT_##object##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
+#define DIV(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) DIV_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
+#define GRAD(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) GRAD_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
+#define VECT(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) VECT_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
 
 int write_B_to_B_prev(in I)
 {
@@ -46,49 +51,48 @@ int write_B_prev_to_B(in I)
 int create_Ab(in I)
 {
 	printf("Creating matrix A and vector B function\n");
-	time_start();
 	int i, j, k, p;
-	if (flag_first_time_step) {
-		if ((B = (double *) malloc(system_dimension * sizeof(double))) == NULL) {
+	if (I.flag_first_time_step) {
+		if ((I.B = (double *) malloc(I.system_dimension * sizeof(double))) == NULL) {
 			printf("Memory error\n");
 			return 1;
 		}
-		memset((void *) B, 0, system_dimension * sizeof(double));
+		memset((void *) I.B, 0, I.system_dimension * sizeof(double));
 		int num_el_in_row = 100; // it is inaccurate value
-		non_zero_elem = num_el_in_row * system_dimension;
-		if ((Aelem_csr = (double *) malloc(non_zero_elem * sizeof(double))) == NULL) {
+		I.non_zero_elem = num_el_in_row * I.system_dimension;
+		if ((I.Aelem_csr = (double *) malloc(I.non_zero_elem * sizeof(double))) == NULL) {
 			printf("Memory error\n");
 			return 1;
 		}
-		memset((void *) Aelem_csr, 0, non_zero_elem * sizeof(double));
-		if ((Ajptr_csr = (int *) malloc(non_zero_elem * sizeof(int))) == NULL) {
+		memset((void *) I.Aelem_csr, 0, I.non_zero_elem * sizeof(double));
+		if ((I.Ajptr_csr = (int *) malloc(I.non_zero_elem * sizeof(int))) == NULL) {
 			printf("Memory error\n");
 			return 1;
 		}
-		memset((void *) Ajptr_csr, -1, non_zero_elem * sizeof(int));
-		if ((Aiptr_csr = (int *) malloc((system_dimension + 1) * sizeof(int))) == NULL) {
+		memset((void *) I.Ajptr_csr, -1, I.non_zero_elem * sizeof(int));
+		if ((I.Aiptr_csr = (int *) malloc((I.system_dimension + 1) * sizeof(int))) == NULL) {
 			printf("Memory error\n");
 			return 1;
 		}
-		memset((void *) Aiptr_csr, -1, (system_dimension + 1) * sizeof(int));
+		memset((void *) I.Aiptr_csr, -1, (I.system_dimension + 1) * sizeof(int));
 	} else {
-		memset((void *) B, 0, system_dimension * sizeof(double));
-		memset((void *) Aelem_csr, 0, non_zero_elem * sizeof(double));
+		memset((void *) I.B, 0, I.system_dimension * sizeof(double));
+		memset((void *) I.Aelem_csr, 0, I.non_zero_elem * sizeof(double));
 	}
 
 /* creating matrix */
-	if (flag_first_time_step)
-		A_ind_current = 0;
-	for (k = 0; k < nz; k++) {
-		for (i = 0; i < nx; i++) {
-			for (j = 0; j < ny; j++) {
-				if (ind_cell_multipl[i * ny + j] != -1) {
+	if (I.flag_first_time_step)
+		I.A_ind_current = 0;
+	for (k = 0; k < I.nz; k++) {
+		for (i = 0; i < I.nx; i++) {
+			for (j = 0; j < I.ny; j++) {
+				if (I.ind_cell_multipl[i * I.ny + j] != -1) {
 					/* momentum equation */
 					for (p = 0; p < 3; p++) {
-						if (flag_first_time_step) {
-							if (Ajptr_csr[A_ind_current] != -1)
-								A_ind_current++;
-							Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
+						if (I.flag_first_time_step) {
+							if (I.Ajptr_csr[I.A_ind_current] != -1)
+								I.A_ind_current++;
+							I.Aiptr_csr[A_IND(I, p, i, j, k)] = I.A_ind_current;
 						}
 						if (DDT(p, i, j, k, density_velocity, second, combined, VOF)) return 1;
 						//if (DDT(p, i, j, k, density_velocity)) return 1;
@@ -99,20 +103,20 @@ int create_Ab(in I)
 					}
 					/* transport equation for snow volume fraction */
 					p = 3;
-					if (flag_first_time_step) {
-						if (Ajptr_csr[A_ind_current] != -1)
-							A_ind_current++;
-						Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
+					if (I.flag_first_time_step) {
+						if (I.Ajptr_csr[I.A_ind_current] != -1)
+							I.A_ind_current++;
+						I.Aiptr_csr[A_IND(I, p, i, j, k)] = I.A_ind_current;
 					}
-					if (DDT(p, i, j, k, density_snow_volume_fraction, second, combined, VOF)) return 1;
-					if (DIV(p, i, j, k, density_snow_volume_fraction_velocity, crank_nikolson, second, combined, VOF)) return 1;
+					if (DDT(p, i, j, k, snow_volume_fraction, second, combined, VOF)) return 1;
+					if (DIV(p, i, j, k, snow_volume_fraction_velocity, crank_nikolson, second, combined, VOF)) return 1;
 					//if (DIV(p, i, j, k, grad_snow_volume_fraction, crank_nikolson, second, combined, FDM)) return 1;
 					/* continuity equation */
 					p = 4;
-					if (flag_first_time_step) {
-						if (Ajptr_csr[A_ind_current] != -1)
-							A_ind_current++;
-						Aiptr_csr[A_IND(p, i, j, k)] = A_ind_current;
+					if (I.flag_first_time_step) {
+						if (I.Ajptr_csr[I.A_ind_current] != -1)
+							I.A_ind_current++;
+						I.Aiptr_csr[A_IND(I, p, i, j, k)] = I.A_ind_current;
 					}
 					if (DIV(p, i, j, k, velocity_cont, crank_nikolson, second, combined, VOF)) return 1;
 					/* poisson equation for pressure */
@@ -128,55 +132,53 @@ int create_Ab(in I)
 			}
 		}
 	}
-	if (flag_first_time_step) {
-		non_zero_elem = A_ind_current + 1;
-		Aiptr_csr[system_dimension] = non_zero_elem;
-		if ((Aelem_csr = (double *) realloc(Aelem_csr, non_zero_elem * sizeof(double))) == NULL) {
+	if (I.flag_first_time_step) {
+		I.non_zero_elem = I.A_ind_current + 1;
+		I.Aiptr_csr[I.system_dimension] = I.non_zero_elem;
+		if ((I.Aelem_csr = (double *) realloc(I.Aelem_csr, I.non_zero_elem * sizeof(double))) == NULL) {
 			printf("Memory error\n");
 			return 1;
 		}
-		if ((Ajptr_csr = (int *) realloc(Ajptr_csr, non_zero_elem * sizeof(int))) == NULL) {
+		if ((I.Ajptr_csr = (int *) realloc(I.Ajptr_csr, I.non_zero_elem * sizeof(int))) == NULL) {
 			printf("Memory error\n");
 			return 1;
 		}
 	}
 	//if (flag_first_time_step)
 	//	print_A_csr();
-	printf("Time: %ld\n", time_stop());
 	return 0;
 }
 
 void print_A_csr(in I)
 {
 	printf("Print matrix A in CSR format function\n");
-	time_start();
 	FILE *f;
 	int i, j, k, fl_tmp;
 	if ((f = fopen("A_csr.txt","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
-	fprintf(f, "#%10d\n", system_dimension);
-	double max = abs(Aelem_csr[0]);
-	for (i = 0; i < non_zero_elem; i++) {
-		if (max < abs(Aelem_csr[i]))
-			max = abs(Aelem_csr[i]);
+	fprintf(f, "#%10d\n", I.system_dimension);
+	double max = abs(I.Aelem_csr[0]);
+	for (i = 0; i < I.non_zero_elem; i++) {
+		if (max < abs(I.Aelem_csr[i]))
+			max = abs(I.Aelem_csr[i]);
 		j = 0;
-		while (!((i >= Aiptr_csr[j]) && (i < Aiptr_csr[j + 1])))
+		while (!((i >= I.Aiptr_csr[j]) && (i < I.Aiptr_csr[j + 1])))
 			j++;
-		fprintf(f, "%20.10lf\t%10d\t%10d\n", Aelem_csr[i], j, Ajptr_csr[i]);
+		fprintf(f, "%20.10lf\t%10d\t%10d\n", I.Aelem_csr[i], j, I.Ajptr_csr[i]);
 	}
 	fclose(f);
 	if ((f = fopen("A_B.txt","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
-	for (i = 0; i < system_dimension; i++) {
-		for (j = 0; j < system_dimension; j++) {
+	for (i = 0; i < I.system_dimension; i++) {
+		for (j = 0; j < I.system_dimension; j++) {
 			fl_tmp = 1;
-			for (k = Aiptr_csr[i]; k < Aiptr_csr[i + 1]; k++) {
-				if (Ajptr_csr[k] == j) {
-					fprintf(f, "%20.10lf\t", Aelem_csr[k]);
+			for (k = I.Aiptr_csr[i]; k < I.Aiptr_csr[i + 1]; k++) {
+				if (I.Ajptr_csr[k] == j) {
+					fprintf(f, "%20.10lf\t", I.Aelem_csr[k]);
 					fl_tmp = 0;
 					break;
 				}
@@ -185,38 +187,38 @@ void print_A_csr(in I)
 				}
 			}
 		}
-		fprintf(f, "\t\t%20.10lf\n", B[i]);
+		fprintf(f, "\t\t%20.10lf\n", I.B[i]);
 	}
 	fclose(f);
 	if ((f = fopen("A_pattern.dat","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
-	fprintf(f, "#%10d\n", system_dimension);
-	for (i = 0; i < non_zero_elem; i++) {
+	fprintf(f, "#%10d\n", I.system_dimension);
+	for (i = 0; i < I.non_zero_elem; i++) {
 		j = 0;
-		while (!((i >= Aiptr_csr[j]) && (i <= Aiptr_csr[j + 1])))
+		while (!((i >= I.Aiptr_csr[j]) && (i <= I.Aiptr_csr[j + 1])))
 			j++;
-		//fprintf(f, "%20.10lf\t%10d\t%10d\n", Aelem_csr[i] / max, system_dimension - 1 - j, Ajptr_csr[i]);
-		fprintf(f, "%20.10lf\t%10d\t%10d\n", 1., system_dimension - 1 - j, Ajptr_csr[i]);
+		//fprintf(f, "%20.10lf\t%10d\t%10d\n", I.Aelem_csr[i] / max, I.system_dimension - 1 - j, I.Ajptr_csr[i]);
+		fprintf(f, "%20.10lf\t%10d\t%10d\n", 1., I.system_dimension - 1 - j, I.Ajptr_csr[i]);
 	}
 	fclose(f);
-	int *A_pattern = (int *) malloc(system_dimension * system_dimension * sizeof(int));
-	memset(A_pattern, 0, system_dimension * system_dimension * sizeof(int));
-	for (i = 0; i < non_zero_elem; i++) {
+	int *A_pattern = (int *) malloc(I.system_dimension * I.system_dimension * sizeof(int));
+	memset(A_pattern, 0, I.system_dimension * I.system_dimension * sizeof(int));
+	for (i = 0; i < I.non_zero_elem; i++) {
 		j = 0;
-		while (!((i >= Aiptr_csr[j]) && (i <= Aiptr_csr[j + 1])))
+		while (!((i >= I.Aiptr_csr[j]) && (i <= I.Aiptr_csr[j + 1])))
 			j++;
-		A_pattern[(system_dimension - 1 - j) * system_dimension + Ajptr_csr[i]] = 1;
+		A_pattern[(I.system_dimension - 1 - j) * I.system_dimension + I.Ajptr_csr[i]] = 1;
 	}
 	if ((f = fopen("A_pattern_matrix.dat","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
-	fprintf(f, "#%10d\n", system_dimension);
-	for (i = 0; i < system_dimension; i++) {
-		for (j = 0; j < system_dimension; j++) {
-			fprintf(f, "%d\t", A_pattern[i * system_dimension + j]);
+	fprintf(f, "#%10d\n", I.system_dimension);
+	for (i = 0; i < I.system_dimension; i++) {
+		for (j = 0; j < I.system_dimension; j++) {
+			fprintf(f, "%d\t", A_pattern[i * I.system_dimension + j]);
 		}
 		fprintf(f, "\n");
 	}
@@ -225,21 +227,20 @@ void print_A_csr(in I)
 		printf("error openning file");
 		return;
 	}
-	fprintf(f, "#%10d\n", system_dimension);
-	for (i = 0; i < non_zero_elem; i++) {
-		fprintf(f, "%10d\t%20.10lf\t%10d\n", i, Aelem_csr[i], Ajptr_csr[i]);
+	fprintf(f, "#%10d\n", I.system_dimension);
+	for (i = 0; i < I.non_zero_elem; i++) {
+		fprintf(f, "%10d\t%20.10lf\t%10d\n", i, I.Aelem_csr[i], I.Ajptr_csr[i]);
 	}
 	fclose(f);
 	if ((f = fopen("A_iptr.txt","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
-	fprintf(f, "#%10d\n", system_dimension);
-	for (i = 0; i < system_dimension; i++) {
-		fprintf(f, "%10d\n", Aiptr_csr[i]);
+	fprintf(f, "#%10d\n", I.system_dimension);
+	for (i = 0; i < I.system_dimension; i++) {
+		fprintf(f, "%10d\n", I.Aiptr_csr[i]);
 	}
 	fclose(f);
-	printf("Time: %ld\n", time_stop());
 	return;
 }
 
@@ -286,18 +287,18 @@ int solve_matrix(in I)
 
 	/* Read the matrix in Harwell-Boeing format. */
 //	dreadhb(&m, &n, &nnz, &a, &asub, &xa);
-	dCreate_CompCol_Matrix(&A_csr, system_dimension, system_dimension, non_zero_elem, Aelem_csr, Ajptr_csr, Aiptr_csr, SLU_NR, SLU_D, SLU_GE);
+	dCreate_CompCol_Matrix(&A_csr, I.system_dimension, I.system_dimension, I.non_zero_elem, I.Aelem_csr, I.Ajptr_csr, I.Aiptr_csr, SLU_NR, SLU_D, SLU_GE);
 	Astore = A_csr.Store;
 	printf("Dimension %dx%d; # nonzeros %d\n", A_csr.nrow, A_csr.ncol, Astore->nnz);
 	nrhs   = 1;
 //	if ( !(rhs = doubleMalloc(m * nrhs)) ) ABORT("Malloc fails for rhs[].");
-	dCreate_Dense_Matrix(&B_csr, system_dimension, nrhs, B, system_dimension, SLU_DN, SLU_D, SLU_GE);
+	dCreate_Dense_Matrix(&B_csr, I.system_dimension, nrhs, I.B, I.system_dimension, SLU_DN, SLU_D, SLU_GE);
 //	xact = doubleMalloc(n * nrhs);
 //	ldx = n;
 //	dGenXtrue(n, nrhs, xact, ldx);
 //	dFillRHS(options.Trans, nrhs, xact, ldx, &A, &B);
-	if ( !(perm_c = intMalloc(system_dimension)) ) ABORT("Malloc fails for perm_c[].");
-	if ( !(perm_r = intMalloc(system_dimension)) ) ABORT("Malloc fails for perm_r[].");
+	if ( !(perm_c = intMalloc(I.system_dimension)) ) ABORT("Malloc fails for perm_c[].");
+	if ( !(perm_r = intMalloc(I.system_dimension)) ) ABORT("Malloc fails for perm_r[].");
 
 	/* Initialize the statistics variables. */
 	StatInit(&stat);
@@ -305,8 +306,8 @@ int solve_matrix(in I)
 	if ( info == 0 ) {
 		/* This is how you could access the solution matrix. */
 		double *sol = (double*) ((DNformat*) B_csr.Store)->nzval; 
-		for (i = 0; i < n_cells_multipl * nz * num_parameters; i++) {
-			B[i] = sol[i];
+		for (i = 0; i < I.n_cells_multipl * I.nz * I.num_parameters; i++) {
+			I.B[i] = sol[i];
 		}
 		/* Compute the infinity norm of the error. */
 //		dinf_norm_error(nrhs, &B, xact);
@@ -315,14 +316,14 @@ int solve_matrix(in I)
 		Ustore = (NCformat *) U.Store;
 		printf("No of nonzeros in factor L = %d\n", Lstore->nnz);
 		printf("No of nonzeros in factor U = %d\n", Ustore->nnz);
-		printf("No of nonzeros in L+U = %d\n", Lstore->nnz + Ustore->nnz - system_dimension);
-		printf("FILL ratio = %.1f\n", (float)(Lstore->nnz + Ustore->nnz - system_dimension)/non_zero_elem);
+		printf("No of nonzeros in L+U = %d\n", Lstore->nnz + Ustore->nnz - I.system_dimension);
+		printf("FILL ratio = %.1f\n", (float)(Lstore->nnz + Ustore->nnz - I.system_dimension)/I.non_zero_elem);
 		dQuerySpace(&L, &U, &mem_usage);
 		printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
 		mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
 	} else {
 		printf("dgssv() error returns INFO= %d\n", info);
-		if ( info <= system_dimension ) { /* factorization completes */
+		if ( info <= I.system_dimension ) { /* factorization completes */
 			dQuerySpace(&L, &U, &mem_usage);
 			printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
 					mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);

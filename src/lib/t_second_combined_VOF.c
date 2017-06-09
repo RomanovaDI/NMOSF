@@ -21,7 +21,7 @@ int DDT_density_velocity_second_combined_VOF(in I, int p, int i, int j, int k)
 	return 0;
 }
 
-int DDT_density_snow_volume_fraction_second_combined_VOF(in I, int p, int i, int j, int k)
+int DDT_snow_volume_fraction_second_combined_VOF(in I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;

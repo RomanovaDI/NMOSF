@@ -295,3 +295,40 @@ int DIV_velocity_cont_crank_nikolson_second_combined_VOF(in I, int p, int i, int
 	return 0;
 }
 
+int DIV_snow_volume_fraction_velocity_half_forward_euler_second_combined_VOF(in I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	int s;
+	for (s = 0; s < 6; s++) {
+	I.B[A_IND(I, 3, i, j, k)] -= (I.area[AREA_IND(I, i, j, k, s)] / (2 * I.volume[VOLUME_IND(I, i, j, k)])) * phase_fraction_on_face(I, i, j, k, s) *
+		(velocity_on_face(I, 0, i, j, k, s) * I.normal[NORMAL_IND(I, 0, i, j, k, s)] +
+		velocity_on_face(I, 1, i, j, k, s) * I.normal[NORMAL_IND(I, 1, i, j, k, s)] +
+		velocity_on_face(I, 2, i, j, k, s) * I.normal[NORMAL_IND(I, 2, i, j, k, s)]);
+	}
+	return 0;
+}
+
+int DIV_snow_volume_fraction_velocity_half_backward_euler_second_combined_VOF(in I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	int s;
+	double A_value;
+	for (s = 0; s < 6; s++) {
+	A_value = (I.area[AREA_IND(I, i ,j, k, s)] / (4 * I.volume[VOLUME_IND(I, i, j, k)])) *
+		(velocity_on_face(I, 0, i, j, k, s) * I.normal[NORMAL_IND(I, 0, i, j, k, s)] +
+		velocity_on_face(I, 1, i, j, k, s) * I.normal[NORMAL_IND(I, 1, i, j, k, s)] +
+		velocity_on_face(I, 2, i, j, k, s) * I.normal[NORMAL_IND(I, 2, i, j, k, s)]);
+	WRITE_TO_A(3, i, j, k, -1);
+	WRITE_TO_A(3, i, j, k, s);
+	}
+	return 0;
+}
+
+int DIV_snow_volume_fraction_velocity_crank_nikolson_second_combined_VOF(in I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	if (DIV(p, i, j, k, snow_volume_fraction_velocity, half_forward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, snow_volume_fraction_velocity, half_backward_euler, second, combined, VOF)) return 1;
+	return 0;
+}
+

@@ -21,8 +21,8 @@ list of objects
    gravity_force
    grad_pressure
    div_density_velocity_velocity
-   density_snow_volume_fraction
-   density_snow_volume_fraction_velocity
+   snow_volume_fraction
+   snow_volume_fraction_velocity
 */
 
 /*
