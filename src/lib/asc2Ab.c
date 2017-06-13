@@ -94,10 +94,13 @@ numbering faces of cells is so
 #include "read_files.h"
 #include "mesh_operations.h"
 #include "utils.h"
+#include "vtk_map_functions.h"
 #include "boundary_conditions.h"
 #include "initial_conditions.h"
-#include "x_crank_nikolson_second_comined_VOF.h"
-#include "t_second_combine_VOF.h"
+#include "array_functions.h"
+#include "x_crank_nikolson_second_combined_VOF.h"
+#include "t_second_combined_VOF.h"
+#include "matrix_functions.h"
 #include "slu_ddefs.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -159,10 +162,10 @@ int main(int argc, char **argv)
 	SET_CONDITION(initial, pressure, fixed_value_with_hydrostatic_pressure);
 	SET_CONDITION(initial, velocity, mass_is_mooving);
 	//SET_CONDITION(initial, velocity, fixed_value);
-	set_arrays();
+	set_arrays(I);
 	time_steps = I.end_time / I.dt;
 	I.flag_first_time_step = 1;
-	for (i = 0; i <= I.time_steps; i++) {
+	for (i = 0; i <= time_steps; i++) {
 		SET_CONDITION(boundary, velocity, zero_gradient_on_up_and_sides_no_slip_on_low);
 		SET_CONDITION(boundary, phase_fraction, fixed_value_on_all);
 		SET_CONDITION(boundary, pressure, fixed_value_on_up_and_sides_zero_gradient_on_low);
