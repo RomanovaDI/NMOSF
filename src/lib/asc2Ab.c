@@ -101,11 +101,9 @@ numbering faces of cells is so
 #include "x_crank_nikolson_second_combined_VOF.h"
 #include "t_second_combined_VOF.h"
 #include "matrix_functions.h"
-#include "slu_ddefs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <unistd.h>
 #include <sys/time.h>
 

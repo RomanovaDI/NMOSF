@@ -7,7 +7,7 @@
 int set_parameters(in I)
 {
 	I.map_name = "map_for_verification_Ab_21.asc";
-	I.region_map_name = "map_for_verification_Ab_region_2.asc";
+	I.region_map_name = "/home/daria/cases/NMOSF/maps/map_for_verification_Ab_region_2.asc";
 	I.hight = 15;
 	I.depth = 7;
 	I.kx = 1;
