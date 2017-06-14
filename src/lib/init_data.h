@@ -1,6 +1,6 @@
 typedef struct init_parameters {
-	char *map_name;
-	char *region_map_name;
+	char map_name[100];
+	char region_map_name[100];
 	double hight;
 	int kx, ky, kz;
 	int nx, ny, nz;
@@ -39,4 +39,4 @@ typedef struct init_parameters {
 	double mass_quantity;
 } in;
 
-int set_parameters(in I);
+int set_parameters(in *I);

@@ -146,26 +146,27 @@ void display_usage(void)
 int main(int argc, char **argv)
 {
 	int i, time_steps;
-	in I;
+	in II;
+	in *I = &II;
 	if (set_parameters(I)) goto error;
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (do_interpolation(I)) goto error;
 	set_arrays(I);
 	make_boundary(I);
-	I.system_dimension = I.n_cells_multipl * I.nz * I.num_parameters;
-	I.system_dimension_with_boundary = I.n_boundary_cells * (I.nz + 2 * I.stencil_size) * I.num_parameters;
-	if ((I.B_prev = (double *) malloc(I.system_dimension_with_boundary * sizeof(double))) == NULL) {
+	I->system_dimension = I->n_cells_multipl * I->nz * I->num_parameters;
+	I->system_dimension_with_boundary = I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->num_parameters;
+	if ((I->B_prev = (double *) malloc(I->system_dimension_with_boundary * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) I.B_prev, 0, I.system_dimension_with_boundary * sizeof(double));
+	memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
 	SET_CONDITION(initial, phase_fraction, ascii_map);
 	SET_CONDITION(initial, pressure, fixed_value_with_hydrostatic_pressure);
 	SET_CONDITION(initial, velocity, mass_is_mooving);
 	//SET_CONDITION(initial, velocity, fixed_value);
 	set_arrays(I);
-	time_steps = I.end_time / I.dt;
-	I.flag_first_time_step = 1;
+	time_steps = I->end_time / I->dt;
+	I->flag_first_time_step = 1;
 	for (i = 0; i <= time_steps; i++) {
 		SET_CONDITION(boundary, velocity, zero_gradient_on_up_and_sides_no_slip_on_low);
 		SET_CONDITION(boundary, phase_fraction, fixed_value_on_all);
@@ -178,7 +179,7 @@ int main(int argc, char **argv)
 		}
 		if (create_Ab(I) == 1) goto error;
 		if (i == 0)
-			I.flag_first_time_step = 0;
+			I->flag_first_time_step = 0;
 		if (solve_matrix(I) == 1) goto error;
 		write_B_to_B_prev(I);
 		if (check_conservation_of_mass(I)) {

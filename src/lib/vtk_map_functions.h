@@ -1,1 +1,1 @@
-int print_vtk(in I, int n);
+int print_vtk(in *I, int n);
