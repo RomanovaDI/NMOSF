@@ -24,6 +24,23 @@ int SET_initial_CONDITION_velocity_fixed_value(in *I)
 	return 0;
 }
 
+int SET_initial_CONDITION_phase_fraction_fixed_value(in *I)
+{
+	printf("Set the initial condition for velocity with fixed value for all calculation domain\n");
+	int i, j, k;
+	double fixed_value = I->density_snow;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					I->B_prev[B_IND(I, 3, i, j, k)] = fixed_value;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 int SET_initial_CONDITION_velocity_mass_is_mooving(in *I)
 {
 	printf("Set the initial condition for velocity with fixed value for all calculation domain\n");
@@ -101,6 +118,22 @@ int SET_initial_CONDITION_pressure_fixed_value_with_hydrostatic_pressure(in *I)
 					} else {
 						I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere;
 					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int SET_initial_CONDITION_pressure_fixed_value(in *I)
+{
+	printf("Set the initial condition for pressure with fixed value atmosphere pressure in respect hydrostatic pressire\n");
+	int i, j, k;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_boundary_cells[i * I->ny + j] != -1) {
+					I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere;
 				}
 			}
 		}

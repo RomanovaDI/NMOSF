@@ -1,4 +1,5 @@
 int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low(in *I);
+int SET_boundary_CONDITION_velocity_zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving(in *I);
 int SET_boundary_CONDITION_velocity_fixed_value_on_all(in *I);
 int SET_boundary_CONDITION_phase_fraction_zero_gradient_on_all(in *I);
 int SET_boundary_CONDITION_phase_fraction_fixed_value_on_all(in *I);

@@ -6,17 +6,17 @@
 
 int set_parameters(in *I)
 {
-	//printf("!%s!\n", I.map_name);
 	strcpy(I->map_name, "maps/map_for_verification_Ab_21.asc");
 	strcpy(I->region_map_name, "maps/map_for_verification_Ab_region_22.asc");
-	//printf("!%s!\n", I.map_name);
-	//I->region_map_name = "/home/daria/cases/NMOSF/maps/map_for_verification_Ab_region_2.asc";
+	strcpy(I->map_name, "maps/map_cavity.asc");
+	strcpy(I->region_map_name, "maps/map_cavity_region.asc");
 	I->hight = 15;
 	I->depth = 7;
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
-	I->density_snow = 200;
+	//I->density_snow = 200;
+	I->density_snow = 1000;
 	I->density_air = 1;
 	I->pressure_atmosphere = 101325;
 	I->k_viscosity_air = 0.0000148;

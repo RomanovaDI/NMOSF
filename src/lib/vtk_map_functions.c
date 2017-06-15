@@ -15,7 +15,7 @@ int print_vtk(in *I, int n)
 	}
 	//char file_name[8 + i];
 	char file_name[20 + i];
-	sprintf(file_name, "map%d.vtk", n);
+	sprintf(file_name, "result/map%d.vtk", n);
 	FILE *f = fopen(file_name, "w");
 	fprintf(f, "# vtk DataFile Version 2.0\n");
 	fprintf(f, "slope\n");
@@ -92,7 +92,7 @@ int print_vtk(in *I, int n)
 		}
 	}
 	fclose(f);
-	sprintf(file_name, "B_prev%d.txt", n);
+	sprintf(file_name, "tmp/B_prev%d.txt", n);
 	f = fopen(file_name, "w");
 	int p;
 	for (p = 0; p < I->num_parameters; p++) {

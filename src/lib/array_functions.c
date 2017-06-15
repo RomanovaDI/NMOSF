@@ -122,7 +122,7 @@ int set_arrays(in *I)
 			}
 		}
 	}
-	FILE *f = fopen("volume", "w");
+	FILE *f = fopen("tmp/volume", "w");
 	for (i = 0; i < I->nx; i++) {
 		for (j = 0; j < I->ny; j++) {
 			if (I->ind_cell_multipl[i * I->ny + j] != -1) {
@@ -132,7 +132,7 @@ int set_arrays(in *I)
 		fprintf(f, "\n");
 	}
 	fclose(f);
-	f = fopen("area", "w");
+	f = fopen("tmp/area", "w");
 	for (i = 0; i < I->nx; i++) {
 		for (j = 0; j < I->ny; j++) {
 			if (I->ind_cell_multipl[i * I->ny + j] != -1) {
@@ -143,7 +143,7 @@ int set_arrays(in *I)
 		fprintf(f, "\n");
 	}
 	fclose(f);
-	f = fopen("normal", "w");
+	f = fopen("tmp/normal", "w");
 	for (i = 0; i < I->n_cells_multipl; i++) {
 		for (j = 0; j < 18; j++) {
 			fprintf(f, "%20.10lf\t", I->normal[i * 18 + j]);

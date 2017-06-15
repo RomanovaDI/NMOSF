@@ -58,7 +58,7 @@ int GRAD_pressure_half_forward_euler_second_combined_VOF(in *I, int p, int i, in
 	int ind_p[3];
 	ind_p[0] = ind_p[1] = ind_p[2] = 0;
 	ind_p[p] = 1;
-	I->B[A_IND(I, p, i, j, k)] -= (pressure(I, i + ind_p[0], j + ind_p[1], k + ind_p[2]) - pressure(I, i - ind_p[0], j - ind_p[1], k - ind_p[2])) / I->dx[p];
+	I->B[A_IND(I, p, i, j, k)] -= (pressure(I, i + ind_p[0], j + ind_p[1], k + ind_p[2]) - pressure(I, i - ind_p[0], j - ind_p[1], k - ind_p[2])) / (4 * I->dx[p]);
 	return 0;
 }
 

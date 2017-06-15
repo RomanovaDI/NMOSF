@@ -275,7 +275,7 @@ int make_boundary(in *I)
 		}
 	}
 	I->n_boundary_cells = k;
-	FILE *f = fopen("boundary.txt", "w");
+	FILE *f = fopen("tmp/boundary.txt", "w");
 	for (i = 0; i < I->nx + 2 * I->stencil_size; i++) {
 		for (j = 0; j < I->ny + 2 * I->stencil_size; j++) {
 			fprintf(f, "%d ", I->ind_boundary_cells[i * (I->ny + 2 * I->stencil_size) + j]);

@@ -31,7 +31,8 @@ int VOLUME_IND(in *I, int i, int j, int k)
 
 double density(in *I, int i, int j, int k)
 {
-	return phase_fraction(I, i, j, k) * I->density_snow + (1 - phase_fraction(I, i, j, k)) * I->density_air;
+	//return phase_fraction(I, i, j, k) * I->density_snow + (1 - phase_fraction(I, i, j, k)) * I->density_air;
+	return phase_fraction(I, i, j, k);
 }
 
 double velocity(in *I, int p, int i, int j, int k)
@@ -341,3 +342,84 @@ int check_conservation_of_mass(in *I)
 	}
 }
 
+int cell_of_computation_domain(in *I, int i, int j, int k)
+{
+	if ((i >= - I->stencil_size) && (i < I->nx + I->stencil_size) &&
+		(j >= - I->stencil_size) && (j < I->ny + I->stencil_size) &&
+		(k >= - I->stencil_size) && (k < I->nz + I->stencil_size))
+			return 1;
+	else
+			return 0;
+}
+
+int boundary_cell(in *I, int i, int j, int k)
+{
+	if (cell_of_computation_domain(I, i, j, k) &&
+		(I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size] != -1) &&
+		((!((i >= 0) && (i < I->nx) &&
+			(j >= 0) && (j < I->ny) &&
+			(I->ind_cell_multipl[i * I->ny + j] != -1))) ||
+		 (k < 0) || (k >= I->nz)))
+			return 1;
+	else
+			return 0;
+
+}
+
+int count_neighbor_internal_cells(in *I, int i, int j, int k)
+{
+	int x = 0;
+	if (boundary_cell(I, i - 1, j, k)) x++;
+	if (boundary_cell(I, i + 1, j, k)) x++;
+	if (boundary_cell(I, i, j - 1, k)) x++;
+	if (boundary_cell(I, i, j + 1, k)) x++;
+	return x;
+}
+
+int count_second_order_neighbor_internal_cells(in *I, int i, int j, int k)
+{
+	int x = 0;
+	if (boundary_cell(I, i - 2, j, k)) x++;
+	if (boundary_cell(I, i + 2, j, k)) x++;
+	if (boundary_cell(I, i, j - 2, k)) x++;
+	if (boundary_cell(I, i, j + 2, k)) x++;
+	return x;
+}
+
+int count_other_corner_neighbor_internal_cells(in *I, int i, int j, int k)
+{
+	int x = 0;
+	if (boundary_cell(I, i - 1, j - 1, k)) x++;
+	if (boundary_cell(I, i - 1, j + 1, k)) x++;
+	if (boundary_cell(I, i + 1, j - 1, k)) x++;
+	if (boundary_cell(I, i + 1, j + 1, k)) x++;
+	if (boundary_cell(I, i - 1, j - 2, k)) x++;
+	if (boundary_cell(I, i - 1, j + 2, k)) x++;
+	if (boundary_cell(I, i + 1, j - 2, k)) x++;
+	if (boundary_cell(I, i + 1, j + 2, k)) x++;
+	if (boundary_cell(I, i - 2, j - 1, k)) x++;
+	if (boundary_cell(I, i - 2, j + 1, k)) x++;
+	if (boundary_cell(I, i + 2, j - 1, k)) x++;
+	if (boundary_cell(I, i + 2, j + 1, k)) x++;
+	if (boundary_cell(I, i - 2, j - 2, k)) x++;
+	if (boundary_cell(I, i - 2, j + 2, k)) x++;
+	if (boundary_cell(I, i + 2, j - 2, k)) x++;
+	if (boundary_cell(I, i + 2, j + 2, k)) x++;
+	return x;
+}
+
+int barotropy_pressure(in *I)
+{
+	int i, j, k;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					if (check_for_corrupt_cell(I, i, j, k)) return 1;
+					I->B[A_IND(I, 4, i, j, k)] = (I->pressure_atmosphere / I->density_snow) * I->B[A_IND(I, 3, i, j, k)];
+				}
+			}
+		}
+	}
+	return 0;
+}

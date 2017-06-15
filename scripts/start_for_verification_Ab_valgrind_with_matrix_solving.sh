@@ -10,6 +10,7 @@ gcc -g -O0 -shared src/lib/initial_conditions.c -lm -o build/lib/libinitial_cond
 gcc -g -O0 -shared src/lib/array_functions.c -lm -o build/lib/libarray_functions.so -fPIC
 gcc -g -O0 -shared src/lib/t_second_combined_VOF.c -lm -o build/lib/libt_second_combined_VOF.so -fPIC
 gcc -g -O0 -shared src/lib/x_crank_nikolson_second_combined_VOF.c -lm -o build/lib/libx_crank_nikolson_second_combined_VOF.so -fPIC
+gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_VOF.c -lm -o build/lib/libx_forward_euler_second_combined_VOF.so -fPIC
 gcc -g -O0 -shared src/lib/create_matrix.c -lm -I src/lib/ -L build/lib -lt_second_combined_VOF -lx_crank_nikolson_second_combined_VOF -o build/lib/libcreate_matrix.so -fPIC
 gcc -g -O0 -shared src/lib/matrix_functions.c -lm -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -lsuperlu -o build/lib/libmatrix_functions.so -fPIC
 gcc -g -O0  src/asc2Ab.c \

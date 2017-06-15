@@ -99,6 +99,7 @@ numbering faces of cells is so
 #include "initial_conditions.h"
 #include "array_functions.h"
 #include "x_crank_nikolson_second_combined_VOF.h"
+#include "x_forward_euler_second_combined_VOF.h"
 #include "t_second_combined_VOF.h"
 #include "create_matrix.h"
 #include "matrix_functions.h"
@@ -160,10 +161,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
-	SET_CONDITION(initial, phase_fraction, ascii_map);
-	SET_CONDITION(initial, pressure, fixed_value_with_hydrostatic_pressure);
-	SET_CONDITION(initial, velocity, mass_is_mooving);
-	//SET_CONDITION(initial, velocity, fixed_value);
+	SET_CONDITION(initial, phase_fraction, fixed_value);
+	SET_CONDITION(initial, pressure, fixed_value);
+	SET_CONDITION(initial, velocity, fixed_value);
 	set_arrays(I);
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
@@ -180,7 +180,8 @@ int main(int argc, char **argv)
 		if (create_Ab(I) == 1) goto error;
 		if (i == 0)
 			I->flag_first_time_step = 0;
-		if (solve_matrix(I) == 1) goto error;
+		if (solve_matrix(I)) goto error;
+		if (barotropy_pressure(I)) goto error;
 		write_B_to_B_prev(I);
 		if (check_conservation_of_mass(I)) {
 			printf("Mass conservation equation failed\n");
