@@ -4,3 +4,4 @@ int SET_boundary_CONDITION_velocity_fixed_value_on_all(in *I);
 int SET_boundary_CONDITION_phase_fraction_zero_gradient_on_all(in *I);
 int SET_boundary_CONDITION_phase_fraction_fixed_value_on_all(in *I);
 int SET_boundary_CONDITION_pressure_fixed_value_on_up_and_sides_zero_gradient_on_low(in *I);
+int SET_boundary_CONDITION_pressure_zero_gradient_on_all(in *I);

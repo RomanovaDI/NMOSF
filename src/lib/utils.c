@@ -416,7 +416,9 @@ int barotropy_pressure(in *I)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					if (check_for_corrupt_cell(I, i, j, k)) return 1;
-					I->B[A_IND(I, 4, i, j, k)] = (I->pressure_atmosphere / I->density_snow) * I->B[A_IND(I, 3, i, j, k)];
+					I->B[A_IND(I, 4, i, j, k)] = I->pressure_atmosphere +
+						(I->pressure_atmosphere / I->density_snow) * 0.999 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) +
+						(I->pressure_atmosphere / I->density_snow) * 0.001 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow);
 				}
 			}
 		}

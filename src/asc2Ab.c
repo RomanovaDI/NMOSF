@@ -149,11 +149,13 @@ int main(int argc, char **argv)
 	int i, time_steps;
 	in II;
 	in *I = &II;
+	if (solve_test_matrix()) goto error;
+	//return 0;
 	if (set_parameters(I)) goto error;
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (do_interpolation(I)) goto error;
-	set_arrays(I);
-	make_boundary(I);
+	if (set_arrays(I)) goto error;
+	if (make_boundary(I)) goto error;
 	I->system_dimension = I->n_cells_multipl * I->nz * I->num_parameters;
 	I->system_dimension_with_boundary = I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->num_parameters;
 	if ((I->B_prev = (double *) malloc(I->system_dimension_with_boundary * sizeof(double))) == NULL) {
@@ -164,13 +166,12 @@ int main(int argc, char **argv)
 	SET_CONDITION(initial, phase_fraction, fixed_value);
 	SET_CONDITION(initial, pressure, fixed_value);
 	SET_CONDITION(initial, velocity, fixed_value);
-	set_arrays(I);
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
 	for (i = 0; i <= time_steps; i++) {
-		SET_CONDITION(boundary, velocity, zero_gradient_on_up_and_sides_no_slip_on_low);
-		SET_CONDITION(boundary, phase_fraction, fixed_value_on_all);
-		SET_CONDITION(boundary, pressure, fixed_value_on_up_and_sides_zero_gradient_on_low);
+		SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving);
+		SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
+		SET_CONDITION(boundary, pressure, zero_gradient_on_all);
 		if (print_vtk(I, i) == 1) {
 			printf("Error printing vtk file\n");
 			goto error;

@@ -12,7 +12,8 @@ typedef struct init_parameters {
 	int *ind;
 	int *bl_cond;
 	int n_points, n_cells;
-	int n_points_multipl, n_cells_multipl;
+	int n_points_multipl;
+	int n_cells_multipl;
 	int *ind_multipl, *ind_cell_multipl;
 	double interpolation, interpolation_poli;
 	double *mass1;

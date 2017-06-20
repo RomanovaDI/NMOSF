@@ -154,3 +154,25 @@ int set_arrays(in *I)
 	return 0;
 }
 
+int print_B_prev(in *I)
+{
+	int i, j, k, p;
+	FILE *f;
+	char file_name[30];
+	for (p = 0; p < I->num_parameters; p++) {
+		for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
+			sprintf(file_name, "tmp/B_prev_p%d_j%d", p, j);
+			f = fopen(file_name, "w");
+			for (k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
+				for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
+					if (I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size] != -1) {
+						fprintf(f, "%f\t", I->B_prev[B_IND(I, p, i, j, k)]);
+					}
+					fprintf(f, "\n");
+				}
+			}
+			fclose(f);
+		}
+	}
+}
+

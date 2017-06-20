@@ -76,49 +76,52 @@ int do_interpolation(in *I)
 	memset((void *) f, 0, I->ncols * sizeof(double));
 
 	int ind_start, ind_finish, flag;
-	for (i = 0; i < I->nrows; i++) {
-		flag = 0;
-		ind_start = 0;
-		ind_finish = I->ncols;
-		for (j = 0; j < I->ncols; j++) {
-			if ((I->ind[i * I->ncols + j] != -1) && (flag == 0)) {
-				ind_start = j;
-				flag = 1;
-			}
-			if ((I->ind[i * I->ncols + j] == -1) && (flag == 1)) {
-				ind_finish = j;
-				flag = 2;
-			}
-		}
-		e[ind_start + 2] = f[ind_start + 2] = 0;
-		for (j = ind_start + 3; j < ind_finish - 1; j++) {
-			e[j] = - 1. / (4 * e[j - 1] + 1);
-			f[j] = (6 * (I->mass[i * I->ncols + j + 1] - 2 * I->mass[i * I->ncols + j] + I->mass[i * I->ncols + j - 1]) / (I->cellsize * I->cellsize) - 4 * f[j - 1]) / (4 * e[j - 1] + 1);
-		}
-		j = ind_finish - 2;
-		c[j] = (6 * (I->mass[i * I->ncols + j + 1] - 2 * I->mass[i * I->ncols + j] + I->mass[i * I->ncols + j - 1]) / (I->cellsize * I->cellsize) - 4 * f[j]) / (1 + 4 * e[j]);
-		for (j = ind_finish - 3; j > ind_start + 1; j--) {
-			c[j] = e[j + 1] * c[j + 1] + f[j + 1];
-		}
-		c[ind_start + 1] = c[ind_finish - 1] = c[ind_start] = 0;
-		for (j = ind_start + 1; j < ind_finish; j++) {
-			a = I->mass[i * I->ncols + j];
-			d = (c[j] - c[j - 1]) / I->cellsize;
-			b = (I->mass[i * I->ncols + j] - I->mass[i * I->ncols + j - 1]) / I->cellsize + I->cellsize * (2 * c[j] + c[j - 1]) / 6;
-			if ((I->ind[i * I->ncols + j - 1] != -1) && (I->ind[i * I->ncols + j] != -1)) {
-				for (k = 0; k < I->ky; k++) {
-					I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + (j - 1) * I->ky + k] = a + b * ((double) k * I->cellsize / (double) I->ky - I->cellsize) +
-						c[j] * pow((double) k * I->cellsize / (double) I->ky - I->cellsize, 2) / 2 +
-						d * pow((double) k * I->cellsize / (double) I->ky - I->cellsize, 3) / 6;
+
+	if ((I->ncols > 2) && (I->ky > 1)) {
+		for (i = 0; i < I->nrows; i++) {
+			flag = 0;
+			ind_start = 0;
+			ind_finish = I->ncols;
+			for (j = 0; j < I->ncols; j++) {
+				if ((I->ind[i * I->ncols + j] != -1) && (flag == 0)) {
+					ind_start = j;
+					flag = 1;
+				}
+				if ((I->ind[i * I->ncols + j] == -1) && (flag == 1)) {
+					ind_finish = j;
+					flag = 2;
 				}
 			}
+			e[ind_start + 2] = f[ind_start + 2] = 0;
+			for (j = ind_start + 3; j < ind_finish - 1; j++) {
+				e[j] = - 1. / (4 * e[j - 1] + 1);
+				f[j] = (6 * (I->mass[i * I->ncols + j + 1] - 2 * I->mass[i * I->ncols + j] + I->mass[i * I->ncols + j - 1]) / (I->cellsize * I->cellsize) - 4 * f[j - 1]) / (4 * e[j - 1] + 1);
+			}
+			j = ind_finish - 2;
+			c[j] = (6 * (I->mass[i * I->ncols + j + 1] - 2 * I->mass[i * I->ncols + j] + I->mass[i * I->ncols + j - 1]) / (I->cellsize * I->cellsize) - 4 * f[j]) / (1 + 4 * e[j]);
+			for (j = ind_finish - 3; j > ind_start + 1; j--) {
+				c[j] = e[j + 1] * c[j + 1] + f[j + 1];
+			}
+			c[ind_start + 1] = c[ind_finish - 1] = c[ind_start] = 0;
+			for (j = ind_start + 1; j < ind_finish; j++) {
+				a = I->mass[i * I->ncols + j];
+				d = (c[j] - c[j - 1]) / I->cellsize;
+				b = (I->mass[i * I->ncols + j] - I->mass[i * I->ncols + j - 1]) / I->cellsize + I->cellsize * (2 * c[j] + c[j - 1]) / 6;
+				if ((I->ind[i * I->ncols + j - 1] != -1) && (I->ind[i * I->ncols + j] != -1)) {
+					for (k = 0; k < I->ky; k++) {
+						I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + (j - 1) * I->ky + k] = a + b * ((double) k * I->cellsize / (double) I->ky - I->cellsize) +
+							c[j] * pow((double) k * I->cellsize / (double) I->ky - I->cellsize, 2) / 2 +
+							d * pow((double) k * I->cellsize / (double) I->ky - I->cellsize, 3) / 6;
+					}
+				}
+			}
+			memset((void *) c, 0, I->ncols * sizeof(double));
+			memset((void *) e, 0, I->ncols * sizeof(double));
+			memset((void *) f, 0, I->ncols * sizeof(double));
 		}
-		memset((void *) c, 0, I->ncols * sizeof(double));
-		memset((void *) e, 0, I->ncols * sizeof(double));
-		memset((void *) f, 0, I->ncols * sizeof(double));
-	}
 
-	printf("Interpolation along the y axis have been done\n");
+		printf("Interpolation along the y axis have been done\n");
+	}
 	
 	if ((c = (double *) realloc(c, I->nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
@@ -139,71 +142,73 @@ int do_interpolation(in *I)
 	memset((void *) e, 0, I->nrows * sizeof(double));
 	memset((void *) f, 0, I->nrows * sizeof(double));
 
-	for (j = 0; j < I->ncols; j++) {
-		for (l = 0; l < I->ky; l++) {
-			flag = 0;
-			ind_start = 0;
-			ind_finish = I->nrows;
-			for (i = 0; i < I->nrows; i++) {
-				if (((I->ind[i * I->ncols + j] != -1) && (flag == 0) && (l == 0)) ||
-					(((I->ind[i * I->ncols + j] != -1) && ((j + 1 == I->ncols) || (I->ind[i * I->ncols + j + 1] != -1))) &&
-					 	(flag == 0) && (l != 0))) {
-							ind_start = i;
-							flag = 1;
+	if ((I->nrows > 2) && (I->kx > 1)) {
+		for (j = 0; j < I->ncols; j++) {
+			for (l = 0; l < I->ky; l++) {
+				flag = 0;
+				ind_start = 0;
+				ind_finish = I->nrows;
+				for (i = 0; i < I->nrows; i++) {
+					if (((I->ind[i * I->ncols + j] != -1) && (flag == 0) && (l == 0)) ||
+						(((I->ind[i * I->ncols + j] != -1) && ((j + 1 == I->ncols) || (I->ind[i * I->ncols + j + 1] != -1))) &&
+						 	(flag == 0) && (l != 0))) {
+								ind_start = i;
+								flag = 1;
+					}
+					if (((I->ind[i * I->ncols + j] == -1) && (flag == 1) && (l == 0)) ||
+						(((I->ind[i * I->ncols + j] == -1) || ((j + 1 == I->ncols) || (I->ind[i * I->ncols + j + 1] == -1))) &&
+						 	(flag == 1) && (l != 0))) {
+								ind_finish = i;
+								flag = 2;
+					}
 				}
-				if (((I->ind[i * I->ncols + j] == -1) && (flag == 1) && (l == 0)) ||
-					(((I->ind[i * I->ncols + j] == -1) || ((j + 1 == I->ncols) || (I->ind[i * I->ncols + j + 1] == -1))) &&
-					 	(flag == 1) && (l != 0))) {
-							ind_finish = i;
-							flag = 2;
+				e[ind_start + 2] = f[ind_start + 2] = 0;
+				for (i = ind_start + 3; i < ind_finish - 1; i++) {
+					e[i] = - 1. / (4 * e[i - 1] + 1);
+					f[i] = (6 * (I->mass1[(i + 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
+						2 * I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] +
+						I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l]) /
+						(I->cellsize * I->cellsize) - 4 * f[i - 1]) / (4 * e[i - 1] + 1);
 				}
-			}
-			e[ind_start + 2] = f[ind_start + 2] = 0;
-			for (i = ind_start + 3; i < ind_finish - 1; i++) {
-				e[i] = - 1. / (4 * e[i - 1] + 1);
-				f[i] = (6 * (I->mass1[(i + 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
+				i = ind_finish - 2;
+				c[i] = (6 * (I->mass1[(i + 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
 					2 * I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] +
 					I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l]) /
-					(I->cellsize * I->cellsize) - 4 * f[i - 1]) / (4 * e[i - 1] + 1);
-			}
-			i = ind_finish - 2;
-			c[i] = (6 * (I->mass1[(i + 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
-				2 * I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] +
-				I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l]) /
-				(I->cellsize * I->cellsize) - 4 * f[i]) / (1 + 4 * e[i]);
-			for (i = ind_finish - 3; i > ind_start + 1; i--) {
-				c[i] = e[i + 1] * c[i + 1] + f[i + 1];
-			}
-			c[ind_start + 1] = c[ind_finish - 1] = c[ind_start] = 0;
-			for (i = ind_start + 1; i < ind_finish; i++) {
-				a = I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l];
-				d = (c[i] - c[i - 1]) / I->cellsize;
-				b = (I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
-					I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l]) /
-					I->cellsize + I->cellsize * (2 * c[i] + c[i - 1]) / 6;
-				//printf("j = %d, l = %d, i = %d, a = %f, b = %f, c = %f, d = %f\n", j, l, i, a, b, c[i], d);
-				if ((I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] != I->nodata_value) &&
-					(I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] != I->nodata_value)) {
-						for (k = 0; k < I->kx; k++) {
-							I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + k * ((I->ncols - 1) * I->ky + 1) + j * I->ky + l] =
-								a + b * ((double) k * I->cellsize / (double) I->kx - I->cellsize) +
-								c[i] * pow((double) k * I->cellsize / (double) I->kx - I->cellsize, 2) / 2 +
-								d * pow((double) k * I->cellsize / (double) I->kx - I->cellsize, 3) / 6;
-						}
+					(I->cellsize * I->cellsize) - 4 * f[i]) / (1 + 4 * e[i]);
+				for (i = ind_finish - 3; i > ind_start + 1; i--) {
+					c[i] = e[i + 1] * c[i + 1] + f[i + 1];
 				}
+				c[ind_start + 1] = c[ind_finish - 1] = c[ind_start] = 0;
+				for (i = ind_start + 1; i < ind_finish; i++) {
+					a = I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l];
+					d = (c[i] - c[i - 1]) / I->cellsize;
+					b = (I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
+						I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l]) /
+						I->cellsize + I->cellsize * (2 * c[i] + c[i - 1]) / 6;
+					//printf("j = %d, l = %d, i = %d, a = %f, b = %f, c = %f, d = %f\n", j, l, i, a, b, c[i], d);
+					if ((I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] != I->nodata_value) &&
+						(I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] != I->nodata_value)) {
+							for (k = 0; k < I->kx; k++) {
+								I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + k * ((I->ncols - 1) * I->ky + 1) + j * I->ky + l] =
+									a + b * ((double) k * I->cellsize / (double) I->kx - I->cellsize) +
+									c[i] * pow((double) k * I->cellsize / (double) I->kx - I->cellsize, 2) / 2 +
+									d * pow((double) k * I->cellsize / (double) I->kx - I->cellsize, 3) / 6;
+							}
+					}
+				}
+				memset((void *) c, 0, I->nrows * sizeof(double));
+				memset((void *) e, 0, I->nrows * sizeof(double));
+				memset((void *) f, 0, I->nrows * sizeof(double));
+				if (j == I->ncols - 1) break;
 			}
-			memset((void *) c, 0, I->nrows * sizeof(double));
-			memset((void *) e, 0, I->nrows * sizeof(double));
-			memset((void *) f, 0, I->nrows * sizeof(double));
-			if (j == I->ncols - 1) break;
 		}
+
+		printf("Interpolation along the x axes have been done\n");
 	}
 
 	free(c);
 	free(e);
 	free(f);
-
-	printf("Interpolation along the x axes have been done\n");
 
 	count_ind_multipl = 0;
 	for (i = 0; i < (I->nrows - 1) * I->kx + 1; i++) {
@@ -227,6 +232,7 @@ int do_interpolation(in *I)
 		I->ind_cell_multipl[i] = -1;
 	}
 
+	I->n_cells_multipl = 0;
 	for (i = 1; i < (I->nrows - 1) * I->kx + 1; i++) {
 		for (j = 1; j < (I->ncols - 1) * I->ky + 1; j++) {
 			if ((I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j] != -1) &&
@@ -234,7 +240,7 @@ int do_interpolation(in *I)
 				(I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j - 1] != -1) &&
 				(I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j - 1] != -1)) {
 					I->ind_cell_multipl[(i - 1) * (I->ncols - 1) * I->ky + j - 1] = I->n_cells_multipl;
-					I->n_cells_multipl++;
+					(I->n_cells_multipl)++;
 			}
 		}
 	}
