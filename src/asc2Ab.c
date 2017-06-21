@@ -100,6 +100,7 @@ numbering faces of cells is so
 #include "array_functions.h"
 #include "x_crank_nikolson_second_combined_VOF.h"
 #include "x_forward_euler_second_combined_VOF.h"
+#include "x_forward_euler_second_combined_FDM.h"
 #include "t_second_combined_VOF.h"
 #include "create_matrix.h"
 #include "matrix_functions.h"
@@ -149,8 +150,7 @@ int main(int argc, char **argv)
 	int i, time_steps;
 	in II;
 	in *I = &II;
-	if (solve_test_matrix()) goto error;
-	//return 0;
+	//if (solve_test_matrix()) goto error;
 	if (set_parameters(I)) goto error;
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (do_interpolation(I)) goto error;

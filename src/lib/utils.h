@@ -6,6 +6,8 @@ double velocity_on_face(in *I, int p, int i, int j, int k, int s);
 double density_on_face(in *I, int i, int j, int k, int s);
 double strain_rate_on_face(in *I, int i, int j, int k, int s, int m, int n);
 double shear_rate_on_face(in *I, int i, int j, int k, int s);
+double strain_rate(in *I, int i, int j, int k, int m, int n);
+double shear_rate(in *I, int i, int j, int k);
 double phase_fraction_on_face(in *I, int i, int j, int k, int s);
 double effective_viscosity_on_face(in *I, int i, int j, int k, int s);
 double pressure_on_face(in *I, int i, int j, int k, int s);

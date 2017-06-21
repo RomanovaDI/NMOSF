@@ -260,6 +260,39 @@ double shear_rate_on_face(in *I, int i, int j, int k, int s)
 	return x;
 }
 
+double strain_rate(in *I, int i, int j, int k, int m, int n)
+{
+	switch (m + n + m * n) {
+		case 0:
+			return (velocity(I, 0, i + 1, j, k) - velocity(I, 0, i - 1, j, k)) / (2 * I->dx[0]);
+		case 1:
+			return 0.5 * ((velocity(I, 0, i, j + 1, k) - velocity(I, 0, i, j - 1, k)) / (2 * I->dx[1]) +
+				(velocity(I, 1, i + 1, j, k) - velocity(I, 1, i - 1, j, k)) / (2 * I->dx[0]));
+		case 2:
+			return 0.5 * ((velocity(I, 0, i, j, k + 1) - velocity(I, 0, i, j, k - 1)) / (2 * I->dx[2]) +
+				(velocity(I, 2, i + 1, j, k) - velocity(I, 2, i - 1, j, k)) / (2 * I->dx[0]));
+		case 3:
+			return (velocity(I, 1, i, j + 1, k) - velocity(I, 1, i, j - 1, k)) / (2 * I->dx[1]);
+		case 5:
+			return 0.5 * ((velocity(I, 1, i, j, k + 1) - velocity(I, 1, i, j, k - 1)) / (2 * I->dx[2]) +
+				(velocity(I, 2, i, j + 1, k) - velocity(I, 2, i, j - 1, k)) / (2 * I->dx[1]));
+		case 8:
+			return (velocity(I, 2, i, j, k + 1) - velocity(I, 2, i, j, k - 1)) / (2 * I->dx[2]);
+	}
+}
+
+double shear_rate(in *I, int i, int j, int k)
+{
+	int m, n;
+	double x = 0;
+	for (m = 0; m < 3; m++) {
+		for (n = 0; n < 3; n ++) {
+			x += strain_rate(I, i, j, k, m, n) * strain_rate(I, i, j, k, m, n);
+		}
+	}
+	return x;
+}
+
 double phase_fraction_on_face(in *I, int i, int j, int k, int s)
 {
 	switch (s) {
@@ -416,9 +449,10 @@ int barotropy_pressure(in *I)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					if (check_for_corrupt_cell(I, i, j, k)) return 1;
-					I->B[A_IND(I, 4, i, j, k)] = I->pressure_atmosphere +
-						(I->pressure_atmosphere / I->density_snow) * 0.999 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) +
-						(I->pressure_atmosphere / I->density_snow) * 0.001 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow);
+					I->B[A_IND(I, 4, i, j, k)] = I->pressure_atmosphere * (
+						1 +
+						(I->B[A_IND(I, 3, i, j, k)] - I->density_snow) / I->density_snow +
+						0.001 * 0.5 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) / I->density_snow);
 				}
 			}
 		}
