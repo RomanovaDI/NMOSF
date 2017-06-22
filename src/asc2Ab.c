@@ -102,6 +102,7 @@ numbering faces of cells is so
 #include "x_forward_euler_second_combined_VOF.h"
 #include "x_forward_euler_second_combined_FDM.h"
 #include "t_second_combined_VOF.h"
+#include "t_test.h"
 #include "create_matrix.h"
 #include "matrix_functions.h"
 #include "slu_ddefs.h"

@@ -1,6 +1,7 @@
 #!/bin/bash
 set -x
 mkdir result
+rm result/*
 mkdir tmp
 gcc -g -O0 -shared src/lib/init_data.c -lm -o build/lib/libinit_data.so -fPIC
 gcc -g -O0 -shared src/lib/read_files.c -lm -o build/lib/libread_files.so -fPIC
@@ -11,10 +12,11 @@ gcc -g -O0 -shared src/lib/boundary_conditions.c -lm -o build/lib/libboundary_co
 gcc -g -O0 -shared src/lib/initial_conditions.c -lm -o build/lib/libinitial_conditions.so -fPIC
 gcc -g -O0 -shared src/lib/array_functions.c -lm -o build/lib/libarray_functions.so -fPIC
 gcc -g -O0 -shared src/lib/t_second_combined_VOF.c -lm -o build/lib/libt_second_combined_VOF.so -fPIC
+gcc -g -O0 -shared src/lib/t_test.c -lm -o build/lib/libt_test.so -fPIC
 gcc -g -O0 -shared src/lib/x_crank_nikolson_second_combined_VOF.c -lm -o build/lib/libx_crank_nikolson_second_combined_VOF.so -fPIC
 gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_VOF.c -lm -o build/lib/libx_forward_euler_second_combined_VOF.so -fPIC
 gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_FDM.c -lm -o build/lib/libx_forward_euler_second_combined_FDM.so -fPIC
-gcc -g -O0 -shared src/lib/create_matrix.c -lm -I src/lib/ -L build/lib -lt_second_combined_VOF -lx_crank_nikolson_second_combined_VOF -lx_forward_euler_second_combined_VOF -lx_forward_euler_second_combined_FDM -o build/lib/libcreate_matrix.so -fPIC
+gcc -g -O0 -shared src/lib/create_matrix.c -lm -I src/lib/ -L build/lib -lt_second_combined_VOF -lx_crank_nikolson_second_combined_VOF -lx_forward_euler_second_combined_VOF -lx_forward_euler_second_combined_FDM -lt_test -o build/lib/libcreate_matrix.so -fPIC
 gcc -g -O0 -shared src/lib/matrix_functions.c -lm -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -lsuperlu -o build/lib/libmatrix_functions.so -fPIC
 gcc -g -O0  src/asc2Ab.c \
 	-I /usr/include/superlu/ -I src/lib/ \
@@ -29,6 +31,7 @@ gcc -g -O0  src/asc2Ab.c \
 	-linitial_conditions \
 	-larray_functions \
 	-lt_second_combined_VOF \
+	-lt_test \
 	-lx_crank_nikolson_second_combined_VOF \
 	-lx_forward_euler_second_combined_VOF \
 	-lx_forward_euler_second_combined_FDM \

@@ -59,7 +59,7 @@ int DIV_shear_stress_linear_forward_euler_second_combined_VOF(in *I, int p, int 
 	int s, pr;
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
-			if ((p != 1) && (pr != 1) && (s != 2) && (s != 3))
+			//if ((p != 1) && (pr != 1) && (s != 2) && (s != 3))
 			I->B[A_IND(I, p, i, j, k)] += (I->area[AREA_IND(I, i, j, k, s)] / I->volume[VOLUME_IND(I, i, j, k)]) * 2 * I->k_viscosity_snow *
 				strain_rate_on_face(I, i, j, k, s, p, pr) * I->normal[NORMAL_IND(I, pr, i, j, k, s)];
 		}

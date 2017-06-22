@@ -46,7 +46,7 @@ int SET_initial_CONDITION_velocity_mass_is_mooving(in *I)
 	printf("Set the initial condition for velocity with fixed value for all calculation domain\n");
 	int i, j, k;
 	double fixed_value[3];
-	fixed_value[0] = 1;
+	fixed_value[0] = 0.5;
 	fixed_value[1] = 0;
 	fixed_value[2] = 0;
 	for (k = 0; k < I->nz; k++) {
