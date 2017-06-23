@@ -67,3 +67,22 @@ int DIV_shear_stress_linear_forward_euler_second_combined_VOF(in *I, int p, int 
 	return 0;
 }
 
+int VECT_barotropy_pressure_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double A_value;
+	A_value = 1;
+	WRITE_TO_A(p, i, j, k, -1);
+	A_value = - I->pressure_atmosphere / I->density_snow;
+	WRITE_TO_A(3, i, j, k, -1);
+}
+
+int VECT_barotropy_density_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double A_value;
+	A_value = 1;
+	WRITE_TO_A(p, i, j, k, -1);
+	A_value = - I->density_snow / I->pressure_atmosphere;
+	WRITE_TO_A(4, i, j, k, -1);
+}

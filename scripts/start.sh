@@ -1,8 +1,10 @@
 #!/bin/bash
 set -x
+rm -rf result
 mkdir result
-rm result/*
 mkdir tmp
+mkdir build
+mkdir build/lib
 gcc -g -O0 -shared src/lib/init_data.c -lm -o build/lib/libinit_data.so -fPIC
 gcc -g -O0 -shared src/lib/read_files.c -lm -o build/lib/libread_files.so -fPIC
 gcc -g -O0 -shared src/lib/mesh_operations.c -lm -o build/lib/libmesh_operations.so -fPIC

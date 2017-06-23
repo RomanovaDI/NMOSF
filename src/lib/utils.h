@@ -27,3 +27,4 @@ int count_neighbor_internal_cells(in *I, int i, int j, int k);
 int count_second_order_neighbor_internal_cells(in *I, int i, int j, int k);
 int count_other_corner_neighbor_internal_cells(in *I, int i, int j, int k);
 int barotropy_pressure(in *I);
+int barotropy_density(in *I);

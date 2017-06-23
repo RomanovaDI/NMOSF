@@ -81,3 +81,35 @@ int DDT_snow_volume_fraction_second_combined_VOF(in *I, int p, int i, int j, int
 	return 0;
 }
 
+int DDT_pressure_cont_second_combined_VOF(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double A_value, prerho, c1 = 0.3, c2 = 0.1;
+	prerho = (I->density_snow / I->pressure_atmosphere) * (c1 + c2 * (pressure(I, i, j, k) - I->pressure_atmosphere));
+	//prerho = I->density_snow / I->pressure_atmosphere;
+	A_value = prerho / I->dt;
+	WRITE_TO_A(p, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] += prerho * (
+		pressure(I, i, j, k) +
+		pressure(I, i - 1, j, k) +
+        pressure(I, i + 1, j, k) +
+        pressure(I, i, j - 1, k) +
+        pressure(I, i, j + 1, k) +
+        pressure(I, i, j, k - 1) +
+        pressure(I, i, j, k + 1)) / (7. * I->dt);
+	//I->B[A_IND(I, p, i, j, k)] += (
+	////	phase_fraction(I, i, j, k) +
+	//	phase_fraction(I, i - 1, j, k) +
+    //    phase_fraction(I, i + 1, j, k) +
+    //    phase_fraction(I, i, j, k - 1) +
+    //    phase_fraction(I, i, j, k + 1)) / (4. * I->dt);
+	//I->B[A_IND(I, p, i, j, k)] += (
+	////	phase_fraction(I, i, j, k) +
+	//	phase_fraction(I, i - 1, j, k) +
+    //    phase_fraction(I, i + 1, j, k) +
+    //    phase_fraction(I, i, j - 1, k) +
+    //    phase_fraction(I, i, j + 1, k) +
+    //    phase_fraction(I, i, j, k - 1) +
+    //    phase_fraction(I, i, j, k + 1)) / (6. * I->dt);
+	return 0;
+}

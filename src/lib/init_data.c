@@ -10,7 +10,7 @@ int set_parameters(in *I)
 	strcpy(I->region_map_name, "maps/map_for_verification_Ab_region_22.asc");
 	strcpy(I->map_name, "maps/map_cavity.asc");
 	strcpy(I->region_map_name, "maps/map_cavity_region.asc");
-	I->hight = 30;
+	I->hight = 10;
 	I->depth = 7;
 	I->kx = 1;
 	I->ky = 1;

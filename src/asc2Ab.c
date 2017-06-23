@@ -183,7 +183,8 @@ int main(int argc, char **argv)
 		if (i == 0)
 			I->flag_first_time_step = 0;
 		if (solve_matrix(I)) goto error;
-		if (barotropy_pressure(I)) goto error;
+		if (barotropy_density(I)) goto error;
+		//if (barotropy_pressure(I)) goto error;
 		write_B_to_B_prev(I);
 		if (check_conservation_of_mass(I)) {
 			printf("Mass conservation equation failed\n");
