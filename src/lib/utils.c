@@ -385,14 +385,20 @@ int cell_of_computation_domain(in *I, int i, int j, int k)
 			return 0;
 }
 
+int internal_cell(in *I, int i, int j, int k)
+{
+	if ((i >= 0) && (i < I->nx) && (j >= 0) && (j < I->ny) && (I->ind_cell_multipl[i * I->ny + j] != -1) && (k >= 0) && (k < I->nz))
+		return 1;
+	else
+		return 0;
+
+}
+
 int boundary_cell(in *I, int i, int j, int k)
 {
 	if (cell_of_computation_domain(I, i, j, k) &&
 		(I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size] != -1) &&
-		((!((i >= 0) && (i < I->nx) &&
-			(j >= 0) && (j < I->ny) &&
-			(I->ind_cell_multipl[i * I->ny + j] != -1))) ||
-		 (k < 0) || (k >= I->nz)))
+		(!(internal_cell(I, i, j, k))))
 			return 1;
 	else
 			return 0;
@@ -463,6 +469,7 @@ int barotropy_pressure(in *I)
 int barotropy_density(in *I)
 {
 	int i, j, k;
+	double c1 = 1, c2 = 0;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
@@ -470,8 +477,8 @@ int barotropy_density(in *I)
 					if (check_for_corrupt_cell(I, i, j, k)) return 1;
 					I->B[A_IND(I, 3, i, j, k)] = (I->density_snow / I->pressure_atmosphere) * (
 						I->pressure_atmosphere +
-						0.3 * (I->B[A_IND(I, 4, i, j, k)] - I->pressure_atmosphere) +
-						0.1 * 0.5 * (I->B[A_IND(I, 4, i, j, k)] - I->pressure_atmosphere) *
+						c1 * (I->B[A_IND(I, 4, i, j, k)] - I->pressure_atmosphere) +
+						c2 * 0.5 * (I->B[A_IND(I, 4, i, j, k)] - I->pressure_atmosphere) *
 						(I->B[A_IND(I, 4, i, j, k)] - I->pressure_atmosphere));
 				}
 			}

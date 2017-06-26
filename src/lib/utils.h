@@ -22,6 +22,7 @@ int check_for_corrupt_cell(in *I, int i, int j, int k);
 int write_to_A_csr(in *I, int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, int j, int k, int s, double value);
 int check_conservation_of_mass(in *I);
 int cell_of_computation_domain(in *I, int i, int j, int k);
+int internal_cell(in *I, int i, int j, int k);
 int boundary_cell(in *I, int i, int j, int k);
 int count_neighbor_internal_cells(in *I, int i, int j, int k);
 int count_second_order_neighbor_internal_cells(in *I, int i, int j, int k);
