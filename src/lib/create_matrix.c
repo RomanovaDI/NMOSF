@@ -3,6 +3,8 @@
 #include "x_crank_nikolson_second_combined_VOF.h"
 #include "x_forward_euler_second_combined_VOF.h"
 #include "x_forward_euler_second_combined_FDM.h"
+#include "x_backward_euler_second_combined_VOF.h"
+#include "x_backward_euler_second_combined_FDM.h"
 #include "t_second_combined_VOF.h"
 #include "t_test.h"
 #include "create_matrix.h"
@@ -78,8 +80,8 @@ int create_Ab(in *I)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if (VECT(p, i, j, k, barotropy_density, forward_euler, second, combined, VOF)) return 1;
-					//if (DDT(p, i, j, k, snow_volume_fraction, second, combined, VOF)) return 1;
+					//if (VECT(p, i, j, k, barotropy_density, forward_euler, second, combined, VOF)) return 1;
+					if (DDT(p, i, j, k, snow_volume_fraction, second, combined, VOF)) return 1;
 					//if (DIV(p, i, j, k, snow_volume_fraction_velocity, forward_euler, second, combined, VOF)) return 1;
 					//if (DIV(p, i, j, k, grad_snow_volume_fraction, crank_nikolson, second, combined, FDM)) return 1;
 					/* continuity equation */
@@ -97,11 +99,11 @@ int create_Ab(in *I)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if (DDT(p, i, j, k, pressure_cont, second, combined, VOF)) return 1;
-					if (DIV(p, i, j, k, snow_volume_fraction_velocity, forward_euler, second, combined, VOF)) return 1;
+					//if (DDT(p, i, j, k, pressure_cont, second, combined, VOF)) return 1;
+					//if (DIV(p, i, j, k, snow_volume_fraction_velocity, forward_euler, second, combined, VOF)) return 1;
 					//if (VECT(p, i, j, k, barotropy_pressure, forward_euler, second, combined, VOF)) return 1;
-					//if (DIV(p, i, j, k, grad_pressure, crank_nikolson, second, combined, VOF)) return 1;
-					//if (DIV(p, i, j, k, div_density_velocity_velocity, crank_nikolson, second, combined, VOF)) return 1;
+					if (DIV(p, i, j, k, grad_pressure, backward_euler, second, combined, FDM)) return 1;
+					if (DIV(p, i, j, k, div_density_velocity_velocity, forward_euler, second, combined, FDM)) return 1;
 				}
 			}
 		}

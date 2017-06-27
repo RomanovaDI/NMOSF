@@ -101,6 +101,8 @@ numbering faces of cells is so
 #include "x_crank_nikolson_second_combined_VOF.h"
 #include "x_forward_euler_second_combined_VOF.h"
 #include "x_forward_euler_second_combined_FDM.h"
+#include "x_backward_euler_second_combined_VOF.h"
+#include "x_backward_euler_second_combined_FDM.h"
 #include "t_second_combined_VOF.h"
 #include "t_test.h"
 #include "create_matrix.h"

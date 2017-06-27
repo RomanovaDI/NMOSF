@@ -79,3 +79,45 @@ int DIV_shear_stress_linear_forward_euler_second_combined_FDM(in *I, int p, int 
 	return 0;
 }
 
+int DIV_div_density_velocity_velocity_forward_euler_second_combined_FDM(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	int pp, pr, ind_pp[3], ind_pr[3];
+	for (pp = 0; pp < 3; pp++) {
+		ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+		ind_pp[pp] = 1;
+		for (pr = 0; pr < 3; pr++) {
+			ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+			ind_pr[pr] = 1;
+			if ((pp != 1) && (pr != 1)) {
+				if (pp == pr) {
+					I->B[A_IND(I, p, i, j, k)] -= (
+						density(I, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) *
+						velocity(I, pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) *
+						velocity(I, pp, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) -
+						2 * density(I, i, j, k) * velocity(I, pp, i, j, k) * velocity(I, pp, i, j, k) +
+						density(I, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) *
+						velocity(I, pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) *
+						velocity(I, pp, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) /
+						(I->dx[pp] * I->dx[pp]);
+				} else {
+					I->B[A_IND(I, p, i, j, k)] -= (
+						density(I, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) *
+						velocity(I, pp, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) *
+						velocity(I, pr, i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) -
+						density(I, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) *
+						velocity(I, pp, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) *
+						velocity(I, pr, i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) -
+						density(I, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) *
+						velocity(I, pp, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) *
+						velocity(I, pr, i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) +
+						density(I, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) *
+						velocity(I, pp, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) *
+						velocity(I, pr, i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) /
+						(4 * I->dx[pp] * I->dx[pr]);
+				}
+			}
+		}
+	}
+	return 0;
+}

@@ -86,3 +86,23 @@ int VECT_barotropy_density_forward_euler_second_combined_VOF(in *I, int p, int i
 	A_value = - I->density_snow / I->pressure_atmosphere;
 	WRITE_TO_A(4, i, j, k, -1);
 }
+
+int DIV_div_density_velocity_velocity_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	int s, pr;
+	for (s = 0; s < 6; s++) {
+		for (pr = 0; pr < 3; pr++) {
+			I->B[A_IND(I, 4, i, j, k)] -= I->area[AREA_IND(I, i, j, k, s)] *
+				(((density_on_face(I, i + 1, j, k, s) * velocity_on_face(I, pr, i + 1, j, k, s) * velocity_on_face(I, 0, i + 1, j, k, s) -
+				   density_on_face(I, i - 1, j, k, s) * velocity_on_face(I, pr, i - 1, j, k, s) * velocity_on_face(I, 0, i - 1, j, k, s)) / (2 * I->dx[0])) +
+				 ((density_on_face(I, i, j + 1, k, s) * velocity_on_face(I, pr, i, j + 1, k, s) * velocity_on_face(I, 1, i, j + 1, k, s) -
+				   density_on_face(I, i, j - 1, k, s) * velocity_on_face(I, pr, i, j - 1, k, s) * velocity_on_face(I, 1, i, j - 1, k, s)) / (2 * I->dx[1])) +
+				 ((density_on_face(I, i, j, k + 1, s) * velocity_on_face(I, pr, i, j, k + 1, s) * velocity_on_face(I, 2, i, j, k + 1, s) -
+				   density_on_face(I, i, j, k - 1, s) * velocity_on_face(I, pr, i, j, k - 1, s) * velocity_on_face(I, 2, i, j, k - 1, s)) / (2 * I->dx[2]))) *
+				I->normal[NORMAL_IND(I, pr, i, j, k, s)];
+		}
+	}
+	return 0;
+}
+
