@@ -172,8 +172,9 @@ int main(int argc, char **argv)
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
 	for (i = 0; i <= time_steps; i++) {
-		SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving);
-		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_sides_no_slip_on_low_upper_wall_is_mooving);
+		SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_and_upper_sides_no_slip_on_low);
+		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving);
+		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_sides_no_slip_on_other_upper_wall_is_mooving);
 		SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
 		SET_CONDITION(boundary, pressure, zero_gradient_on_all);
 		if (print_vtk(I, i) == 1) {

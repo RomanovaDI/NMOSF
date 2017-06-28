@@ -120,7 +120,7 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_y_sides_no_slip_on_other_up
 	return 0;
 }
 
-int SET_boundary_CONDITION_velocity_zero_gradient_on_y_and_x_sides_no_slip_on_low_upper_wall_is_mooving(in *I)
+int SET_boundary_CONDITION_velocity_zero_gradient_on_y_and_x_sides_no_slip_on_other_upper_wall_is_mooving(in *I)
 {
 	printf("Set the boundary condition for velosity with zero gradient on upper and sides boundaries and no slip condition on the lower boundary\n");
 	int i, j, k, p, m;
@@ -155,6 +155,59 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_y_and_x_sides_no_slip_on_lo
 							}
 						} else if ((k >= I->nz) && (p == 0)) {
 							I->B_prev[B_IND(I, p, i, j, k)] = 1;
+						} else {
+							I->B_prev[B_IND(I, p, i, j, k)] = 0;
+						}
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int SET_boundary_CONDITION_velocity_zero_gradient_on_y_and_x_and_upper_sides_no_slip_on_low(in *I)
+{
+	printf("Set the boundary condition for velosity with zero gradient on upper and sides boundaries and no slip condition on the lower boundary\n");
+	int i, j, k, p, m;
+	int search[2 * I->stencil_size + 1];
+	search[0] = 0;
+	for (i = 1; i <= I->stencil_size; i++) {
+		search[i * 2 - 1] = i;
+		search[i * 2] = -i;
+	}
+	for (p = 0; p < 3; p++) {
+		for (k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
+			for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
+				for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
+					if (boundary_cell(I, i, j, k)) {
+						if ((j < 0) || (j >= I->ny)) {
+							for (m = 0; m < 2 * I->stencil_size + 1; m++) {
+								if ((j + search[m] >= 0) &&
+									(j + search[m] < I->ny) &&
+									(I->ind_cell_multipl[i * I->ny + j + search[m]] != -1)) {
+										I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, j + search[m], k)];
+										break;
+								}
+							}
+						} else if ((i < 0) || (i >= I->nx)) {
+							for (m = 0; m < 2 * I->stencil_size + 1; m++) {
+								if ((i + search[m] >= 0) &&
+									(i + search[m] < I->nx) &&
+									(I->ind_cell_multipl[(i + search[m]) * I->ny + j] != -1)) {
+										I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i + search[m], j, k)];
+										break;
+								}
+							}
+						} else if (k >= I->nz) {
+							for (m = 0; m < 2 * I->stencil_size + 1; m++) {
+								if ((k + search[m] >= 0) &&
+									(k + search[m] < I->nz) &&
+									(I->ind_cell_multipl[i * I->ny + j] != -1)) {
+										I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, j, k + search[m])];
+										break;
+								}
+							}
 						} else {
 							I->B_prev[B_IND(I, p, i, j, k)] = 0;
 						}

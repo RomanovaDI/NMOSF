@@ -67,7 +67,7 @@ int create_Ab(in *I)
 						if (DDT(p, i, j, k, density_velocity, second, combined, VOF)) return 1;
 						//if (DDT(p, i, j, k, density_velocity)) return 1;
 						if (DIV(p, i, j, k, density_velocity_velocity, forward_euler, second, combined, VOF)) return 1;
-						//if (VECT(p, i, j, k, gravity_force, crank_nikolson, second, combined, VOF)) return 1;
+						if (VECT(p, i, j, k, gravity_force, forward_euler, second, combined, VOF)) return 1;
 						//if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF)) return 1;
 						if (GRAD(p, i, j, k, pressure, forward_euler, second, combined, VOF)) return 1;
 						if (DIV(p, i, j, k, shear_stress_linear, forward_euler, second, combined, VOF)) return 1;
