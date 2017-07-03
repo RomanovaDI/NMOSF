@@ -135,7 +135,7 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_y_and_x_sides_no_slip_on_ot
 			for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
 				for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
 					if (boundary_cell(I, i, j, k)) {
-						if ((j < 0) || (j >= I->ny)) {
+						if (((j < 0) || (j >= I->ny)) && (i >= 0) && (i < I->nx)) {
 							for (m = 0; m < 2 * I->stencil_size + 1; m++) {
 								if ((j + search[m] >= 0) &&
 									(j + search[m] < I->ny) &&
@@ -144,7 +144,7 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_y_and_x_sides_no_slip_on_ot
 										break;
 								}
 							}
-						} else if ((i < 0) || (i >= I->nx)) {
+						} else if (((i < 0) || (i >= I->nx)) && (j >= 0) && (j < I->ny)) {
 							for (m = 0; m < 2 * I->stencil_size + 1; m++) {
 								if ((i + search[m] >= 0) &&
 									(i + search[m] < I->nx) &&

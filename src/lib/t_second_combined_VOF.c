@@ -29,10 +29,10 @@ int DDT_density_velocity_second_combined_VOF(in *I, int p, int i, int j, int k)
 		//velocity(I, p, i, j, k) +
 		velocity(I, p, i - 1, j, k) +
 		velocity(I, p, i + 1, j, k) +
-		//velocity(I, p, i, j - 1, k) +
-		//velocity(I, p, i, j + 1, k) +
+		velocity(I, p, i, j - 1, k) +
+		velocity(I, p, i, j + 1, k) +
 		velocity(I, p, i, j, k - 1) +
-		velocity(I, p, i, j, k + 1)) / (4. * I->dt);
+		velocity(I, p, i, j, k + 1)) / (6. * I->dt);
 	//I->B[A_IND(I, p, i, j, k)] += (
 	////	density(I, i, j, k) * velocity(I, p, i, j, k) +
 	//	density(I, i - 1, j, k) * velocity(I, p, i - 1, j, k) +
@@ -57,13 +57,13 @@ int DDT_snow_volume_fraction_second_combined_VOF(in *I, int p, int i, int j, int
 	A_value = 1 / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
 	I->B[A_IND(I, p, i, j, k)] += (
-		phase_fraction(I, i, j, k) +
+		//phase_fraction(I, i, j, k) +
 		phase_fraction(I, i - 1, j, k) +
         phase_fraction(I, i + 1, j, k) +
         phase_fraction(I, i, j - 1, k) +
         phase_fraction(I, i, j + 1, k) +
         phase_fraction(I, i, j, k - 1) +
-        phase_fraction(I, i, j, k + 1)) / (7. * I->dt);
+        phase_fraction(I, i, j, k + 1)) / (6. * I->dt);
 	//I->B[A_IND(I, p, i, j, k)] += (
 	////	phase_fraction(I, i, j, k) +
 	//	phase_fraction(I, i - 1, j, k) +

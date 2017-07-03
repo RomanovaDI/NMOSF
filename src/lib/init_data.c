@@ -20,7 +20,7 @@ int set_parameters(in *I)
 	I->density_air = 1;
 	I->pressure_atmosphere = 101325;
 	I->k_viscosity_air = 0.0000148;
-	I->k_viscosity_snow = 1;//1000;
+	I->k_viscosity_snow = 1.49;//1000;
 	I->flow_index = 1;
 	I->yield_stress = 2000;
 	I->shear_rate_0 = 0.00001;
