@@ -25,12 +25,12 @@ int set_parameters(in *I)
 	I->yield_stress = 2000;
 	I->shear_rate_0 = 0.00001;
 	I->limiting_viscosity_snow = I->k_viscosity_snow * pow(I->shear_rate_0, I->flow_index - 1) + I->yield_stress / I->shear_rate_0;
-	I->end_time = 5;
+	I->end_time = 100;
 	double g = 9.81;
 	double alpha = (30 * 3.14) / 180;
-	I->g[0] = 1;//sin(alpha) * g;
+	I->g[0] = sin(alpha) * g;
 	I->g[1] = 0;
-	I->g[2] = 0;//cos(alpha) * g;
+	I->g[2] = - cos(alpha) * g;
 	I->stencil_size = 2;
 	I->num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	I->mass_quantity = 0;

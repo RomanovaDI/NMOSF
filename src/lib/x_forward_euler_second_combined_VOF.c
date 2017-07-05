@@ -109,7 +109,6 @@ int VECT_gravity_force_forward_euler_second_combined_VOF(in *I, int p, int i, in
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	I->B[A_IND(I, p, i, j, k)] += density(I, i, j, k) * I->g[p];
-
 	return 0;
 }
 
