@@ -10,11 +10,11 @@ int set_parameters(in *I)
 	strcpy(I->region_map_name, "maps/map_for_verification_Ab_region_22.asc");
 	strcpy(I->map_name, "maps/map_cavity.asc");
 	strcpy(I->region_map_name, "maps/map_cavity_region.asc");
-	I->hight = 30;
+	I->hight = 0.1;
 	I->depth = 7;
-	I->kx = 1;
+	I->kx = 2;
 	I->ky = 1;
-	I->kz = 1;
+	I->kz = 2;
 	//I->density_snow = 200;
 	I->density_snow = 1000;
 	I->density_air = 1;
@@ -27,10 +27,10 @@ int set_parameters(in *I)
 	I->limiting_viscosity_snow = I->k_viscosity_snow * pow(I->shear_rate_0, I->flow_index - 1) + I->yield_stress / I->shear_rate_0;
 	I->end_time = 100;
 	double g = 9.81;
-	double alpha = (30 * 3.14) / 180;
-	I->g[0] = sin(alpha) * g;
+	double alpha = (90 * 3.14) / 180;
+	I->g[0] = 0;//sin(alpha) * g;
 	I->g[1] = 0;
-	I->g[2] = - cos(alpha) * g;
+	I->g[2] = 0;//- cos(alpha) * g;
 	I->stencil_size = 2;
 	I->num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	I->mass_quantity = 0;
