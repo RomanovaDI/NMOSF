@@ -109,9 +109,9 @@ int do_interpolation(in *I)
 				b = (I->mass[i * I->ncols + j] - I->mass[i * I->ncols + j - 1]) / I->cellsize + I->cellsize * (2 * c[j] + c[j - 1]) / 6;
 				if ((I->ind[i * I->ncols + j - 1] != -1) && (I->ind[i * I->ncols + j] != -1)) {
 					for (k = 0; k < I->ky; k++) {
-						I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + (j - 1) * I->ky + k] = a + b * ((double) k * I->cellsize / (double) I->ky - I->cellsize) +
-							c[j] * pow((double) k * I->cellsize / (double) I->ky - I->cellsize, 2) / 2 +
-							d * pow((double) k * I->cellsize / (double) I->ky - I->cellsize, 3) / 6;
+						I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + (j - 1) * I->ky + k] = a + b * (k * I->cellsize / (double) I->ky - I->cellsize) +
+							c[j] * pow(k * I->cellsize / (double) I->ky - I->cellsize, 2) / 2 +
+							d * pow(k * I->cellsize / (double) I->ky - I->cellsize, 3) / 6;
 					}
 				}
 			}
@@ -190,9 +190,9 @@ int do_interpolation(in *I)
 						(I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] != I->nodata_value)) {
 							for (k = 0; k < I->kx; k++) {
 								I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + k * ((I->ncols - 1) * I->ky + 1) + j * I->ky + l] =
-									a + b * ((double) k * I->cellsize / (double) I->kx - I->cellsize) +
-									c[i] * pow((double) k * I->cellsize / (double) I->kx - I->cellsize, 2) / 2 +
-									d * pow((double) k * I->cellsize / (double) I->kx - I->cellsize, 3) / 6;
+									a + b * (k * I->cellsize / (double) I->kx - I->cellsize) +
+									c[i] * pow(k * I->cellsize / (double) I->kx - I->cellsize, 2) / 2 +
+									d * pow(k * I->cellsize / (double) I->kx - I->cellsize, 3) / 6;
 							}
 					}
 				}

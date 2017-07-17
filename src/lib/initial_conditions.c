@@ -78,11 +78,11 @@ int SET_initial_CONDITION_phase_fraction_ascii_map(in *I)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_boundary_cells[i * I->ny + j] != -1) {
 					if (I->snow_region[(i / I->kx) * I->ncols + j / I->ky] == 1) {
-						if ((double) (k + 1) * (I->cellsize / I->kz) <= I->depth) {
+						if ((k + 1) * (I->cellsize / (double) I->kz) <= I->depth) {
 							I->B_prev[B_IND(I, 3, i, j, k)] = 1;
 							I->mass_quantity += I->B_prev[B_IND(I, 3, i, j, k)];
-						} else if (((double) (k + 1) * (I->cellsize / I->kz) > I->depth) && ((double) k * (I->cellsize / I->kz)) < I->depth) {
-							I->B_prev[B_IND(I, 3, i, j, k)] = (I->depth - (double) k * (I->cellsize / I->kz)) / (double) (I->cellsize / I->kz);
+						} else if (((k + 1) * (I->cellsize / (double) I->kz) > I->depth) && (k * (I->cellsize / (double) I->kz)) < I->depth) {
+							I->B_prev[B_IND(I, 3, i, j, k)] = (I->depth - k * (I->cellsize / (double) I->kz)) / (I->cellsize / (double) I->kz);
 							I->mass_quantity += I->B_prev[B_IND(I, 3, i, j, k)];
 						} else {
 							I->B_prev[B_IND(I, 3, i, j, k)] = 0;
@@ -106,11 +106,11 @@ int SET_initial_CONDITION_pressure_fixed_value_with_hydrostatic_pressure(in *I)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_boundary_cells[i * I->ny + j] != -1) {
 					if (I->snow_region[(i / I->kx) * I->ncols + j / I->ky] == 1) {
-						if ((double) (k + 1) * (I->cellsize / I->kz) <= I->depth) {
-							I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere + I->density_snow * I->g[2] * (I->depth - (double) (k * (I->cellsize / I->kz)));
+						if ((k + 1) * (I->cellsize / (double) I->kz) <= I->depth) {
+							I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere + I->density_snow * I->g[2] * (I->depth - k * (I->cellsize / (double) I->kz));
 							//I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere;
-						} else if (((double) (k + 1) * (I->cellsize / I->kz) > I->depth) && ((double) k * (I->cellsize / I->kz)) < I->depth) {
-							I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere + I->density_snow * I->g[2] * (I->depth - (double) (k * (I->cellsize / I->kz)));
+						} else if (((k + 1) * (I->cellsize / (double) I->kz) > I->depth) && (k * (I->cellsize / (double) I->kz)) < I->depth) {
+							I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere + I->density_snow * I->g[2] * (I->depth - k * (I->cellsize / (double) I->kz));
 							//I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere;
 						} else {
 							I->B_prev[B_IND(I, 4, i, j, k)] = I->pressure_atmosphere;

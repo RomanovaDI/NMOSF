@@ -167,19 +167,6 @@ int read_asc_and_declare_variables(in *I)
 		return 1;
 	}
 
-	if ((I->cellsize - (int) I->cellsize != 0) || (cellsize1 - (int) cellsize1 != 0)) {
-		printf("In this vercion the value cellsize need to be integer\n");
-		return 1;
-	}
-
-	if ((((int) fabs(xllcorner - xllcorner1)) % (int) I->cellsize) ||
-		((int) fabs(yllcorner - yllcorner1) % (int) I->cellsize) ||
-		(fabs(xllcorner - xllcorner1) - (int) fabs(xllcorner - xllcorner1) != 0) ||
-		(fabs(yllcorner - yllcorner1) - (int) fabs(yllcorner - yllcorner1) != 0)) {
-			printf("Difference between xllcorners of maps and yllcorners need to aligned to cellsize\n");
-			return 1;
-	}
-
 	if ((I->mass = (double *) malloc(I->ncols * I->nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -238,14 +225,14 @@ int read_asc_and_declare_variables(in *I)
 				(i * I->cellsize + xlucorner >= xlucorner1) &&
 				(j * I->cellsize + ylucorner <= ylucorner1 + ncols1 * I->cellsize) &&
 				(i * I->cellsize + xlucorner <= xlucorner1 + nrows1 * I->cellsize)) {
-					if (mass_tmp[(i - ((int) (xlucorner1 - xlucorner)) /\
-						(int) I->cellsize) * ncols1 + j -\
-						((int) (ylucorner1 - ylucorner)) /\
-						(int) I->cellsize] == 1)
+					if (mass_tmp[(i - (int) ((xlucorner1 - xlucorner) /\
+						I->cellsize)) * ncols1 + j -\
+						(int) ((ylucorner1 - ylucorner) /\
+						I->cellsize)] == 1)
 							I->snow_region[i * I->ncols + j] = 1;
-					else if (mass_tmp[(i - ((int) (xlucorner1 - xlucorner)) /\
-						(int) I->cellsize) * ncols1 + j -\
-						((int) (ylucorner1 - ylucorner)) / (int) I->cellsize] == 0)
+					else if (mass_tmp[(i - (int) ((xlucorner1 - xlucorner) /\
+						I->cellsize)) * ncols1 + j -\
+						(int) ((ylucorner1 - ylucorner) / I->cellsize)] == 0)
 							I->snow_region[i * I->ncols + j] = 0;
 					else
 						I->snow_region[i * I->ncols + j] = -1;
@@ -311,7 +298,7 @@ int read_asc_and_declare_variables(in *I)
 	}
 	I->nx = (I->nrows - 1) * I->kx;
 	I->ny = (I->ncols - 1) * I->ky;
-	I->nz = (int) I->hight / I->cellsize * I->kz;
+	I->nz = (int) (I->hight / I->cellsize) * I->kz;
 	I->dx[0] = I->dx[1] = I->dx[2] = I->cellsize;
 	printf("Maps entered correctly.\n");
 	return 0;
