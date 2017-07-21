@@ -18,13 +18,14 @@ int do_interpolation(in *I)
 		for (j = 0; j < I->ncols - 1; j++) {
 			if (I->bl_cond[i * (I->ncols - 1) + j] != -1) {
 				if ((j - 1 < 0) || (I->bl_cond[i * (I->ncols - 1) + j - 1] == -1)) {
-					I->n_points_multipl += I->ky + 1;
-					if ((i - 1 >= 0) && (I->bl_cond[(i - 1) * (I->ncols - 1) + j] != -1)) {
-						I->n_points_multipl -= 1;
+					I->n_points_multipl += I->kx + 1;
+					if (((i - 1 >= 0) && (I->bl_cond[(i - 1) * (I->ncols - 1) + j] != -1)) ||
+						((i - 1 >= 0) && (j - 1 >= 0) && (I->bl_cond[(i - 1) * (I->ncols - 1) + j - 1] != -1))) {
+							I->n_points_multipl -= 1;
 					}
 				}
 				if ((i - 1 < 0) || (I->bl_cond[(i - 1) * (I->ncols - 1) + j] == -1)) {
-					I->n_points_multipl += I->kx;
+					I->n_points_multipl += I->ky;
 					if ((i - 1 >= 0) && (j + 1 < I->ncols - 1) && (I->bl_cond[(i - 1) * (I->ncols - 1) + j + 1] != -1)) {
 						I->n_points_multipl -= 1;
 					}
