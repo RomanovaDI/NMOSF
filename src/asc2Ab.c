@@ -172,9 +172,9 @@ int main(int argc, char **argv)
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
 	for (i = 0; i <= time_steps; i++) {
-		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_and_upper_sides_no_slip_on_low);
-		SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving);
-		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_sides_no_slip_on_other_upper_wall_is_mooving);
+		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_and_upper_sides_no_slip_on_low); //mass
+		SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving); //cavity
+		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_sides_no_slip_on_other_upper_wall_is_mooving); //couette
 		SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
 		SET_CONDITION(boundary, pressure, zero_gradient_on_all);
 		if (print_vtk(I, i) == 1) {
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 			I->flag_first_time_step = 0;
 		if (solve_matrix(I)) goto error;
 		//if (barotropy_density(I)) goto error;
-		if (barotropy_pressure(I)) goto error;
+		//if (barotropy_pressure(I)) goto error;
 		write_B_to_B_prev(I);
 		if (check_conservation_of_mass(I)) {
 			printf("Mass conservation equation failed\n");

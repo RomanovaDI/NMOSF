@@ -457,8 +457,8 @@ int barotropy_pressure(in *I)
 					if (check_for_corrupt_cell(I, i, j, k)) return 1;
 					I->B[A_IND(I, 4, i, j, k)] = I->pressure_atmosphere * (
 						1 +
-						10 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) / I->density_snow +
-						0.1 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) / (I->density_snow * I->density_snow));
+						0.001 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) / I->density_snow +
+						0 * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) * (I->B[A_IND(I, 3, i, j, k)] - I->density_snow) / (I->density_snow * I->density_snow));
 				}
 			}
 		}

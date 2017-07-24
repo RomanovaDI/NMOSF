@@ -108,7 +108,7 @@ int SET_boundary_CONDITION_velocity_zero_gradient_on_y_sides_no_slip_on_other_up
 								}
 							}
 						} else if ((k >= I->nz) && (p == 0)) {
-							I->B_prev[B_IND(I, p, i, j, k)] = 1;
+							I->B_prev[B_IND(I, p, i, j, k)] = 0.1;
 						} else {
 							I->B_prev[B_IND(I, p, i, j, k)] = 0;
 						}

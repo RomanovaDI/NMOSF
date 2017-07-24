@@ -39,14 +39,14 @@ int DIV_density_velocity_velocity_forward_euler_second_combined_VOF(in *I, int p
 	return 0;
 }
 
-int DIV_snow_volume_fraction_velocity_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_density_velocity_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr;
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
 			if ((p != 1) && (pr != 1) && (s != 2) && (s != 3))
-			I->B[A_IND(I, p, i, j, k)] -= (I->area[AREA_IND(I, i, j, k, s)] / I->volume[VOLUME_IND(I, i, j, k)]) * phase_fraction_on_face(I, i, j, k, s) *
+			I->B[A_IND(I, p, i, j, k)] -= (I->area[AREA_IND(I, i, j, k, s)] / I->volume[VOLUME_IND(I, i, j, k)]) * density_on_face(I, i, j, k, s) *
 				velocity_on_face(I, pr, i, j, k, s) * I->normal[NORMAL_IND(I, pr, i, j, k, s)];
 		}
 	}
