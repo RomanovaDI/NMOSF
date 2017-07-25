@@ -30,7 +30,8 @@ list of numerical_schemes
 	crank_nikolson
 	half_forward_euler
 	half_backward_euler
-	forward_euler
+	forward_euler - unsteady solution
+	backward_euler - steady solution
 */
 
 /*
@@ -43,6 +44,7 @@ list of approximation orders
 list of solution modes
 	combined
 	separated
+	ultra_combined - don't working
 */
 
 /*

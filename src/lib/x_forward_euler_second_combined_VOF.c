@@ -31,7 +31,6 @@ int DIV_density_velocity_velocity_forward_euler_second_combined_VOF(in *I, int p
 	int s, pr;
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
-			if ((p != 1) && (pr != 1) && (s != 2) && (s != 3))
 			I->B[A_IND(I, p, i, j, k)] -= (I->area[AREA_IND(I, i, j, k, s)] / I->volume[VOLUME_IND(I, i, j, k)]) * density_on_face(I, i, j, k, s) *
 				velocity_on_face(I, p, i, j, k, s) * velocity_on_face(I, pr, i, j, k, s) * I->normal[NORMAL_IND(I, pr, i, j, k, s)];
 		}
@@ -45,7 +44,6 @@ int DIV_density_velocity_forward_euler_second_combined_VOF(in *I, int p, int i, 
 	int s, pr;
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
-			if ((p != 1) && (pr != 1) && (s != 2) && (s != 3))
 			I->B[A_IND(I, p, i, j, k)] -= (I->area[AREA_IND(I, i, j, k, s)] / I->volume[VOLUME_IND(I, i, j, k)]) * density_on_face(I, i, j, k, s) *
 				velocity_on_face(I, pr, i, j, k, s) * I->normal[NORMAL_IND(I, pr, i, j, k, s)];
 		}
@@ -59,7 +57,6 @@ int DIV_shear_stress_linear_forward_euler_second_combined_VOF(in *I, int p, int 
 	int s, pr;
 	for (s = 0; s < 6; s++) {
 		for (pr = 0; pr < 3; pr++) {
-			//if ((p != 1) && (pr != 1) && (s != 2) && (s != 3))
 			I->B[A_IND(I, p, i, j, k)] += (I->area[AREA_IND(I, i, j, k, s)] / I->volume[VOLUME_IND(I, i, j, k)]) * 2 * I->k_viscosity_snow *
 				strain_rate_on_face(I, i, j, k, s, p, pr) * I->normal[NORMAL_IND(I, pr, i, j, k, s)];
 		}
@@ -70,11 +67,14 @@ int DIV_shear_stress_linear_forward_euler_second_combined_VOF(in *I, int p, int 
 int VECT_barotropy_pressure_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	double A_value;
+	double A_value, c1;
+	c1 = 0.1;//0.001;
 	A_value = 1;
 	WRITE_TO_A(p, i, j, k, -1);
-	A_value = - I->pressure_atmosphere / I->density_snow;
+	A_value = - c1 * I->pressure_atmosphere / I->density_snow;
 	WRITE_TO_A(3, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] += I->pressure_atmosphere * (1 - c1);
+	return 0;
 }
 
 int VECT_barotropy_density_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)

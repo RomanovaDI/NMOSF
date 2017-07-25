@@ -4,8 +4,10 @@
 #include "x_forward_euler_second_combined_VOF.h"
 #include "x_forward_euler_second_combined_FDM.h"
 #include "x_backward_euler_second_combined_VOF.h"
-#include "x_backward_euler_second_combined_FDM.h"
+#include "x_backward_euler_second_combined_VOF.h"
+#include "x_backward_euler_second_ultra_combined_VOF.h"
 #include "t_second_combined_VOF.h"
+#include "t_second_ultra_combined_VOF.h"
 #include "t_test.h"
 #include "create_matrix.h"
 #include <stdio.h>
@@ -66,11 +68,11 @@ int create_Ab(in *I)
 						}
 						if (DDT(p, i, j, k, density_velocity, second, combined, VOF)) return 1;
 						//if (DDT(p, i, j, k, density_velocity)) return 1;
-						if (DIV(p, i, j, k, density_velocity_velocity, backward_euler, second, combined, VOF)) return 1;
+						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson, second, combined, VOF)) return 1;
 						//if (VECT(p, i, j, k, gravity_force, backward_euler, second, combined, VOF)) return 1;
 						//if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF)) return 1;
-						if (GRAD(p, i, j, k, pressure, backward_euler, second, combined, VOF)) return 1;
-						if (DIV(p, i, j, k, shear_stress_linear, backward_euler, second, combined, VOF)) return 1;
+						if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF)) return 1;
+						if (DIV(p, i, j, k, shear_stress_linear, crank_nikolson, second, combined, VOF)) return 1;
 						//if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF)) return 1;
 					}
 					/* transport equation for snow volume fraction */
@@ -82,7 +84,7 @@ int create_Ab(in *I)
 					}
 					//if (VECT(p, i, j, k, barotropy_density, forward_euler, second, combined, VOF)) return 1;
 					if (DDT(p, i, j, k, density, second, combined, VOF)) return 1;
-					if (DIV(p, i, j, k, density_velocity, backward_euler, second, combined, VOF)) return 1;
+					if (DIV(p, i, j, k, density_velocity, crank_nikolson, second, combined, VOF)) return 1;
 					//if (DIV(p, i, j, k, grad_snow_volume_fraction, crank_nikolson, second, combined, FDM)) return 1;
 					/* continuity equation */
 					//p = 4;
@@ -101,7 +103,7 @@ int create_Ab(in *I)
 					}
 					////if (DDT(p, i, j, k, pressure_cont, second, combined, VOF)) return 1;
 					////if (DIV(p, i, j, k, snow_volume_fraction_velocity, forward_euler, second, combined, VOF)) return 1;
-					if (VECT(p, i, j, k, barotropy_pressure, backward_euler, second, combined, VOF)) return 1;
+					if (VECT(p, i, j, k, barotropy_pressure, crank_nikolson, second, combined, VOF)) return 1;
 					//if (DIV(p, i, j, k, grad_pressure, backward_euler, second, combined, FDM)) return 1;
 					//if (DIV(p, i, j, k, div_density_velocity_velocity, forward_euler, second, combined, FDM)) return 1;
 				}

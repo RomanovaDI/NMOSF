@@ -16,7 +16,7 @@ int set_parameters(in *I)
 	I->ky = 1;
 	I->kz = 1;
 	//I->density_snow = 200;
-	I->density_snow = 1000;
+	I->density_snow = 1260;//1000;
 	I->density_air = 1;
 	I->pressure_atmosphere = 101325;
 	I->k_viscosity_air = 0.0000148;
