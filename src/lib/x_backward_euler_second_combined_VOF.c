@@ -95,7 +95,7 @@ int VECT_barotropy_pressure_backward_euler_second_combined_VOF(in *I, int p, int
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value, c1;
-	c1 = 0.1;//0.001;
+	c1 = 0.01;//0.001;
 	A_value = 1;
 	WRITE_TO_A(p, i, j, k, -1);
 	A_value = - c1 * I->pressure_atmosphere / I->density_snow;
