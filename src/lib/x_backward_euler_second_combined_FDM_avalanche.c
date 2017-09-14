@@ -1,6 +1,6 @@
 #include "init_data.h"
 #include "utils.h"
-#include "x_backward_euler_second_combined_FDM.h"
+#include "x_backward_euler_second_combined_FDM_avalanche.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -15,7 +15,7 @@
 #define GRAD(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) GRAD_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
 #define VECT(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) VECT_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
 
-int DIV_grad_pressure_backward_euler_second_combined_FDM(in *I, int p, int i, int j, int k)
+int DIV_grad_pressure_backward_euler_second_combined_FDM_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;

@@ -1,6 +1,6 @@
 #include "init_data.h"
 #include "utils.h"
-#include "x_crank_nikolson_second_combined_VOF.h"
+#include "x_crank_nikolson_second_combined_VOF_avalanche.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -10,12 +10,12 @@
 		printf("Error writing matrix A\n"); \
 		return 1; \
 	}
-#define DDT(p, i, j, k, object, approximation_order, solution_mode, method) DDT_##object##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
-#define DIV(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) DIV_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
-#define GRAD(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) GRAD_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
-#define VECT(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method) VECT_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method(I, p, i, j, k)
+#define DDT(p, i, j, k, object, approximation_order, solution_mode, method, task) DDT_##object##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
+#define DIV(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) DIV_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
+#define GRAD(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) GRAD_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
+#define VECT(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) VECT_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 
-int DIV_density_velocity_velocity_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_density_velocity_velocity_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr;
@@ -28,7 +28,7 @@ int DIV_density_velocity_velocity_half_forward_euler_second_combined_VOF(in *I, 
 	return 0;
 }
 
-int DIV_density_velocity_velocity_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_density_velocity_velocity_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr;
@@ -44,15 +44,15 @@ int DIV_density_velocity_velocity_half_backward_euler_second_combined_VOF(in *I,
 	return 0;
 }
 
-int DIV_density_velocity_velocity_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_density_velocity_velocity_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (DIV(p, i, j, k, density_velocity_velocity, half_forward_euler, second, combined, VOF)) return 1;
-	if (DIV(p, i, j, k, density_velocity_velocity, half_backward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, density_velocity_velocity, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (DIV(p, i, j, k, density_velocity_velocity, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int GRAD_pressure_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int GRAD_pressure_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int ind_p[3];
@@ -62,7 +62,7 @@ int GRAD_pressure_half_forward_euler_second_combined_VOF(in *I, int p, int i, in
 	return 0;
 }
 
-int GRAD_pressure_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int GRAD_pressure_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
@@ -76,22 +76,22 @@ int GRAD_pressure_half_backward_euler_second_combined_VOF(in *I, int p, int i, i
 	return 0;
 }
 
-int GRAD_pressure_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int GRAD_pressure_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (GRAD(p, i, j, k, pressure, half_forward_euler, second, combined, VOF)) return 1;
-	if (GRAD(p, i, j, k, pressure, half_backward_euler, second, combined, VOF)) return 1;
+	if (GRAD(p, i, j, k, pressure, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (GRAD(p, i, j, k, pressure, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int VECT_gravity_force_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int VECT_gravity_force_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	I->B[A_IND(I, p, i, j, k)] += density(I, i, j, k) * I->g[p] / 2;
 	return 0;
 }
 
-int VECT_gravity_force_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int VECT_gravity_force_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	double A_value;
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
@@ -101,15 +101,15 @@ int VECT_gravity_force_half_backward_euler_second_combined_VOF(in *I, int p, int
 	return 0;
 }
 
-int VECT_gravity_force_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int VECT_gravity_force_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (VECT(p, i, j, k, gravity_force, half_forward_euler, second, combined, VOF)) return 1;
-	if (VECT(p, i, j, k, gravity_force, half_backward_euler, second, combined, VOF)) return 1;
+	if (VECT(p, i, j, k, gravity_force, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (VECT(p, i, j, k, gravity_force, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int DIV_shear_stress_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_shear_stress_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr;
@@ -122,7 +122,7 @@ int DIV_shear_stress_half_forward_euler_second_combined_VOF(in *I, int p, int i,
 	return 0;
 }
 
-int DIV_shear_stress_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_shear_stress_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr, ind_p[3], ind_pr[3];
@@ -154,15 +154,15 @@ int DIV_shear_stress_half_backward_euler_second_combined_VOF(in *I, int p, int i
 	return 0;
 }
 
-int DIV_shear_stress_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_shear_stress_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (DIV(p, i, j, k, shear_stress, half_forward_euler, second, combined, VOF)) return 1;
-	if (DIV(p, i, j, k, shear_stress, half_backward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, shear_stress, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (DIV(p, i, j, k, shear_stress, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int DIV_grad_pressure_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_grad_pressure_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s;
@@ -175,7 +175,7 @@ int DIV_grad_pressure_half_forward_euler_second_combined_VOF(in *I, int p, int i
 	return 0;
 }
 
-int DIV_grad_pressure_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_grad_pressure_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s;
@@ -203,15 +203,15 @@ int DIV_grad_pressure_half_backward_euler_second_combined_VOF(in *I, int p, int 
 	return 0;
 }
 
-int DIV_grad_pressure_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_grad_pressure_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (DIV(p, i, j, k, grad_pressure, half_forward_euler, second, combined, VOF)) return 1;
-	if (DIV(p, i, j, k, grad_pressure, half_backward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, grad_pressure, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (DIV(p, i, j, k, grad_pressure, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int DIV_div_density_velocity_velocity_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_div_density_velocity_velocity_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr;
@@ -229,7 +229,7 @@ int DIV_div_density_velocity_velocity_half_forward_euler_second_combined_VOF(in 
 	return 0;
 }
 
-int DIV_div_density_velocity_velocity_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_div_density_velocity_velocity_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr, pp;
@@ -252,15 +252,15 @@ int DIV_div_density_velocity_velocity_half_backward_euler_second_combined_VOF(in
 	return 0;
 }
 
-int DIV_div_density_velocity_velocity_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_div_density_velocity_velocity_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (DIV(p, i, j, k, div_density_velocity_velocity, half_forward_euler, second, combined, VOF)) return 1;
-	if (DIV(p, i, j, k, div_density_velocity_velocity, half_backward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, div_density_velocity_velocity, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (DIV(p, i, j, k, div_density_velocity_velocity, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int DIV_velocity_cont_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_velocity_cont_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int pr, s;
@@ -272,7 +272,7 @@ int DIV_velocity_cont_half_forward_euler_second_combined_VOF(in *I, int p, int i
 	return 0;
 }
 
-int DIV_velocity_cont_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_velocity_cont_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int pr, s;
@@ -287,15 +287,15 @@ int DIV_velocity_cont_half_backward_euler_second_combined_VOF(in *I, int p, int 
 	return 0;
 }
 
-int DIV_velocity_cont_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_velocity_cont_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (DIV(p, i, j, k, velocity_cont, half_forward_euler, second, combined, VOF)) return 1;
-	if (DIV(p, i, j, k, velocity_cont, half_backward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, velocity_cont, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (DIV(p, i, j, k, velocity_cont, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int DIV_snow_volume_fraction_velocity_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_snow_volume_fraction_velocity_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s;
@@ -308,7 +308,7 @@ int DIV_snow_volume_fraction_velocity_half_forward_euler_second_combined_VOF(in 
 	return 0;
 }
 
-int DIV_snow_volume_fraction_velocity_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_snow_volume_fraction_velocity_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s;
@@ -324,15 +324,15 @@ int DIV_snow_volume_fraction_velocity_half_backward_euler_second_combined_VOF(in
 	return 0;
 }
 
-int DIV_snow_volume_fraction_velocity_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_snow_volume_fraction_velocity_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (DIV(p, i, j, k, snow_volume_fraction_velocity, half_forward_euler, second, combined, VOF)) return 1;
-	if (DIV(p, i, j, k, snow_volume_fraction_velocity, half_backward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, snow_volume_fraction_velocity, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (DIV(p, i, j, k, snow_volume_fraction_velocity, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int DIV_density_velocity_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_density_velocity_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr;
@@ -345,7 +345,7 @@ int DIV_density_velocity_half_forward_euler_second_combined_VOF(in *I, int p, in
 	return 0;
 }
 
-int DIV_density_velocity_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_density_velocity_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr;
@@ -361,15 +361,15 @@ int DIV_density_velocity_half_backward_euler_second_combined_VOF(in *I, int p, i
 	return 0;
 }
 
-int DIV_density_velocity_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_density_velocity_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (DIV(p, i, j, k, density_velocity, half_forward_euler, second, combined, VOF)) return 1;
-	if (DIV(p, i, j, k, density_velocity, half_backward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, density_velocity, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (DIV(p, i, j, k, density_velocity, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int DIV_shear_stress_linear_half_forward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_shear_stress_linear_half_forward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr;
@@ -382,7 +382,7 @@ int DIV_shear_stress_linear_half_forward_euler_second_combined_VOF(in *I, int p,
 	return 0;
 }
 
-int DIV_shear_stress_linear_half_backward_euler_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_shear_stress_linear_half_backward_euler_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	int s, pr, ind_p[3], ind_pr[3];
@@ -412,15 +412,15 @@ int DIV_shear_stress_linear_half_backward_euler_second_combined_VOF(in *I, int p
 	return 0;
 }
 
-int DIV_shear_stress_linear_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DIV_shear_stress_linear_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (DIV(p, i, j, k, shear_stress_linear, half_forward_euler, second, combined, VOF)) return 1;
-	if (DIV(p, i, j, k, shear_stress_linear, half_backward_euler, second, combined, VOF)) return 1;
+	if (DIV(p, i, j, k, shear_stress_linear, half_forward_euler, second, combined, VOF, avalanche)) return 1;
+	if (DIV(p, i, j, k, shear_stress_linear, half_backward_euler, second, combined, VOF, avalanche)) return 1;
 	return 0;
 }
 
-int VECT_barotropy_pressure_crank_nikolson_second_combined_VOF(in *I, int p, int i, int j, int k)
+int VECT_barotropy_pressure_crank_nikolson_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value, c1;

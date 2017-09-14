@@ -4,10 +4,10 @@
 #include <math.h>
 #include "init_data.h"
 
-int set_parameters(in *I)
+int set_parameters_avalanche(in *I)
 {
-	strcpy(I->map_name, "maps/map_for_verification_Ab_21.asc");
-	strcpy(I->region_map_name, "maps/map_for_verification_Ab_region_22.asc");
+	//strcpy(I->map_name, "maps/map_for_verification_Ab_21.asc");
+	//strcpy(I->region_map_name, "maps/map_for_verification_Ab_region_22.asc");
 	strcpy(I->map_name, "maps/map_cavity.asc");
 	strcpy(I->region_map_name, "maps/map_cavity_region.asc");
 	I->hight = 1;
@@ -35,5 +35,22 @@ int set_parameters(in *I)
 	I->num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	I->mass_quantity = 0;
 	I->dt = 0.1;//we need to set dt!!!
+	return 0;
+}
+
+int set_parameters_termogas(in *I)
+{
+	strcpy(I->map_name, "maps/termogase.asc");
+	strcpy(I->region_map_name, "maps/termogase.asc");
+	I->hight = 1;
+	I->kx = 1;
+	I->ky = 1;
+	I->kz = 1;
+	I->end_time = 10;
+	I->stencil_size = 2;
+	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
+	I->mass_quantity = 0;
+	I->dt = 0.01;//we need to set dt!!!
+//	I->porousness = 0.3;
 	return 0;
 }

@@ -1,5 +1,5 @@
 /*
-matrix A and vector B structure:
+matrix A and vector B structure in avalanche case:
 velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, 0, 0]
 velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [0, 1, 0]
 .....................................................................
@@ -10,6 +10,20 @@ velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny
 velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, 1]
 .....................................................................
 velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny - 1, nz - 1]
+*/
+
+/*
+matrix A and vector B structure in termogase case:
+concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [0, 0, 0]
+concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [0, 1, 0]
+...............................................................................................................................................................................
+concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [0, ny - 1, 0]
+concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [1, ny - 1, 0]
+...............................................................................................................................................................................
+concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [nx - 1, ny - 1, 0]
+concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [nx - 1, ny - 1, 1]
+...............................................................................................................................................................................
+concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [nx - 1, ny - 1, nz - 1]
 */
 
 /*
@@ -100,12 +114,12 @@ numbering faces of cells is so
 #include "boundary_conditions.h"
 #include "initial_conditions.h"
 #include "array_functions.h"
-#include "x_crank_nikolson_second_combined_VOF.h"
-#include "x_forward_euler_second_combined_VOF.h"
-#include "x_forward_euler_second_combined_FDM.h"
-#include "x_backward_euler_second_combined_VOF.h"
-#include "x_backward_euler_second_combined_FDM.h"
-#include "t_second_combined_VOF.h"
+//#include "x_crank_nikolson_second_combined_VOF_avalanche.h"
+//#include "x_forward_euler_second_combined_VOF.h"
+//#include "x_forward_euler_second_combined_FDM.h"
+//#include "x_backward_euler_second_combined_VOF.h"
+//#include "x_backward_euler_second_combined_FDM.h"
+//#include "t_second_combined_VOF.h"
 #include "t_test.h"
 #include "create_matrix.h"
 #include "matrix_functions.h"
@@ -156,7 +170,7 @@ int main(int argc, char **argv)
 	in II;
 	in *I = &II;
 	//if (solve_test_matrix()) goto error;
-	if (set_parameters(I)) goto error;
+	if (set_parameters_avalanche(I)) goto error;
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (do_interpolation(I)) goto error;
 	if (set_arrays(I)) goto error;
@@ -185,7 +199,7 @@ int main(int argc, char **argv)
 		} else {
 			printf("Result printed to vtk file\n");
 		}
-		if (create_Ab(I) == 1) goto error;
+		if (create_Ab_avalanche(I) == 1) goto error;
 		if (i == 0)
 			I->flag_first_time_step = 0;
 		if (solve_matrix(I)) goto error;

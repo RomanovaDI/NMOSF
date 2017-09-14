@@ -1,6 +1,6 @@
 #include "init_data.h"
 #include "utils.h"
-#include "t_second_combined_VOF.h"
+#include "t_second_combined_VOF_avalanche.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +11,7 @@
 		return 1; \
 	}
 
-int DDT_density_velocity_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DDT_density_velocity_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
@@ -50,7 +50,7 @@ int DDT_density_velocity_second_combined_VOF(in *I, int p, int i, int j, int k)
 	return 0;
 }
 
-int DDT_density_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DDT_density_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
@@ -81,7 +81,7 @@ int DDT_density_second_combined_VOF(in *I, int p, int i, int j, int k)
 	return 0;
 }
 
-int DDT_pressure_cont_second_combined_VOF(in *I, int p, int i, int j, int k)
+int DDT_pressure_cont_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value, prerho, c1 = 1, c2 = 0;

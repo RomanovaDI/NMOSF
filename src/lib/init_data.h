@@ -1,4 +1,4 @@
-typedef struct init_parameters {
+typedef struct init_parameters_avalanche {
 	char map_name[100];
 	char region_map_name[100];
 	double hight;
@@ -38,6 +38,45 @@ typedef struct init_parameters {
 	int stencil_size;
 	int *ind_boundary_cells, n_boundary_cells;
 	double mass_quantity;
-} in;
+} in_avalanche;
 
-int set_parameters(in *I);
+typedef struct init_parameters_termogas {
+	char map_name[100];
+	char region_map_name[100];
+	double hight;
+	int kx, ky, kz;
+	int nx, ny, nz;
+	int n_bl_x, n_bl_y, n_bl_z;
+	int ncols;
+	int nrows;
+	double cellsize;
+	double *mass;
+	int *ind;
+	int *bl_cond;
+	int n_points, n_cells;
+	int n_points_multipl;
+	int n_cells_multipl;
+	int *ind_multipl, *ind_cell_multipl;
+	double interpolation, interpolation_poli;
+	double *mass1;
+	double nodata_value;
+	double *normal, *volume, *area;
+	double dt, dx[3];
+	double *B, *Aelem_csr, *B_prev;
+	int *Ajptr_csr, *Aiptr_csr;
+	int num_parameters;
+	int system_dimension, system_dimension_with_boundary;
+	int non_zero_elem;
+	int A_ind_current;
+	int flag_first_time_step;
+	double end_time;
+	int stencil_size;
+	int *ind_boundary_cells, n_boundary_cells;
+	double mass_quantity;
+	double porousness;
+} in_termogas;
+
+typedef in_avalanche in;
+
+int set_parameters_avalanche(in *I);
+int set_parameters_termogas(in *I);

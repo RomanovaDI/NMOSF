@@ -29,3 +29,7 @@ int count_second_order_neighbor_internal_cells(in *I, int i, int j, int k);
 int count_other_corner_neighbor_internal_cells(in *I, int i, int j, int k);
 int barotropy_pressure(in *I);
 int barotropy_density(in *I);
+double saturation(in *I, int p, int i, int j, int k);
+double concentration(in *I, int p, int i, int j, int k);
+double temperature_flow(in *I, int i, int j, int k);
+double temperature_environment(in *I, int i, int j, int k);

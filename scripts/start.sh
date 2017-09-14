@@ -13,27 +13,27 @@ gcc -g -O0 -shared src/lib/vtk_map_functions.c -lm -o build/lib/libvtk_map_funct
 gcc -g -O0 -shared src/lib/boundary_conditions.c -lm -o build/lib/libboundary_conditions.so -fPIC
 gcc -g -O0 -shared src/lib/initial_conditions.c -lm -o build/lib/libinitial_conditions.so -fPIC
 gcc -g -O0 -shared src/lib/array_functions.c -lm -o build/lib/libarray_functions.so -fPIC
-gcc -g -O0 -shared src/lib/t_second_combined_VOF.c -lm -o build/lib/libt_second_combined_VOF.so -fPIC
-gcc -g -O0 -shared src/lib/t_second_ultra_combined_VOF.c -lm -o build/lib/libt_second_ultra_combined_VOF.so -fPIC
+gcc -g -O0 -shared src/lib/t_second_combined_VOF_avalanche.c -lm -o build/lib/libt_second_combined_VOF_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/t_second_ultra_combined_VOF_avalanche.c -lm -o build/lib/libt_second_ultra_combined_VOF_avalanche.so -fPIC
 gcc -g -O0 -shared src/lib/t_test.c -lm -o build/lib/libt_test.so -fPIC
-gcc -g -O0 -shared src/lib/x_crank_nikolson_second_combined_VOF.c -lm -o build/lib/libx_crank_nikolson_second_combined_VOF.so -fPIC
-gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_VOF.c -lm -o build/lib/libx_forward_euler_second_combined_VOF.so -fPIC
-gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_FDM.c -lm -o build/lib/libx_forward_euler_second_combined_FDM.so -fPIC
-gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_VOF.c -lm -o build/lib/libx_backward_euler_second_combined_VOF.so -fPIC
-gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM.c -lm -o build/lib/libx_backward_euler_second_combined_FDM.so -fPIC
-gcc -g -O0 -shared src/lib/x_backward_euler_second_ultra_combined_VOF.c -lm -o build/lib/libx_backward_euler_second_ultra_combined_VOF.so -fPIC
+gcc -g -O0 -shared src/lib/x_crank_nikolson_second_combined_VOF_avalanche.c -lm -o build/lib/libx_crank_nikolson_second_combined_VOF_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_VOF_avalanche.c -lm -o build/lib/libx_forward_euler_second_combined_VOF_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_FDM_avalanche.c -lm -o build/lib/libx_forward_euler_second_combined_FDM_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_VOF_avalanche.c -lm -o build/lib/libx_backward_euler_second_combined_VOF_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_avalanche.c -lm -o build/lib/libx_backward_euler_second_combined_FDM_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/x_backward_euler_second_ultra_combined_VOF_avalanche.c -lm -o build/lib/libx_backward_euler_second_ultra_combined_VOF_avalanche.so -fPIC
 gcc -g -O0 -shared src/lib/create_matrix.c \
 	-I src/lib/ \
 	-L build/lib \
 	-lm \
-	-lt_second_combined_VOF \
-	-lt_second_ultra_combined_VOF \
-	-lx_crank_nikolson_second_combined_VOF \
-	-lx_forward_euler_second_combined_VOF \
-	-lx_forward_euler_second_combined_FDM \
-	-lx_backward_euler_second_combined_VOF \
-	-lx_backward_euler_second_combined_FDM \
-	-lx_backward_euler_second_ultra_combined_VOF \
+	-lt_second_combined_VOF_avalanche \
+	-lt_second_ultra_combined_VOF_avalanche \
+	-lx_crank_nikolson_second_combined_VOF_avalanche \
+	-lx_forward_euler_second_combined_VOF_avalanche \
+	-lx_forward_euler_second_combined_FDM_avalanche \
+	-lx_backward_euler_second_combined_VOF_avalanche \
+	-lx_backward_euler_second_combined_FDM_avalanche \
+	-lx_backward_euler_second_ultra_combined_VOF_avalanche \
 	-lt_test \
 	-o build/lib/libcreate_matrix.so \
 	-fPIC
@@ -50,15 +50,15 @@ gcc -g -O0  src/asc2Ab.c \
 	-lboundary_conditions \
 	-linitial_conditions \
 	-larray_functions \
-	-lt_second_combined_VOF \
-	-lt_second_ultra_combined_VOF \
+	-lt_second_combined_VOF_avalanche \
+	-lt_second_ultra_combined_VOF_avalanche \
 	-lt_test \
-	-lx_crank_nikolson_second_combined_VOF \
-	-lx_forward_euler_second_combined_VOF \
-	-lx_forward_euler_second_combined_FDM \
-	-lx_backward_euler_second_combined_VOF \
-	-lx_backward_euler_second_combined_FDM \
-	-lx_backward_euler_second_ultra_combined_VOF \
+	-lx_crank_nikolson_second_combined_VOF_avalanche \
+	-lx_forward_euler_second_combined_VOF_avalanche \
+	-lx_forward_euler_second_combined_FDM_avalanche \
+	-lx_backward_euler_second_combined_VOF_avalanche \
+	-lx_backward_euler_second_combined_FDM_avalanche \
+	-lx_backward_euler_second_ultra_combined_VOF_avalanche \
 	-lcreate_matrix \
 	-lmatrix_functions \
 	-o build/NMOSF

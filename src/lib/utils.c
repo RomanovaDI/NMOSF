@@ -486,3 +486,24 @@ int barotropy_density(in *I)
 	}
 	return 0;
 }
+
+double saturation(in *I, int p, int i, int j, int k)
+{
+	return I->B_prev[B_IND(I, p, i, j, k)];
+}
+
+double concentration(in *I, int p, int i, int j, int k)
+{
+	return I->B_prev[B_IND(I, p, i, j, k)];
+}
+
+double temperature_flow(in *I, int i, int j, int k)
+{
+	return I->B_prev[B_IND(I, 8, i, j, k)];
+}
+
+double temperature_environment(in *I, int i, int j, int k)
+{
+	return I->B_prev[B_IND(I, 9, i, j, k)];
+}
+
