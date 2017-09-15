@@ -4,10 +4,11 @@
 #include "x_forward_euler_second_combined_VOF_avalanche.h"
 #include "x_forward_euler_second_combined_FDM_avalanche.h"
 #include "x_backward_euler_second_combined_VOF_avalanche.h"
-#include "x_backward_euler_second_combined_VOF_avalanche.h"
 #include "x_backward_euler_second_ultra_combined_VOF_avalanche.h"
 #include "t_second_combined_VOF_avalanche.h"
 #include "t_second_ultra_combined_VOF_avalanche.h"
+#include "t_second_combined_FDM_termogas.h"
+#include "x_backward_euler_second_combined_FDM_termogas.h"
 #include "t_test.h"
 #include "create_matrix.h"
 #include <stdio.h>
@@ -22,6 +23,7 @@
 
 int create_Ab_avalanche(in *I)
 {
+#if AVALANCHE
 	printf("Creating matrix A and vector B function\n");
 	int i, j, k, p;
 	if (I->flag_first_time_step) {
@@ -123,11 +125,13 @@ int create_Ab_avalanche(in *I)
 	}
 	//if (flag_first_time_step)
 	//	print_A_csr();
+#endif
 	return 0;
 }
 
 int create_Ab_termogas(in *I)
 {
+#if TERMOGAS
 	printf("Creating matrix A and vector B function\n");
 	int i, j, k, p;
 	if (I->flag_first_time_step) {
@@ -159,77 +163,76 @@ int create_Ab_termogas(in *I)
 	}
 
 /* creating matrix */
-//	if (I->flag_first_time_step)
-//		I->A_ind_current = 0;
-//	for (k = 0; k < I->nz; k++) {
-//		for (i = 0; i < I->nx; i++) {
-//			for (j = 0; j < I->ny; j++) {
-//				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-//					/* concentration equation */
-//					for (p = 0; p < 4; p++) {
-//						if (I->flag_first_time_step) {
-//							if (I->Ajptr_csr[I->A_ind_current] != -1)
-//								I->A_ind_current++;
-//							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
-//						}
-//						if (DDT(p, i, j, k, concentration_density_saturation_porousness, second, combined, VOF, termogas)) return 1;
-//						//if (DDT(p, i, j, k, density_velocity)) return 1;
-//						if (DIV(p, i, j, k, density_velocity_velocity, crank_nikolson, second, combined, VOF, termogas)) return 1;
-//						//if (VECT(p, i, j, k, gravity_force, backward_euler, second, combined, VOF, termogas)) return 1;
-//						//if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
-//						if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
-//						if (DIV(p, i, j, k, shear_stress_linear, crank_nikolson, second, combined, VOF, termogas)) return 1;
-//						//if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF, termogas)) return 1;
-//					}
-//					/* transport equation for snow volume fraction */
-//					p = 3;
-//					if (I->flag_first_time_step) {
-//						if (I->Ajptr_csr[I->A_ind_current] != -1)
-//							I->A_ind_current++;
-//						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
-//					}
-//					//if (VECT(p, i, j, k, barotropy_density, forward_euler, second, combined, VOF, termogas)) return 1;
-//					if (DDT(p, i, j, k, density, second, combined, VOF, termogas)) return 1;
-//					if (DIV(p, i, j, k, density_velocity, crank_nikolson, second, combined, VOF, termogas)) return 1;
-//					//if (DIV(p, i, j, k, grad_snow_volume_fraction, crank_nikolson, second, combined, FDM, termogas)) return 1;
-//					/* continuity equation */
-//					//p = 4;
-//					//if (I->flag_first_time_step) {
-//					//	if (I->Ajptr_csr[I->A_ind_current] != -1)
-//					//		I->A_ind_current++;
-//					//	I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
-//					//}
-//					//if (DIV(p, i, j, k, velocity_cont, crank_nikolson, second, combined, VOF, termogas)) return 1;
-//					/* poisson equation for pressure */
-//					p = 4;
-//					if (I->flag_first_time_step) {
-//						if (I->Ajptr_csr[I->A_ind_current] != -1)
-//							I->A_ind_current++;
-//						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
-//					}
-//					////if (DDT(p, i, j, k, pressure_cont, second, combined, VOF, termogas)) return 1;
-//					////if (DIV(p, i, j, k, snow_volume_fraction_velocity, forward_euler, second, combined, VOF, termogas)) return 1;
-//					if (VECT(p, i, j, k, barotropy_pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
-//					//if (DIV(p, i, j, k, grad_pressure, backward_euler, second, combined, FDM, termogas)) return 1;
-//					//if (DIV(p, i, j, k, div_density_velocity_velocity, forward_euler, second, combined, FDM, termogas)) return 1;
-//				}
-//			}
-//		}
-//	}
-//	if (I->flag_first_time_step) {
-//		I->non_zero_elem = I->A_ind_current + 1;
-//		I->Aiptr_csr[I->system_dimension] = I->non_zero_elem;
-//		if ((I->Aelem_csr = (double *) realloc(I->Aelem_csr, I->non_zero_elem * sizeof(double))) == NULL) {
-//			printf("Memory error\n");
-//			return 1;
-//		}
-//		if ((I->Ajptr_csr = (int *) realloc(I->Ajptr_csr, I->non_zero_elem * sizeof(int))) == NULL) {
-//			printf("Memory error\n");
-//			return 1;
-//		}
-//	}
-//	//if (flag_first_time_step)
-//	//	print_A_csr();
+	if (I->flag_first_time_step)
+		I->A_ind_current = 0;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					/* concentration equation */
+					for (p = 0; p < 4; p++) {
+						if (I->flag_first_time_step) {
+							if (I->Ajptr_csr[I->A_ind_current] != -1)
+								I->A_ind_current++;
+							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
+						}
+						if (DDT(p, i, j, k, concentration_density_saturation_porousness, second, combined, FDM, termogas)) return 1;
+						if (DIV(p, i, j, k, concentration_density_average_velocity, backward_euler, second, combined, FDM, termogas)) return 1;
+						//if (VECT(p, i, j, k, gravity_force, backward_euler, second, combined, VOF, termogas)) return 1;
+						//if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
+						if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
+						if (DIV(p, i, j, k, shear_stress_linear, crank_nikolson, second, combined, VOF, termogas)) return 1;
+						//if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF, termogas)) return 1;
+					}
+					/* transport equation for snow volume fraction */
+					p = 3;
+					if (I->flag_first_time_step) {
+						if (I->Ajptr_csr[I->A_ind_current] != -1)
+							I->A_ind_current++;
+						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
+					}
+					//if (VECT(p, i, j, k, barotropy_density, forward_euler, second, combined, VOF, termogas)) return 1;
+					if (DDT(p, i, j, k, density, second, combined, VOF, termogas)) return 1;
+					if (DIV(p, i, j, k, density_velocity, crank_nikolson, second, combined, VOF, termogas)) return 1;
+					//if (DIV(p, i, j, k, grad_snow_volume_fraction, crank_nikolson, second, combined, FDM, termogas)) return 1;
+					/* continuity equation */
+					//p = 4;
+					//if (I->flag_first_time_step) {
+					//	if (I->Ajptr_csr[I->A_ind_current] != -1)
+					//		I->A_ind_current++;
+					//	I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
+					//}
+					//if (DIV(p, i, j, k, velocity_cont, crank_nikolson, second, combined, VOF, termogas)) return 1;
+					/* poisson equation for pressure */
+					p = 4;
+					if (I->flag_first_time_step) {
+						if (I->Ajptr_csr[I->A_ind_current] != -1)
+							I->A_ind_current++;
+						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
+					}
+					////if (DDT(p, i, j, k, pressure_cont, second, combined, VOF, termogas)) return 1;
+					////if (DIV(p, i, j, k, snow_volume_fraction_velocity, forward_euler, second, combined, VOF, termogas)) return 1;
+					if (VECT(p, i, j, k, barotropy_pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
+					//if (DIV(p, i, j, k, grad_pressure, backward_euler, second, combined, FDM, termogas)) return 1;
+					//if (DIV(p, i, j, k, div_density_velocity_velocity, forward_euler, second, combined, FDM, termogas)) return 1;
+				}
+			}
+		}
+	}
+	if (I->flag_first_time_step) {
+		I->non_zero_elem = I->A_ind_current + 1;
+		I->Aiptr_csr[I->system_dimension] = I->non_zero_elem;
+		if ((I->Aelem_csr = (double *) realloc(I->Aelem_csr, I->non_zero_elem * sizeof(double))) == NULL) {
+			printf("Memory error\n");
+			return 1;
+		}
+		if ((I->Ajptr_csr = (int *) realloc(I->Ajptr_csr, I->non_zero_elem * sizeof(int))) == NULL) {
+			printf("Memory error\n");
+			return 1;
+		}
+	}
+	//if (flag_first_time_step)
+	//	print_A_csr();
+#endif
 	return 0;
 }
-

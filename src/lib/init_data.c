@@ -1,11 +1,12 @@
+#include "init_data.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "init_data.h"
 
 int set_parameters_avalanche(in *I)
 {
+#if AVALANCHE
 	//strcpy(I->map_name, "maps/map_for_verification_Ab_21.asc");
 	//strcpy(I->region_map_name, "maps/map_for_verification_Ab_region_22.asc");
 	strcpy(I->map_name, "maps/map_cavity.asc");
@@ -35,11 +36,13 @@ int set_parameters_avalanche(in *I)
 	I->num_parameters = 5; // 5 = 3 components of velocity + 1 phase fraction + 1 pressure
 	I->mass_quantity = 0;
 	I->dt = 0.1;//we need to set dt!!!
+#endif
 	return 0;
 }
 
 int set_parameters_termogas(in *I)
 {
+#if TERMOGAS
 	strcpy(I->map_name, "maps/termogase.asc");
 	strcpy(I->region_map_name, "maps/termogase.asc");
 	I->hight = 1;
@@ -51,6 +54,20 @@ int set_parameters_termogas(in *I)
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
 	I->dt = 0.01;//we need to set dt!!!
-//	I->porousness = 0.3;
+	I->porousness = 0.3;
+	I->density_water = 998;
+	I->density_oil = 850;
+	I->pressure_0 = 1000000;
+	I->beta_water = 0.0011;
+	I->beta_oil = 8701;
+	I->temperature_0 = 330;
+	I->a_water = 1400;
+	I->a_oil = 1300;
+	I->R = 8.314;
+	I->m_weight[0] = 0.02801; //N2
+	I->m_weight[1] = 0.032; //O2
+	I->m_weight[2] = 0.04401; //CO2
+	I->m_weight[3] = 0.01802; //H2O
+#endif
 	return 0;
 }

@@ -507,3 +507,15 @@ double temperature_environment(in *I, int i, int j, int k)
 	return I->B_prev[B_IND(I, 9, i, j, k)];
 }
 
+double density_t(in *I, int p, int i, int j, int k)
+{
+	if (p == 0)
+		return ((I->density_water + pow(I->a_water, -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->beta_water * (temperature_flow(I, i, j, k) - I->temperature_0)));
+	if (p == 1)
+		return ((I->density_oil + pow(I->a_oil, -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->beta_oil * (temperature_flow(I, i, j, k) - I->temperature_0)));
+	if (p == 2)
+		return (pressure(I, i, j, k) * (concentration(I, 0, i, j, k) * I->m_weight[0] +
+										concentration(I, 1, i, j, k) * I->m_weight[1] +
+										concentration(I, 2, i, j, k) * I->m_weight[2] +
+										concentration(I, 3, i, j, k) * I->m_weight[3]) / (I->R * temperature_flow(I, i, j, k)));
+}

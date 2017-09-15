@@ -22,6 +22,8 @@ gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_FDM_avalanche.c -lm -
 gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_VOF_avalanche.c -lm -o build/lib/libx_backward_euler_second_combined_VOF_avalanche.so -fPIC
 gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_avalanche.c -lm -o build/lib/libx_backward_euler_second_combined_FDM_avalanche.so -fPIC
 gcc -g -O0 -shared src/lib/x_backward_euler_second_ultra_combined_VOF_avalanche.c -lm -o build/lib/libx_backward_euler_second_ultra_combined_VOF_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/t_second_combined_FDM_termogas.c -lm -o build/lib/libt_second_combined_FDM_termogas.so -fPIC
+gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_termogas.c -lm -o build/lib/libx_backward_euler_second_combined_FDM_termogas.so -fPIC
 gcc -g -O0 -shared src/lib/create_matrix.c \
 	-I src/lib/ \
 	-L build/lib \
@@ -34,6 +36,8 @@ gcc -g -O0 -shared src/lib/create_matrix.c \
 	-lx_backward_euler_second_combined_VOF_avalanche \
 	-lx_backward_euler_second_combined_FDM_avalanche \
 	-lx_backward_euler_second_ultra_combined_VOF_avalanche \
+	-lt_second_combined_FDM_termogas \
+	-lx_backward_euler_second_combined_FDM_termogas \
 	-lt_test \
 	-o build/lib/libcreate_matrix.so \
 	-fPIC
@@ -59,6 +63,8 @@ gcc -g -O0  src/asc2Ab.c \
 	-lx_backward_euler_second_combined_VOF_avalanche \
 	-lx_backward_euler_second_combined_FDM_avalanche \
 	-lx_backward_euler_second_ultra_combined_VOF_avalanche \
+	-lt_second_combined_FDM_termogas \
+	-lx_backward_euler_second_combined_FDM_termogas \
 	-lcreate_matrix \
 	-lmatrix_functions \
 	-o build/NMOSF

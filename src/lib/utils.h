@@ -33,3 +33,4 @@ double saturation(in *I, int p, int i, int j, int k);
 double concentration(in *I, int p, int i, int j, int k);
 double temperature_flow(in *I, int i, int j, int k);
 double temperature_environment(in *I, int i, int j, int k);
+double density_t(in *I, int p, int i, int j, int k);

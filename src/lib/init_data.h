@@ -1,3 +1,6 @@
+#define AVALANCHE 1
+#define TERMOGAS 0
+
 typedef struct init_parameters_avalanche {
 	char map_name[100];
 	char region_map_name[100];
@@ -74,6 +77,13 @@ typedef struct init_parameters_termogas {
 	int *ind_boundary_cells, n_boundary_cells;
 	double mass_quantity;
 	double porousness;
+	double density_water, density_oil;
+	double pressure_0;
+	double beta_water, beta_oil;
+	double temperature_0;
+	double a_water, a_oil;
+	double R;
+	double m_weight[4];
 } in_termogas;
 
 typedef in_avalanche in;
