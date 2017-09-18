@@ -68,6 +68,10 @@ int set_parameters_termogas(in *I)
 	I->m_weight[1] = 0.032; //O2
 	I->m_weight[2] = 0.04401; //CO2
 	I->m_weight[3] = 0.01802; //H2O
+	I->permeability = 0.000000000001;
+	I->relative_saturation[0] = 0.15;
+	I->relative_saturation[1] = 0.2;
+	I->relative_saturation[2] = 0;
 #endif
 	return 0;
 }

@@ -84,6 +84,8 @@ typedef struct init_parameters_termogas {
 	double a_water, a_oil;
 	double R;
 	double m_weight[4];
+	double permeability;
+	double relative_saturation[3];
 } in_termogas;
 
 typedef in_avalanche in;
