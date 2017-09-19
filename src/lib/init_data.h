@@ -77,15 +77,22 @@ typedef struct init_parameters_termogas {
 	int *ind_boundary_cells, n_boundary_cells;
 	double mass_quantity;
 	double porousness;
-	double density_water, density_oil;
+	double density_0[2];
 	double pressure_0;
-	double beta_water, beta_oil;
+	double density_coef_beta[2];
 	double temperature_0;
-	double a_water, a_oil;
+	double density_coef_a[2];
 	double R;
-	double m_weight[4];
+	double molar_weight[4];
 	double permeability;
 	double relative_saturation[3];
+	double viscosity_coef_A[2];
+	double viscosity_coef_A_gas[4];
+	double viscosity_coef_B[2];
+	double viscosity_coef_C_gas[4];
+	double capillary_pressure_at_maximum_saturation[3];
+	double residual_saturation[3];
+	double capillary_pressure_coef;
 } in_termogas;
 
 typedef in_avalanche in;

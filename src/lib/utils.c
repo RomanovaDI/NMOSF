@@ -509,15 +509,13 @@ double temperature_environment(in *I, int i, int j, int k)
 
 double density_t(in *I, int p, int i, int j, int k)
 {
-	if (p == 0)
-		return ((I->density_water + pow(I->a_water, -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->beta_water * (temperature_flow(I, i, j, k) - I->temperature_0)));
-	if (p == 1)
-		return ((I->density_oil + pow(I->a_oil, -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->beta_oil * (temperature_flow(I, i, j, k) - I->temperature_0)));
+	if ((p == 0) || (p == 1))
+		return ((I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
 	if (p == 2)
-		return (pressure(I, i, j, k) * (concentration(I, 0, i, j, k) * I->m_weight[0] +
-										concentration(I, 1, i, j, k) * I->m_weight[1] +
-										concentration(I, 2, i, j, k) * I->m_weight[2] +
-										concentration(I, 3, i, j, k) * I->m_weight[3]) / (I->R * temperature_flow(I, i, j, k)));
+		return (pressure(I, i, j, k) * (concentration(I, 0, i, j, k) * I->molar_weight[0] +
+										concentration(I, 1, i, j, k) * I->molar_weight[1] +
+										concentration(I, 2, i, j, k) * I->molar_weight[2] +
+										concentration(I, 3, i, j, k) * I->molar_weight[3]) / (I->R * temperature_flow(I, i, j, k)));
 }
 
 double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k)
@@ -552,23 +550,101 @@ double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k
 double relative_permeability(in *I, int p, int i, int j, int k)
 {
 	if (p == 0)
-		return (((saturation(I, 1, i, j, k) - I->relative_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k) +
+		return ((saturation(I, 1, i, j, k) - I->relative_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k) +
 				(saturation(I, 2, i, j, k) - I->relative_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k)) / (
-				saturation(I, 1, i, j, k) - I->relative_saturation[1] + saturation(I, 2, i, j, k) - I->relative_saturation[2]));
+				saturation(I, 1, i, j, k) - I->relative_saturation[1] + saturation(I, 2, i, j, k) - I->relative_saturation[2]);
 	if (p == 1)
-		return (((saturation(I, 0, i, j, k) - I->relative_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k) +
+		return ((saturation(I, 0, i, j, k) - I->relative_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k) +
 				(saturation(I, 2, i, j, k) - I->relative_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k)) / (
-				saturation(I, 0, i, j, k) - I->relative_saturation[0] + saturation(I, 2, i, j, k) - I->relative_saturation[2]));
+				saturation(I, 0, i, j, k) - I->relative_saturation[0] + saturation(I, 2, i, j, k) - I->relative_saturation[2]);
 	if (p == 2)
-		return (((saturation(I, 0, i, j, k) - I->relative_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
+		return ((saturation(I, 0, i, j, k) - I->relative_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
 				(saturation(I, 1, i, j, k) - I->relative_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) / (
-				saturation(I, 0, i, j, k) - I->relative_saturation[0] + saturation(I, 1, i, j, k) - I->relative_saturation[1]));
+				saturation(I, 0, i, j, k) - I->relative_saturation[0] + saturation(I, 1, i, j, k) - I->relative_saturation[1]);
+}
+
+double viscosity_gas(in *I, int p, int i, int j, int k)
+{
+	return I->viscosity_coef_A_gas[p] *
+		(I->temperature_0 + I->viscosity_coef_C_gas[p]) *
+		pow(temperature_flow(I, i, j, k) / I->temperature_0, 3 / 2) /
+		(temperature_flow(I, i, j, k) + I->viscosity_coef_C_gas[p]);
+}
+
+double molar_fraction(in *I, int p, int i, int j, int k)
+{
+	double x = 0;
+	int l;
+	for (l = 0; l < 4; l++)
+		x += concentration(I, l, i, j, k) / I->molar_weight[l];
+	return concentration(I, p, i, j, k) / (I->molar_weight[p] * x);
+}
+
+double viscosity(in *I, int p, int i, int j, int k)
+{
+	if ((p == 0) || (p == 1))
+		return (I->viscosity_coef_A[p] / (1 / density_t(I, p, i, j, k) - I->viscosity_coef_B[p]));
+	if (p == 2) {
+		double x = 1;
+		int l;
+		for (l = 0; l < 4; l++)
+			x *= pow(viscosity_gas(I, l, i, j, k), molar_fraction(I, l, i, j, k));
+		return x;
+	}
+}
+
+double Darsi_M_coef_phases(in *I, int p, int i, int j, int k)
+{
+	return density_t(I, p, i, j, k) * I->permeability * relative_permeability(I, p, i, j, k) / viscosity(I, p, i, j, k);
+}
+
+double Darsi_M_coef(in *I, int i, int j, int k)
+{
+	double x = 0;
+	int l;
+	for (l = 0; l < 3; l++)
+		x += Darsi_M_coef_phases(I, l, i, j, k);
+	return x;
+}
+
+double capillary_pressure_derivative_by_saturation(in *I, int p, int i, int j, int k)
+{
+	return - I->capillary_pressure_at_maximum_saturation[p] *
+		pow(1 - I->residual_saturation[p], I->capillary_pressure_coef) *
+		I->capillary_pressure_coef *
+		pow(saturation(I, p, i, j, k), - I->capillary_pressure_coef - 1);
 }
 
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 {
-	int ind_p[3];
-	ind_p[0] = ind_p[1] = ind_p[2] = 0;
-	idn_p[p] = 1;
-	return (- I->permeability * relative_permeability(I, p, i, j, k) * ())
+	int ind_pr[3];
+	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+	idn_pr[pr] = 1;
+	if (p == 0)
+		return - I->permeability * relative_permeability(I, p, i, j, k) * (
+			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
+			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
+			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
+			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]));
+	if (p == 1)
+		return - I->permeability * relative_permeability(I, p, i, j, k) * (
+			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
+			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
+			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
+			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]));
+	if (p == 2)
+		return - I->permeability * relative_permeability(I, p, i, j, k) * (
+			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
+			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
+			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
+			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]));
 }
