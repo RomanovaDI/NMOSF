@@ -91,6 +91,14 @@ int set_parameters_termogas(in *I)
 	I->residual_saturation[1] = 0;
 	I->residual_saturation[2] = 0.3;
 	I->capillary_pressure_coef = 0.5;
+	I->num_carbon_atoms = 8;
+	I->num_hydrogen_atoms = 18;
+	I->stoichiometric_coef[0] = I->num_carbon_atoms + 0.25 * I->num_hydrogen_atoms;
+	I->stoichiometric_coef[1] = I->num_carbon_atoms;
+	I->stoichiometric_coef[2] = 0.25 * I->num_hydrogen_atoms;
+	I->threshold_temperature = 400;
+	I->frequency_factor = 1;
+	I->activation_temperature = 400;
 #endif
 	return 0;
 }

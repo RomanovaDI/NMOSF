@@ -516,6 +516,7 @@ double density_t(in *I, int p, int i, int j, int k)
 										concentration(I, 1, i, j, k) * I->molar_weight[1] +
 										concentration(I, 2, i, j, k) * I->molar_weight[2] +
 										concentration(I, 3, i, j, k) * I->molar_weight[3]) / (I->R * temperature_flow(I, i, j, k)));
+	return 0;
 }
 
 double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k)
@@ -545,6 +546,7 @@ double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k
 		S = (saturation(I, 1, i, j, k) - I->relative_saturation[1]) / (1 - I->relative_saturation[1] - I->relative_saturation[0]);
 		return ((1 - S) * (1 - S) * (1 - S * S));
 	}
+	return 0;
 }
 
 double relative_permeability(in *I, int p, int i, int j, int k)
@@ -561,6 +563,7 @@ double relative_permeability(in *I, int p, int i, int j, int k)
 		return ((saturation(I, 0, i, j, k) - I->relative_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
 				(saturation(I, 1, i, j, k) - I->relative_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) / (
 				saturation(I, 0, i, j, k) - I->relative_saturation[0] + saturation(I, 1, i, j, k) - I->relative_saturation[1]);
+	return 0;
 }
 
 double viscosity_gas(in *I, int p, int i, int j, int k)
@@ -591,6 +594,7 @@ double viscosity(in *I, int p, int i, int j, int k)
 			x *= pow(viscosity_gas(I, l, i, j, k), molar_fraction(I, l, i, j, k));
 		return x;
 	}
+	return 0;
 }
 
 double Darsi_M_coef_phases(in *I, int p, int i, int j, int k)
@@ -647,4 +651,37 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
 			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]));
+	return 0;
+}
+
+double rate_of_reaction_coef(in *I, int i, int j, int k)
+{
+	if (temperature_flow(I, i, j, k) < I->threshold_temperature)
+		return 0;
+	else
+		return I->frequency_factor * exp(- I->activation_temperature / temperature_flow(I, i, j, k));
+}
+
+double rate_of_reaction(in *I, int i, int j, int k)
+{
+	return rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * pow(relative_permeability(I, 1, i, j, k) * relative_permeability(I, 2, i, j, k), 0.25);
+}
+
+double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
+{
+	if (p == 0)
+		return 0;
+	if (p == 1)
+		return - rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[0] * I->molar_weight[p];
+	if (p == 2)
+		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[1] * I->molar_weight[p];
+	if (p == 3)
+		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
+	if (p == 5)
+		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
+	if (p == 6)
+		return - mass_inflow_rate_func(I, 5, i, j, k) - mass_inflow_rate_func(I, 7, i, j, k);
+	if (p == 7)
+		return mass_inflow_rate_func(I, 0, i, j, k) + mass_inflow_rate_func(I, 1, i, j, k) +
+			mass_inflow_rate_func(I, 2, i, j, k) + mass_inflow_rate_func(I, 3, i, j, k);
 }

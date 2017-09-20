@@ -93,6 +93,12 @@ typedef struct init_parameters_termogas {
 	double capillary_pressure_at_maximum_saturation[3];
 	double residual_saturation[3];
 	double capillary_pressure_coef;
+	double num_carbon_atoms;
+	double num_hydrogen_atoms;
+	double stoichiometric_coef[3];
+	double threshold_temperature;
+	double frequency_factor;
+	double activation_temperature;
 } in_termogas;
 
 typedef in_avalanche in;

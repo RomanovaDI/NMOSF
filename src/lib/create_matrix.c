@@ -20,6 +20,7 @@
 #define DIV(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) DIV_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 #define GRAD(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) GRAD_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 #define VECT(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) VECT_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
+#define SCAL(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) SCAL_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 
 int create_Ab_avalanche(in *I)
 {
@@ -178,11 +179,7 @@ int create_Ab_termogas(in *I)
 						}
 						if (DDT(p, i, j, k, concentration_density_saturation_porousness, second, combined, FDM, termogas)) return 1;
 						if (DIV(p, i, j, k, concentration_density_average_velocity, backward_euler, second, combined, FDM, termogas)) return 1;
-						//if (VECT(p, i, j, k, gravity_force, backward_euler, second, combined, VOF, termogas)) return 1;
-						//if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
-						if (GRAD(p, i, j, k, pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
-						if (DIV(p, i, j, k, shear_stress_linear, crank_nikolson, second, combined, VOF, termogas)) return 1;
-						//if (DIV(p, i, j, k, shear_stress, crank_nikolson, second, combined, VOF, termogas)) return 1;
+						if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, combined, FDM, termogas)) return 1;
 					}
 					/* transport equation for snow volume fraction */
 					p = 3;
