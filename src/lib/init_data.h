@@ -99,6 +99,8 @@ typedef struct init_parameters_termogas {
 	double threshold_temperature;
 	double frequency_factor;
 	double activation_temperature;
+	double specific_heat[7];
+	double thermal_conductivity_coef[4];
 } in_termogas;
 
 typedef in_avalanche in;

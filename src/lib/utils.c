@@ -685,3 +685,24 @@ double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
 		return mass_inflow_rate_func(I, 0, i, j, k) + mass_inflow_rate_func(I, 1, i, j, k) +
 			mass_inflow_rate_func(I, 2, i, j, k) + mass_inflow_rate_func(I, 3, i, j, k);
 }
+
+double density_derivative_by_pressure(in *I, int p, int i, int j, int k)
+{
+	if ((p == 0) || (p == 1))
+		return pow(I->density_coef_a[p], -2) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0));
+	if (p == 2)
+		return (concentration(I, 0, i, j, k) * I->molar_weight[0] +
+				concentration(I, 1, i, j, k) * I->molar_weight[1] +
+				concentration(I, 2, i, j, k) * I->molar_weight[2] +
+				concentration(I, 3, i, j, k) * I->molar_weight[3]) / (I->R * temperature_flow(I, i, j, k));
+	return 0;
+}
+
+double Darsi_A_coef(in *I, int i, int j, int k)
+{
+	int l;
+	double x = 0;
+	for (l = 0; l < 3; l++) {
+		x += I->porousness * saturation(I, l, i, j, k) * density_derivative_by_pressure(I, l, i, j, k);
+	}
+}

@@ -99,6 +99,17 @@ int set_parameters_termogas(in *I)
 	I->threshold_temperature = 400;
 	I->frequency_factor = 1;
 	I->activation_temperature = 400;
+	I->specific_heat[0] = 18000;
+	I->specific_heat[1] = 1800;
+	I->specific_heat[2] = 1300;
+	I->specific_heat[3] = 1400;
+	I->specific_heat[4] = 2100;
+	I->specific_heat[5] = 1600;
+	I->specific_heat[7] = 1000;
+	I->thermal_conductivity_coef[0] = 0.55;
+	I->thermal_conductivity_coef[1] = 0.128;
+	I->thermal_conductivity_coef[2] = 0.05;
+	I->thermal_conductivity_coef[3] = 2;
 #endif
 	return 0;
 }

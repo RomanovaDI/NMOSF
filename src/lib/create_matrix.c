@@ -21,6 +21,7 @@
 #define GRAD(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) GRAD_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 #define VECT(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) VECT_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 #define SCAL(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) SCAL_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
+#define LAPL(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) LAPL_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 
 int create_Ab_avalanche(in *I)
 {
@@ -181,32 +182,36 @@ int create_Ab_termogas(in *I)
 						if (DIV(p, i, j, k, concentration_density_average_velocity, backward_euler, second, combined, FDM, termogas)) return 1;
 						if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, combined, FDM, termogas)) return 1;
 					}
-					/* transport equation for snow volume fraction */
-					p = 3;
-					if (I->flag_first_time_step) {
-						if (I->Ajptr_csr[I->A_ind_current] != -1)
-							I->A_ind_current++;
-						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
-					}
-					//if (VECT(p, i, j, k, barotropy_density, forward_euler, second, combined, VOF, termogas)) return 1;
-					if (DDT(p, i, j, k, density, second, combined, VOF, termogas)) return 1;
-					if (DIV(p, i, j, k, density_velocity, crank_nikolson, second, combined, VOF, termogas)) return 1;
-					//if (DIV(p, i, j, k, grad_snow_volume_fraction, crank_nikolson, second, combined, FDM, termogas)) return 1;
-					/* continuity equation */
-					//p = 4;
-					//if (I->flag_first_time_step) {
-					//	if (I->Ajptr_csr[I->A_ind_current] != -1)
-					//		I->A_ind_current++;
-					//	I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
-					//}
-					//if (DIV(p, i, j, k, velocity_cont, crank_nikolson, second, combined, VOF, termogas)) return 1;
-					/* poisson equation for pressure */
+					/* pressure equation */
 					p = 4;
 					if (I->flag_first_time_step) {
 						if (I->Ajptr_csr[I->A_ind_current] != -1)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
+					if (DDT(p, i, j, k, coef_pressute, second, combined, FDM, termogas)) return 1;
+					if (LAPL(p, i, j, k, coef_pressute, backward_euler, second, combined, FDM, termogas)) return 1;
+					/* saturation equation */
+					for (p = 5; p < 8; p++) {
+						if (I->flag_first_time_step) {
+							if (I->Ajptr_csr[I->A_ind_current] != -1)
+								I->A_ind_current++;
+							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
+						}
+						if (DDT(p, i, j, k, density_saturation_porousness, second, combined, FDM, termogas)) return 1;
+						if (DIV(p, i, j, k, density_average_velocity, backward_euler, second, combined, FDM, termogas)) return 1;
+						if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, combined, FDM, termogas)) return 1;
+					}
+					/* temperature flow equation */
+					p = 8;
+					if (I->flag_first_time_step) {
+						if (I->Ajptr_csr[I->A_ind_current] != -1)
+							I->A_ind_current++;
+						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
+					}
+					if (DDT(p, i, j, k, porousness_density_energy_flow, second, combined, FDM, termogas)) return 1;
+					if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, second, combined, FDM, termogas)) return 1;
+					if (LAPL(p, i, j, k, heat_influx_vector, backward_euler, second, combined, FDM, termogas)) return 1;
 					////if (DDT(p, i, j, k, pressure_cont, second, combined, VOF, termogas)) return 1;
 					////if (DIV(p, i, j, k, snow_volume_fraction_velocity, forward_euler, second, combined, VOF, termogas)) return 1;
 					if (VECT(p, i, j, k, barotropy_pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
