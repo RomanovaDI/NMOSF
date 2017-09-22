@@ -210,13 +210,22 @@ int create_Ab_termogas(in *I)
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
 					if (DDT(p, i, j, k, porousness_density_energy_flow, second, combined, FDM, termogas)) return 1;
-					if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, second, combined, FDM, termogas)) return 1;
-					if (LAPL(p, i, j, k, heat_influx_vector, backward_euler, second, combined, FDM, termogas)) return 1;
-					////if (DDT(p, i, j, k, pressure_cont, second, combined, VOF, termogas)) return 1;
-					////if (DIV(p, i, j, k, snow_volume_fraction_velocity, forward_euler, second, combined, VOF, termogas)) return 1;
-					if (VECT(p, i, j, k, barotropy_pressure, crank_nikolson, second, combined, VOF, termogas)) return 1;
-					//if (DIV(p, i, j, k, grad_pressure, backward_euler, second, combined, FDM, termogas)) return 1;
-					//if (DIV(p, i, j, k, div_density_velocity_velocity, forward_euler, second, combined, FDM, termogas)) return 1;
+					if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (DIV(p, i, j, k, heat_influx_vector, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (SCAL(p, i, j, k, heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (SCAL(p, i, j, k, chemical_reaction_heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
+					/* temperature environment equation */
+					p = 8;
+					if (I->flag_first_time_step) {
+						if (I->Ajptr_csr[I->A_ind_current] != -1)
+							I->A_ind_current++;
+						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
+					}
+					if (DDT(p, i, j, k, porousness_density_energy_flow, second, combined, FDM, termogas)) return 1;
+					if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (DIV(p, i, j, k, heat_influx_vector, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (SCAL(p, i, j, k, heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (SCAL(p, i, j, k, chemical_reaction_heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
 				}
 			}
 		}

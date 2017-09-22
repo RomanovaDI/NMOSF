@@ -48,3 +48,5 @@ double rate_of_reaction(in *I, int i, int j, int k);
 double mass_inflow_rate_func(in *I, int p, int i, int j, int k);
 double density_derivative_by_pressure(in *I, int p, int i, int j, int k);
 double Darsi_A_coef(in *I, int i, int j, int k);
+double internal_energy(in *I, int p, int i, int j, int k);
+double enthalpy_flow(in *I, int i, int j, int k);

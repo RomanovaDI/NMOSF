@@ -669,19 +669,19 @@ double rate_of_reaction(in *I, int i, int j, int k)
 
 double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
 {
-	if (p == 0)
+	if (p == 0) // N2
 		return 0;
-	if (p == 1)
+	if (p == 1) // O2
 		return - rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[0] * I->molar_weight[p];
-	if (p == 2)
+	if (p == 2) // CO2
 		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[1] * I->molar_weight[p];
-	if (p == 3)
+	if (p == 3) // H2O
 		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
-	if (p == 5)
+	if (p == 5) // water
 		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
-	if (p == 6)
+	if (p == 6) // oil
 		return - mass_inflow_rate_func(I, 5, i, j, k) - mass_inflow_rate_func(I, 7, i, j, k);
-	if (p == 7)
+	if (p == 7) // gas
 		return mass_inflow_rate_func(I, 0, i, j, k) + mass_inflow_rate_func(I, 1, i, j, k) +
 			mass_inflow_rate_func(I, 2, i, j, k) + mass_inflow_rate_func(I, 3, i, j, k);
 }
@@ -705,4 +705,23 @@ double Darsi_A_coef(in *I, int i, int j, int k)
 	for (l = 0; l < 3; l++) {
 		x += I->porousness * saturation(I, l, i, j, k) * density_derivative_by_pressure(I, l, i, j, k);
 	}
+	return x;
+}
+
+double internal_energy(in *I, int p, int i, int j, int k)
+{
+	if ((p == 0) || (p == 1)) // water, oil
+		return I->specific_heat[p] * (temperature_flow(I, i, j, k) - I->tempetarure_for_calculation_internal_energy) + I->initial_enthalpy[p];
+	if (p == 2) // gas
+		return internal_cell(I, 3, i, j, k) + internal_energy(I, 4, i, j, k) + internal_energy(I, 5, i, j, k) + internal_energy(I, 6, i, j, k);
+	if ((p == 3) || (p == 4) || (p == 5) || (p == 6)) // N2, O2, CO2, H2O
+		return (I->specific_heat[p - 1] * (temperature_flow(I, i, j, k) - I->tempetarure_for_calculation_internal_energy) + I->initial_enthalpy[p - 1]) * concentration(I, p - 3, i, j, k);
+	if (p == 7) // environment
+		return I->specific_heat[p - 1] * (temperature_environment(I, i, j, k) - I->tempetarure_for_calculation_internal_energy) + I->initial_enthalpy[p - 1];
+	return 0;
+}
+
+double enthalpy_flow(in *I, int i, int j, int k)
+{
+	return internal_energy(I, 0, i, j, k) - internal_energy(I, 1, i, j, k) - internal_energy(I, 2, i, j, k) + 2 * internal_energy(I, 5, i, j, k) + 2 * internal_energy(I, 6, i, j, k);
 }

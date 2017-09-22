@@ -94,12 +94,12 @@ int DIV_density_saturation_internal_energy_avarage_velocity_second_combined_FDM_
 		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 		A_value = 0;
 		for (pp = 0; pp < 2; pp++)
-			A_value += density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+			A_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 				saturation(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 				I->specific_heat[pp] *
 				avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
 		for (pp = 0; pp < 4; pp++)
-			A_value += density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+			A_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 				saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 				I->specific_heat[pp + 2] *
 				concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
@@ -109,10 +109,62 @@ int DIV_density_saturation_internal_energy_avarage_velocity_second_combined_FDM_
 	}
 }
 
-int LAPL_heat_influx_vector_backward_euler_second_combined_FDM_termogas(in *I, int p, int i, int j, int k)
+int DIV_heat_influx_vector_backward_euler_second_combined_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
-	A_value = I->porousness * 
+	int pr, ind_pr[3];
+	for (pr = 0; pr < 3; pr++) {
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		A_value = I->porousness * (
+			I->thermal_conductivity_coef[0] * saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) +
+			I->thermal_conductivity_coef[1] * saturation(I, 1, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) +
+			I->thermal_conductivity_coef[2] * saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2])) / (2 * I->dx[pr]);
+		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		A_value = - I->porousness * (
+			I->thermal_conductivity_coef[0] * saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) +
+			I->thermal_conductivity_coef[1] * saturation(I, 1, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) +
+			I->thermal_conductivity_coef[2] * saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
+		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+	}
+	if (LAPL(p, i, j, k, thermal_conductivity_coef_saturation_temperature_flow, backward_euler, second, combined, FDM, termogas)) return 1;
+	return 0;
+}
+
+int LAPL_thermal_conductivity_coef_saturation_temperature_flow_backward_euler_second_combined_FDM_termogas(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double A_value;
+	int pr, ind_pr[3];
+	for (pr = 0; pr < 3; pr++) {
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		A_value = I->porousness * (
+			I->thermal_conductivity_coef[0] * saturation(I, 0, i, j, k) +
+			I->thermal_conductivity_coef[1] * saturation(I, 1, i, j, k) +
+			I->thermal_conductivity_coef[2] * saturation(I, 2, i, j, k)) / (I->dx[pr] * I->dx[pr]);
+		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		A_value *= -2;
+		WRITE_TO_A(p, i, j, k, -1);
+	}
+	return 0;
+}
+
+int SCAL_heat_flow_backward_euler_second_combined_FDM_termogas(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double A_value;
+	I->B[A_IND(I, p, i, j, k)] += I->heat_transfer_coef * temperature_environment(I, i, j, k);
+	A_value = I->heat_transfer_coef;
+	WRITE_TO_A(p, i, j, k);
+	return 0;
+}
+
+int SCAL_chemical_reaction_heat_flow_backward_euler_second_combined_FDM_termogas(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, 1, i, j, k) * enthalpy_flow(I, i, j, k);
 	return 0;
 }
