@@ -1,5 +1,5 @@
-#define AVALANCHE 1
-#define TERMOGAS 0
+#define AVALANCHE 0
+#define TERMOGAS 1
 
 typedef struct init_parameters_avalanche {
 	char map_name[100];
@@ -104,9 +104,15 @@ typedef struct init_parameters_termogas {
 	double heat_transfer_coef;
 	double tempetarure_for_calculation_internal_energy;
 	double initial_enthalpy[7];
+	double density_environment;
+	double initial_pressure;
+	double initial_temperature;
+	double injection_well_pressure;
+	double production_well_pressure;
 } in_termogas;
 
-typedef in_avalanche in;
+//typedef in_avalanche in;
+typedef in_termogas in;
 
 int set_parameters_avalanche(in *I);
 int set_parameters_termogas(in *I);

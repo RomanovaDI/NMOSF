@@ -31,7 +31,7 @@ int DDT_coef_pressure_second_combined_FDM_termogas(in *I, int p, int i, int j, i
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
-	A_value = Darsi_A_coef / I->dt;
+	A_value = Darsi_A_coef(I, i, j, k) / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
 	I->B[A_IND(I, p, i, j, k)] += A_value * (
 		pressure(I, i + 1, j, k) + pressure(I, i - 1, j, k) +
@@ -67,6 +67,19 @@ int DDT_porousness_density_energy_flow_second_combined_FDM_termogas(in *I, int p
 		temperature_flow(I, i + 1, j, k) + temperature_flow(I, i - 1, j, k) +
 		temperature_flow(I, i, j + 1, k) + temperature_flow(I, i, j - 1, k) +
 		temperature_flow(I, i, j, k + 1) + temperature_flow(I, i, j, k - 1)) / 6;
+	return 0;
+}
+
+int DDT_porousness_density_energy_environment_second_combined_FDM_termogas(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double A_value;
+	A_value = (1 - I->porousness) * I->density_environment * I->specific_heat[6];
+	WRITE_TO_A(p, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] += A_value * (
+		temperature_environment(I, i + 1, j, k) + temperature_environment(I, i - 1, j, k) +
+		temperature_environment(I, i, j + 1, k) + temperature_environment(I, i, j - 1, k) +
+		temperature_environment(I, i, j, k + 1) + temperature_environment(I, i, j, k - 1)) / 6;
 	return 0;
 }
 

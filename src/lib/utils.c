@@ -29,27 +29,6 @@ int VOLUME_IND(in *I, int i, int j, int k)
 	return (I->ind_cell_multipl[i * I->ny + j]);
 }
 
-double density(in *I, int i, int j, int k)
-{
-	//return phase_fraction(I, i, j, k) * I->density_snow + (1 - phase_fraction(I, i, j, k)) * I->density_air;
-	return phase_fraction(I, i, j, k);
-}
-
-double velocity(in *I, int p, int i, int j, int k)
-{
-	return I->B_prev[B_IND(I, p, i, j, k)];
-}
-
-double phase_fraction(in *I, int i, int j, int k)
-{
-	return I->B_prev[B_IND(I, 3, i, j, k)];
-}
-
-double pressure(in *I, int i, int j, int k)
-{
-	return I->B_prev[B_IND(I, 4, i, j, k)];
-}
-
 int check_for_corrupt_cell(in *I, int i, int j, int k)
 {
 	if ((i >= I->nx) || (i < 0) ||
@@ -188,6 +167,100 @@ int A_IND_S(in *I, int p, int i, int j, int k, int s)
 		case 5:
 			return A_IND(I, p, i, j, k - 1);
 	}
+}
+
+int cell_of_computation_domain(in *I, int i, int j, int k)
+{
+	if ((i >= - I->stencil_size) && (i < I->nx + I->stencil_size) &&
+		(j >= - I->stencil_size) && (j < I->ny + I->stencil_size) &&
+		(k >= - I->stencil_size) && (k < I->nz + I->stencil_size))
+			return 1;
+	else
+			return 0;
+}
+
+int internal_cell(in *I, int i, int j, int k)
+{
+	if ((i >= 0) && (i < I->nx) && (j >= 0) && (j < I->ny) && (I->ind_cell_multipl[i * I->ny + j] != -1) && (k >= 0) && (k < I->nz))
+		return 1;
+	else
+		return 0;
+
+}
+
+int boundary_cell(in *I, int i, int j, int k)
+{
+	if (cell_of_computation_domain(I, i, j, k) &&
+		(I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size] != -1) &&
+		(!(internal_cell(I, i, j, k))))
+			return 1;
+	else
+			return 0;
+
+}
+
+int count_neighbor_internal_cells(in *I, int i, int j, int k)
+{
+	int x = 0;
+	if (boundary_cell(I, i - 1, j, k)) x++;
+	if (boundary_cell(I, i + 1, j, k)) x++;
+	if (boundary_cell(I, i, j - 1, k)) x++;
+	if (boundary_cell(I, i, j + 1, k)) x++;
+	return x;
+}
+
+int count_second_order_neighbor_internal_cells(in *I, int i, int j, int k)
+{
+	int x = 0;
+	if (boundary_cell(I, i - 2, j, k)) x++;
+	if (boundary_cell(I, i + 2, j, k)) x++;
+	if (boundary_cell(I, i, j - 2, k)) x++;
+	if (boundary_cell(I, i, j + 2, k)) x++;
+	return x;
+}
+
+int count_other_corner_neighbor_internal_cells(in *I, int i, int j, int k)
+{
+	int x = 0;
+	if (boundary_cell(I, i - 1, j - 1, k)) x++;
+	if (boundary_cell(I, i - 1, j + 1, k)) x++;
+	if (boundary_cell(I, i + 1, j - 1, k)) x++;
+	if (boundary_cell(I, i + 1, j + 1, k)) x++;
+	if (boundary_cell(I, i - 1, j - 2, k)) x++;
+	if (boundary_cell(I, i - 1, j + 2, k)) x++;
+	if (boundary_cell(I, i + 1, j - 2, k)) x++;
+	if (boundary_cell(I, i + 1, j + 2, k)) x++;
+	if (boundary_cell(I, i - 2, j - 1, k)) x++;
+	if (boundary_cell(I, i - 2, j + 1, k)) x++;
+	if (boundary_cell(I, i + 2, j - 1, k)) x++;
+	if (boundary_cell(I, i + 2, j + 1, k)) x++;
+	if (boundary_cell(I, i - 2, j - 2, k)) x++;
+	if (boundary_cell(I, i - 2, j + 2, k)) x++;
+	if (boundary_cell(I, i + 2, j - 2, k)) x++;
+	if (boundary_cell(I, i + 2, j + 2, k)) x++;
+	return x;
+}
+
+#if AVALANCHE
+double density(in *I, int i, int j, int k)
+{
+	//return phase_fraction(I, i, j, k) * I->density_snow + (1 - phase_fraction(I, i, j, k)) * I->density_air;
+	return phase_fraction(I, i, j, k);
+}
+
+double velocity(in *I, int p, int i, int j, int k)
+{
+	return I->B_prev[B_IND(I, p, i, j, k)];
+}
+
+double phase_fraction(in *I, int i, int j, int k)
+{
+	return I->B_prev[B_IND(I, 3, i, j, k)];
+}
+
+double pressure(in *I, int i, int j, int k)
+{
+	return I->B_prev[B_IND(I, 4, i, j, k)];
 }
 
 double velocity_on_face(in *I, int p, int i, int j, int k, int s)
@@ -375,78 +448,6 @@ int check_conservation_of_mass(in *I)
 	}
 }
 
-int cell_of_computation_domain(in *I, int i, int j, int k)
-{
-	if ((i >= - I->stencil_size) && (i < I->nx + I->stencil_size) &&
-		(j >= - I->stencil_size) && (j < I->ny + I->stencil_size) &&
-		(k >= - I->stencil_size) && (k < I->nz + I->stencil_size))
-			return 1;
-	else
-			return 0;
-}
-
-int internal_cell(in *I, int i, int j, int k)
-{
-	if ((i >= 0) && (i < I->nx) && (j >= 0) && (j < I->ny) && (I->ind_cell_multipl[i * I->ny + j] != -1) && (k >= 0) && (k < I->nz))
-		return 1;
-	else
-		return 0;
-
-}
-
-int boundary_cell(in *I, int i, int j, int k)
-{
-	if (cell_of_computation_domain(I, i, j, k) &&
-		(I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size] != -1) &&
-		(!(internal_cell(I, i, j, k))))
-			return 1;
-	else
-			return 0;
-
-}
-
-int count_neighbor_internal_cells(in *I, int i, int j, int k)
-{
-	int x = 0;
-	if (boundary_cell(I, i - 1, j, k)) x++;
-	if (boundary_cell(I, i + 1, j, k)) x++;
-	if (boundary_cell(I, i, j - 1, k)) x++;
-	if (boundary_cell(I, i, j + 1, k)) x++;
-	return x;
-}
-
-int count_second_order_neighbor_internal_cells(in *I, int i, int j, int k)
-{
-	int x = 0;
-	if (boundary_cell(I, i - 2, j, k)) x++;
-	if (boundary_cell(I, i + 2, j, k)) x++;
-	if (boundary_cell(I, i, j - 2, k)) x++;
-	if (boundary_cell(I, i, j + 2, k)) x++;
-	return x;
-}
-
-int count_other_corner_neighbor_internal_cells(in *I, int i, int j, int k)
-{
-	int x = 0;
-	if (boundary_cell(I, i - 1, j - 1, k)) x++;
-	if (boundary_cell(I, i - 1, j + 1, k)) x++;
-	if (boundary_cell(I, i + 1, j - 1, k)) x++;
-	if (boundary_cell(I, i + 1, j + 1, k)) x++;
-	if (boundary_cell(I, i - 1, j - 2, k)) x++;
-	if (boundary_cell(I, i - 1, j + 2, k)) x++;
-	if (boundary_cell(I, i + 1, j - 2, k)) x++;
-	if (boundary_cell(I, i + 1, j + 2, k)) x++;
-	if (boundary_cell(I, i - 2, j - 1, k)) x++;
-	if (boundary_cell(I, i - 2, j + 1, k)) x++;
-	if (boundary_cell(I, i + 2, j - 1, k)) x++;
-	if (boundary_cell(I, i + 2, j + 1, k)) x++;
-	if (boundary_cell(I, i - 2, j - 2, k)) x++;
-	if (boundary_cell(I, i - 2, j + 2, k)) x++;
-	if (boundary_cell(I, i + 2, j - 2, k)) x++;
-	if (boundary_cell(I, i + 2, j + 2, k)) x++;
-	return x;
-}
-
 int barotropy_pressure(in *I)
 {
 	int i, j, k;
@@ -486,7 +487,9 @@ int barotropy_density(in *I)
 	}
 	return 0;
 }
+#endif
 
+#if TERMOGAS
 double saturation(in *I, int p, int i, int j, int k)
 {
 	return I->B_prev[B_IND(I, p, i, j, k)];
@@ -495,6 +498,11 @@ double saturation(in *I, int p, int i, int j, int k)
 double concentration(in *I, int p, int i, int j, int k)
 {
 	return I->B_prev[B_IND(I, p, i, j, k)];
+}
+
+double pressure(in *I, int i, int j, int k)
+{
+	return I->B_prev[B_IND(I, 4, i, j, k)];
 }
 
 double temperature_flow(in *I, int i, int j, int k)
@@ -623,34 +631,34 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 {
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
-	idn_pr[pr] = 1;
+	ind_pr[pr] = 1;
 	if (p == 0)
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
-			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]));
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
 	if (p == 1)
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
-			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]));
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
 	if (p == 2)
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
-			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]) +
+			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * dx[pr]));
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
 	return 0;
 }
 
@@ -713,7 +721,7 @@ double internal_energy(in *I, int p, int i, int j, int k)
 	if ((p == 0) || (p == 1)) // water, oil
 		return I->specific_heat[p] * (temperature_flow(I, i, j, k) - I->tempetarure_for_calculation_internal_energy) + I->initial_enthalpy[p];
 	if (p == 2) // gas
-		return internal_cell(I, 3, i, j, k) + internal_energy(I, 4, i, j, k) + internal_energy(I, 5, i, j, k) + internal_energy(I, 6, i, j, k);
+		return internal_energy(I, 3, i, j, k) + internal_energy(I, 4, i, j, k) + internal_energy(I, 5, i, j, k) + internal_energy(I, 6, i, j, k);
 	if ((p == 3) || (p == 4) || (p == 5) || (p == 6)) // N2, O2, CO2, H2O
 		return (I->specific_heat[p - 1] * (temperature_flow(I, i, j, k) - I->tempetarure_for_calculation_internal_energy) + I->initial_enthalpy[p - 1]) * concentration(I, p - 3, i, j, k);
 	if (p == 7) // environment
@@ -725,3 +733,4 @@ double enthalpy_flow(in *I, int i, int j, int k)
 {
 	return internal_energy(I, 0, i, j, k) - internal_energy(I, 1, i, j, k) - internal_energy(I, 2, i, j, k) + 2 * internal_energy(I, 5, i, j, k) + 2 * internal_energy(I, 6, i, j, k);
 }
+#endif

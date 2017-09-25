@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 
+#if AVALANCHE
 int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low(in *I)
 {
 	printf("Set the boundary condition for velosity with zero gradient on upper and sides boundaries and no slip condition on the lower boundary\n");
@@ -559,4 +560,58 @@ int SET_boundary_CONDITION_pressure_zero_gradient_on_all(in *I)
 	}
 	return 0;
 }
+#endif
 
+#if TERMOGAS
+int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out(in *I)
+{
+	printf("Set the boundary condition in termogas case for all values with no boundaries condition, 4 injection well and 1 production well.\n");
+	int i, j, k, p, l, m, fl_tmp;
+	int search[2 * I->stencil_size + 1];
+	double x;
+	search[0] = 0;
+	for (i = 1; i <= I->stencil_size; i++) {
+		search[i * 2 - 1] = i;
+		search[i * 2] = -i;
+	}
+	for (p = 0; p < 10; p++) {
+		for (k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
+			for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
+				for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
+					if (boundary_cell(I, i, j, k)) {
+						if (k < 0)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, j, 0)];
+						else if (k >= I->nz)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, j, I->nz - 1)];
+						else if (i < 0)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, 0, j, k)];
+						else if (i >= I->nx)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, I->nx - 1, j, k)];
+						else if (j < 0)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, 0, k)];
+						else if (j >= I->ny)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, I->ny - 1, k)];
+					}
+				}
+			}
+		}
+	}
+	i = j = k = 0;
+	I->B_prev[B_IND(I, 3, i, j, k)] = I->injection_well_pressure;
+	i = k = 0;
+	j = I->ny;
+	I->B_prev[B_IND(I, 3, i, j, k)] = I->injection_well_pressure;
+	j = k = 0;
+	i = I->nx;
+	I->B_prev[B_IND(I, 3, i, j, k)] = I->injection_well_pressure;
+	k = 0;
+	i = I->nx;
+	j = I->ny;
+	I->B_prev[B_IND(I, 3, i, j, k)] = I->injection_well_pressure;
+	k = 0;
+	i = I->nx / 2;
+	j = I->ny / 2;
+	I->B_prev[B_IND(I, 3, i, j, k)] = I->production_well_pressure;
+	return 0;
+}
+#endif

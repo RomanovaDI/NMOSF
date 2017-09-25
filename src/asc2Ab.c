@@ -13,7 +13,7 @@ velocity_x, velocity_y, velocity_z, phase_fraction, pressure in cell [nx - 1, ny
 */
 
 /*
-matrix A and vector B structure in termogase case:
+matrix A and vector B structure in termogas case:
 concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [0, 0, 0]
 concentration_N2, concentration_O2, concentration_CO2, concentration_H2O, pressure, saturation_water, saturation_oil, saturation_gas, temperature_flow, temperature_environment [0, 1, 0]
 ...............................................................................................................................................................................
@@ -114,12 +114,18 @@ numbering faces of cells is so
 #include "boundary_conditions.h"
 #include "initial_conditions.h"
 #include "array_functions.h"
-//#include "x_crank_nikolson_second_combined_VOF_avalanche.h"
-//#include "x_forward_euler_second_combined_VOF.h"
-//#include "x_forward_euler_second_combined_FDM.h"
-//#include "x_backward_euler_second_combined_VOF.h"
-//#include "x_backward_euler_second_combined_FDM.h"
-//#include "t_second_combined_VOF.h"
+#if AVALANCHE
+#include "x_crank_nikolson_second_combined_VOF_avalanche.h"
+#include "x_forward_euler_second_combined_VOF_avalanche.h"
+#include "x_forward_euler_second_combined_FDM_avalanche.h"
+#include "x_backward_euler_second_combined_VOF_avalanche.h"
+#include "x_backward_euler_second_combined_FDM_avalanche.h"
+#include "t_second_combined_VOF_avalanche.h"
+#endif
+#if TERMOGAS
+#include "t_second_combined_FDM_termogas.h"
+#include "x_backward_euler_second_combined_FDM_termogas.h"
+#endif
 #include "t_test.h"
 #include "create_matrix.h"
 #include "matrix_functions.h"
@@ -182,33 +188,40 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
-	SET_CONDITION(initial, phase_fraction, fixed_value);
-	SET_CONDITION(initial, pressure, fixed_value);
-	SET_CONDITION(initial, velocity, fixed_value);
+	//SET_CONDITION(initial, phase_fraction, fixed_value);
+	//SET_CONDITION(initial, pressure, fixed_value);
+	//SET_CONDITION(initial, velocity, fixed_value);
+	SET_CONDITION(initial, termogas, fixed_value);
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
 	for (i = 0; i <= time_steps; i++) {
 		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_and_upper_sides_no_slip_on_low); //mass
-		SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving); //cavity
+		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving); //cavity
 		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_sides_no_slip_on_other_upper_wall_is_mooving); //couette
-		SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
-		SET_CONDITION(boundary, pressure, zero_gradient_on_all);
+		//SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
+		//SET_CONDITION(boundary, pressure, zero_gradient_on_all);
+		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if (print_vtk(I, i) == 1) {
 			printf("Error printing vtk file\n");
 			goto error;
 		} else {
 			printf("Result printed to vtk file\n");
 		}
+#if AVALANCHE
 		if (create_Ab_avalanche(I) == 1) goto error;
+#endif
+#if TERMOGAS
+		if (create_Ab_termogas(I) == 1) goto error;
+#endif
 		if (i == 0)
 			I->flag_first_time_step = 0;
 		if (solve_matrix(I)) goto error;
 		//if (barotropy_density(I)) goto error;
 		//if (barotropy_pressure(I)) goto error;
 		write_B_to_B_prev(I);
-		if (check_conservation_of_mass(I)) {
-			printf("Mass conservation equation failed\n");
-		}
+		//if (check_conservation_of_mass(I)) {
+		//	printf("Mass conservation equation failed\n");
+		//}
 		if (i == time_steps) {
 			if (print_vtk(I, i + 1) == 1) {
 				printf("Error printing vtk file\n");

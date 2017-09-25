@@ -64,6 +64,8 @@ int print_vtk(in *I, int n)
 	}
 
 	fprintf(f, "CELL_DATA %d\n", I->n_cells_multipl * I->nz);
+
+#if AVALANCHE
 	fprintf(f, "VECTORS velocity double\n");
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
@@ -110,6 +112,102 @@ int print_vtk(in *I, int n)
 			}
 		}
 	}
+#endif
+
+#if TERMOGAS
+	fprintf(f, "COLOR_SCALARS concentration 4\n");
+	int p;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 4; p++)
+						fprintf(f, "%20.10f\t", I->B_prev[B_IND(I, p, i, j, k)]);
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS pressure double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, 4, i, j, k)]);
+			}
+		}
+	}
+	fprintf(f, "COLOR_SCALARS saturation 4\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 5; p < 8; p++)
+						fprintf(f, "%20.10f\t", I->B_prev[B_IND(I, p, i, j, k)]);
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS temperature_flow double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, 8, i, j, k)]);
+			}
+		}
+	}
+	fprintf(f, "SCALARS temperature_environment double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, 9, i, j, k)]);
+			}
+		}
+	}
+	fprintf(f, "VECTORS avarage_velocity_water double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.10f\t", avarage_velocity(I, 0, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS avarage_velocity_oil double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.10f\t", avarage_velocity(I, 1, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS avarage_velocity_gas double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.10f\t", avarage_velocity(I, 2, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+#endif
+
 	fclose(f);
 	return 0;
 }

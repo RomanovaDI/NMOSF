@@ -119,6 +119,11 @@ int set_parameters_termogas(in *I)
 	I->initial_enthalpy[4] = -393000; // CO2
 	I->initial_enthalpy[5] = -241000; // H2O
 	I->initial_enthalpy[6] = -911000; // environment
+	I->density_environment = 2000;
+	I->initial_pressure = 20000000;
+	I->initial_temperature = 600;
+	I->injection_well_pressure = 30000000;
+	I->production_well_pressure = 100000;
 #endif
 	return 0;
 }

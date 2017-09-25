@@ -11,6 +11,7 @@
 		return 1; \
 	}
 
+#if AVALANCHE
 int DDT_density_velocity_second_combined_VOF_avalanche(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
@@ -121,3 +122,4 @@ int DDT_pressure_cont_second_combined_VOF_avalanche(in *I, int p, int i, int j, 
     //    phase_fraction(I, i, j, k + 1)) / (6. * I->dt);
 	return 0;
 }
+#endif

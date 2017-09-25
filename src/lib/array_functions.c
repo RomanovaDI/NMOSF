@@ -14,7 +14,9 @@ int free_massives(in *I)
 	free(I->ind_cell_multipl);
 	free(I->mass1);
 	free(I->ind_multipl);
+#if AVALANCHE
 	free(I->snow_region);
+#endif
 	free(I->bl_cond);
 	free(I->ind);
 	free(I->mass);

@@ -26,6 +26,7 @@ int read_asc_and_declare_variables(in *I)
 	fclose(f1);
 	fclose(f);
 
+#if AVALANCHE
 	f = fopen(I->region_map_name,"r");
 	//f = fopen("maps/map_for_verification_Ab_region_2.asc","r");
 	if (f == NULL) {
@@ -40,9 +41,12 @@ int read_asc_and_declare_variables(in *I)
 	}
 	fclose(f1);
 	fclose(f);
+#endif
 
 	f = fopen("map.txt", "r");
+#if AVALANCHE
 	f1 = fopen("regions_map.txt", "r");
+#endif
 	int err;
 	char str[20];
 
@@ -102,6 +106,7 @@ int read_asc_and_declare_variables(in *I)
 		return 1;
 	}
 
+#if AVALANCHE
 	int ncols1;
 	if ((err = fscanf(f1, "%s %d", str, &ncols1)) == EOF) {
 		printf("Error file of region\n");
@@ -166,6 +171,7 @@ int read_asc_and_declare_variables(in *I)
 		printf("Cellsize in both maps need to be the same\n");
 		return 1;
 	}
+#endif
 
 	if ((I->mass = (double *) malloc(I->ncols * I->nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
@@ -195,6 +201,7 @@ int read_asc_and_declare_variables(in *I)
 	fclose(f);
 	remove("map.txt");
 	
+#if AVALANCHE
 	double *mass_tmp;
 	if ((mass_tmp = (double *) malloc(ncols1 * nrows1 * sizeof(double))) == NULL) {
 		printf("Memory error\n");
@@ -242,6 +249,7 @@ int read_asc_and_declare_variables(in *I)
 		}
 	}
 	free(mass_tmp);
+#endif
 
 	I->n_points = 0;
 	I->n_cells = 0;

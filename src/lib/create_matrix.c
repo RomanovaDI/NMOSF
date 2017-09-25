@@ -1,5 +1,6 @@
 #include "init_data.h"
 #include "utils.h"
+#if AVALANCHE
 #include "x_crank_nikolson_second_combined_VOF_avalanche.h"
 #include "x_forward_euler_second_combined_VOF_avalanche.h"
 #include "x_forward_euler_second_combined_FDM_avalanche.h"
@@ -7,8 +8,11 @@
 #include "x_backward_euler_second_ultra_combined_VOF_avalanche.h"
 #include "t_second_combined_VOF_avalanche.h"
 #include "t_second_ultra_combined_VOF_avalanche.h"
+#endif
+#if TERMOGAS
 #include "t_second_combined_FDM_termogas.h"
 #include "x_backward_euler_second_combined_FDM_termogas.h"
+#endif
 #include "t_test.h"
 #include "create_matrix.h"
 #include <stdio.h>
@@ -189,8 +193,8 @@ int create_Ab_termogas(in *I)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if (DDT(p, i, j, k, coef_pressute, second, combined, FDM, termogas)) return 1;
-					if (LAPL(p, i, j, k, coef_pressute, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (DDT(p, i, j, k, coef_pressure, second, combined, FDM, termogas)) return 1;
+					if (LAPL(p, i, j, k, coef_pressure, backward_euler, second, combined, FDM, termogas)) return 1;
 					/* saturation equation */
 					for (p = 5; p < 8; p++) {
 						if (I->flag_first_time_step) {
@@ -211,21 +215,19 @@ int create_Ab_termogas(in *I)
 					}
 					if (DDT(p, i, j, k, porousness_density_energy_flow, second, combined, FDM, termogas)) return 1;
 					if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, backward_euler, second, combined, FDM, termogas)) return 1;
-					if (DIV(p, i, j, k, heat_influx_vector, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (DIV(p, i, j, k, heat_influx_vector_flow, backward_euler, second, combined, FDM, termogas)) return 1;
 					if (SCAL(p, i, j, k, heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
 					if (SCAL(p, i, j, k, chemical_reaction_heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
 					/* temperature environment equation */
-					p = 8;
+					p = 9;
 					if (I->flag_first_time_step) {
 						if (I->Ajptr_csr[I->A_ind_current] != -1)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if (DDT(p, i, j, k, porousness_density_energy_flow, second, combined, FDM, termogas)) return 1;
-					if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, backward_euler, second, combined, FDM, termogas)) return 1;
-					if (DIV(p, i, j, k, heat_influx_vector, backward_euler, second, combined, FDM, termogas)) return 1;
-					if (SCAL(p, i, j, k, heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
-					if (SCAL(p, i, j, k, chemical_reaction_heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (DDT(p, i, j, k, porousness_density_energy_environment, second, combined, FDM, termogas)) return 1;
+					if (DIV(p, i, j, k, heat_influx_vector_environment, backward_euler, second, combined, FDM, termogas)) return 1;
+					if (SCAL(p, i, j, k, minus_heat_flow, backward_euler, second, combined, FDM, termogas)) return 1;
 				}
 			}
 		}
