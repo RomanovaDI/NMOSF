@@ -43,8 +43,9 @@ int set_parameters_avalanche(in *I)
 int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
-	strcpy(I->map_name, "maps/termogase.asc");
-	strcpy(I->region_map_name, "maps/termogase.asc");
+	strcpy(I->map_name, "maps/map_termogas.asc");
+	strcpy(I->region_map_name, "maps/map_termogas_region.asc");
+	//strcpy(I->map_name, "maps/map_cavity.asc");
 	I->hight = 1;
 	I->kx = 1;
 	I->ky = 1;
@@ -59,7 +60,7 @@ int set_parameters_termogas(in *I)
 	I->density_0[1] = 850; // oil
 	I->pressure_0 = 1000000;
 	I->density_coef_beta[0] = 0.0011; // water
-	I->density_coef_beta[1] = 8701; // oil
+	I->density_coef_beta[1] = 0.0008701; // oil
 	I->temperature_0 = 330;
 	I->density_coef_a[0] = 1400; // water
 	I->density_coef_a[1] = 1300; // oil

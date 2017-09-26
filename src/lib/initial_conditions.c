@@ -27,6 +27,7 @@ int SET_initial_CONDITION_velocity_fixed_value(in *I)
 
 int SET_initial_CONDITION_phase_fraction_fixed_value(in *I)
 {
+	V
 	printf("Set the initial condition for velocity with fixed value for all calculation domain\n");
 	int i, j, k;
 	double fixed_value = I->density_snow;
@@ -157,8 +158,8 @@ int SET_initial_CONDITION_termogas_fixed_value(in *I)
 					I->B_prev[B_IND(I, 2, i, j, k)] = 0;
 					I->B_prev[B_IND(I, 3, i, j, k)] = 1;
 					I->B_prev[B_IND(I, 4, i, j, k)] = I->initial_pressure;
-					I->B_prev[B_IND(I, 5, i, j, k)] = 0;
-					I->B_prev[B_IND(I, 6, i, j, k)] = 1;
+					I->B_prev[B_IND(I, 5, i, j, k)] = 0.1;
+					I->B_prev[B_IND(I, 6, i, j, k)] = 0.9;
 					I->B_prev[B_IND(I, 7, i, j, k)] = 0;
 					I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
 					I->B_prev[B_IND(I, 9, i, j, k)] = I->initial_temperature;

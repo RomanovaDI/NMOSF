@@ -176,7 +176,8 @@ int main(int argc, char **argv)
 	in II;
 	in *I = &II;
 	//if (solve_test_matrix()) goto error;
-	if (set_parameters_avalanche(I)) goto error;
+	//if (set_parameters_avalanche(I)) goto error;
+	if (set_parameters_termogas(I)) goto error;
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (do_interpolation(I)) goto error;
 	if (set_arrays(I)) goto error;

@@ -5,35 +5,38 @@ mkdir result
 mkdir tmp
 mkdir build
 mkdir build/lib
+export NMOSF=/home/daria/cases/NMOSF/
 gcc -g -O0 -shared src/lib/init_data.c -lm -o build/lib/libinit_data.so -fPIC
-gcc -g -O0 -shared src/lib/read_files.c -lm -o build/lib/libread_files.so -fPIC
-gcc -g -O0 -shared src/lib/mesh_operations.c -lm -o build/lib/libmesh_operations.so -fPIC
-gcc -g -O0 -shared src/lib/utils.c -lm -I/usr/include/superlu/ -L/usr/lib/x86_64-linux-gnu/ -lsuperlu -o build/lib/libutils.so -fPIC
-gcc -g -O0 -shared src/lib/vtk_map_functions.c -lm -o build/lib/libvtk_map_functions.so -fPIC
-gcc -g -O0 -shared src/lib/boundary_conditions.c -lm -o build/lib/libboundary_conditions.so -fPIC
-gcc -g -O0 -shared src/lib/initial_conditions.c -lm -o build/lib/libinitial_conditions.so -fPIC
-gcc -g -O0 -shared src/lib/array_functions.c -lm -o build/lib/libarray_functions.so -fPIC
-#gcc -g -O0 -shared src/lib/t_second_combined_VOF_avalanche.c -lm -o build/lib/libt_second_combined_VOF_avalanche.so -fPIC
-#gcc -g -O0 -shared src/lib/t_second_ultra_combined_VOF_avalanche.c -lm -o build/lib/libt_second_ultra_combined_VOF_avalanche.so -fPIC
-gcc -g -O0 -shared src/lib/t_test.c -lm -o build/lib/libt_test.so -fPIC
-#gcc -g -O0 -shared src/lib/x_crank_nikolson_second_combined_VOF_avalanche.c -lm -o build/lib/libx_crank_nikolson_second_combined_VOF_avalanche.so -fPIC
-#gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_VOF_avalanche.c -lm -o build/lib/libx_forward_euler_second_combined_VOF_avalanche.so -fPIC
-#gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_FDM_avalanche.c -lm -o build/lib/libx_forward_euler_second_combined_FDM_avalanche.so -fPIC
-#gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_VOF_avalanche.c -lm -o build/lib/libx_backward_euler_second_combined_VOF_avalanche.so -fPIC
-#gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_avalanche.c -lm -o build/lib/libx_backward_euler_second_combined_FDM_avalanche.so -fPIC
-#gcc -g -O0 -shared src/lib/x_backward_euler_second_ultra_combined_VOF_avalanche.c -lm -o build/lib/libx_backward_euler_second_ultra_combined_VOF_avalanche.so -fPIC
-gcc -g -O0 -shared src/lib/t_second_combined_FDM_termogas.c -lm -o build/lib/libt_second_combined_FDM_termogas.so -fPIC
-gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_termogas.c -lm -o build/lib/libx_backward_euler_second_combined_FDM_termogas.so -fPIC
+gcc -g -O0 -shared src/lib/read_files.c -lm -I src/lib/ -L build/lib/ -linit_data -o build/lib/libread_files.so -fPIC
+gcc -g -O0 -shared src/lib/mesh_operations.c -lm -I src/lib/ -L build/lib/ -linit_data -o build/lib/libmesh_operations.so -fPIC
+gcc -g -O0 -shared src/lib/utils.c -lm -I src/lib/ -L build/lib/ -linit_data -I/usr/include/superlu/ -L/usr/lib/x86_64-linux-gnu/ -lsuperlu -o build/lib/libutils.so -fPIC
+gcc -g -O0 -shared src/lib/vtk_map_functions.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libvtk_map_functions.so -fPIC
+gcc -g -O0 -shared src/lib/boundary_conditions.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libboundary_conditions.so -fPIC
+gcc -g -O0 -shared src/lib/initial_conditions.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libinitial_conditions.so -fPIC
+gcc -g -O0 -shared src/lib/array_functions.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libarray_functions.so -fPIC
+#gcc -g -O0 -shared src/lib/t_second_combined_VOF_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libt_second_combined_VOF_avalanche.so -fPIC
+#gcc -g -O0 -shared src/lib/t_second_ultra_combined_VOF_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libt_second_ultra_combined_VOF_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/t_test.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libt_test.so -fPIC
+#gcc -g -O0 -shared src/lib/x_crank_nikolson_second_combined_VOF_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_crank_nikolson_second_combined_VOF_avalanche.so -fPIC
+#gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_VOF_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_forward_euler_second_combined_VOF_avalanche.so -fPIC
+#gcc -g -O0 -shared src/lib/x_forward_euler_second_combined_FDM_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_forward_euler_second_combined_FDM_avalanche.so -fPIC
+#gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_VOF_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_combined_VOF_avalanche.so -fPIC
+#gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_combined_FDM_avalanche.so -fPIC
+#gcc -g -O0 -shared src/lib/x_backward_euler_second_ultra_combined_VOF_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_ultra_combined_VOF_avalanche.so -fPIC
+gcc -g -O0 -shared src/lib/t_second_combined_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libt_second_combined_FDM_termogas.so -fPIC
+gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_combined_FDM_termogas.so -fPIC
 gcc -g -O0 -shared src/lib/create_matrix.c \
 	-I src/lib/ \
 	-L build/lib \
 	-lm \
+	-linit_data \
+	-lutils \
 	-lt_second_combined_FDM_termogas \
 	-lx_backward_euler_second_combined_FDM_termogas \
 	-lt_test \
 	-o build/lib/libcreate_matrix.so \
 	-fPIC
-gcc -g -O0 -shared src/lib/matrix_functions.c -lm -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -lsuperlu -o build/lib/libmatrix_functions.so -fPIC
+gcc -g -O0 -shared src/lib/matrix_functions.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -lsuperlu -o build/lib/libmatrix_functions.so -fPIC
 gcc -g -O0  src/asc2Ab.c \
 	-I /usr/include/superlu/ -I src/lib/ \
 	-L /usr/lib/x86_64-linux-gnu/ -L build/lib/ \
