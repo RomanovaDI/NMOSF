@@ -531,27 +531,27 @@ double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k
 {
 	double S;
 	if ((p == 0) && (pr == 1)) {
-		S = (saturation(I, 0, i, j, k) - I->relative_saturation[0]) / (1 - I->relative_saturation[0] - I->relative_saturation[2]);
+		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[2]);
 		return (pow(S, 4));
 	}
 	if ((p == 1) && (pr == 0)) {
-		S = (saturation(I, 0, i, j, k) - I->relative_saturation[0]) / (1 - I->relative_saturation[0] - I->relative_saturation[2]);
+		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[2]);
 		return ((1 - S) * (1 - S) * (1 - S * S));
 	}
 	if ((p == 0) && (pr == 2)) {
-		S = (saturation(I, 0, i, j, k) - I->relative_saturation[0]) / (1 - I->relative_saturation[0] - I->relative_saturation[1]);
+		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[1]);
 		return (pow(S, 4));
 	}
 	if ((p == 2) && (pr == 0)) {
-		S = (saturation(I, 0, i, j, k) - I->relative_saturation[0]) / (1 - I->relative_saturation[0] - I->relative_saturation[1]);
+		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[1]);
 		return ((1 - S) * (1 - S) * (1 - S * S));
 	}
 	if ((p == 1) && (pr == 2)) {
-		S = (saturation(I, 1, i, j, k) - I->relative_saturation[1]) / (1 - I->relative_saturation[1] - I->relative_saturation[0]);
+		S = (saturation(I, 1, i, j, k) - I->residual_saturation[1]) / (1 - I->residual_saturation[1] - I->residual_saturation[0]);
 		return (pow(S, 4));
 	}
 	if ((p == 2) && (pr == 1)) {
-		S = (saturation(I, 1, i, j, k) - I->relative_saturation[1]) / (1 - I->relative_saturation[1] - I->relative_saturation[0]);
+		S = (saturation(I, 1, i, j, k) - I->residual_saturation[1]) / (1 - I->residual_saturation[1] - I->residual_saturation[0]);
 		return ((1 - S) * (1 - S) * (1 - S * S));
 	}
 	return 0;
@@ -560,17 +560,17 @@ double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k
 double relative_permeability(in *I, int p, int i, int j, int k)
 {
 	if (p == 0)
-		return ((saturation(I, 1, i, j, k) - I->relative_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k) +
-				(saturation(I, 2, i, j, k) - I->relative_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k)) / (
-				saturation(I, 1, i, j, k) - I->relative_saturation[1] + saturation(I, 2, i, j, k) - I->relative_saturation[2]);
+		return ((saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k) +
+				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k)) / (
+				saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
 	if (p == 1)
-		return ((saturation(I, 0, i, j, k) - I->relative_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k) +
-				(saturation(I, 2, i, j, k) - I->relative_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k)) / (
-				saturation(I, 0, i, j, k) - I->relative_saturation[0] + saturation(I, 2, i, j, k) - I->relative_saturation[2]);
+		return ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k) +
+				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k)) / (
+				saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
 	if (p == 2)
-		return ((saturation(I, 0, i, j, k) - I->relative_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
-				(saturation(I, 1, i, j, k) - I->relative_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) / (
-				saturation(I, 0, i, j, k) - I->relative_saturation[0] + saturation(I, 1, i, j, k) - I->relative_saturation[1]);
+		return ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
+				(saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) / (
+				saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 1, i, j, k) - I->residual_saturation[1]);
 	return 0;
 }
 

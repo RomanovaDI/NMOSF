@@ -70,9 +70,9 @@ int set_parameters_termogas(in *I)
 	I->molar_weight[2] = 0.04401; //CO2
 	I->molar_weight[3] = 0.01802; //H2O
 	I->permeability = 0.000000000001;
-	I->relative_saturation[0] = 0.15; // water
-	I->relative_saturation[1] = 0.2; // oil
-	I->relative_saturation[2] = 0; // gas
+	I->residual_saturation[0] = 0.15; // water
+	I->residual_saturation[1] = 0.2; // oil
+	I->residual_saturation[2] = 0; // gas
 	I->viscosity_coef_A[0] = 0.00000001556; // water
 	I->viscosity_coef_A[1] = 0.000000383; // oil
 	I->viscosity_coef_A_gas[0] = 0.000018; // N2
