@@ -85,13 +85,14 @@ typedef struct init_parameters_termogas {
 	double R;
 	double molar_weight[4];
 	double permeability;
-	double relative_saturation[3];
+	double residual_saturation[3];
 	double viscosity_coef_A[2];
 	double viscosity_coef_A_gas[4];
 	double viscosity_coef_B[2];
 	double viscosity_coef_C_gas[4];
+	double temperature_0_gas[4];
 	double capillary_pressure_at_maximum_saturation[3];
-	double residual_saturation[3];
+	double residual_saturation_two_phase[3];
 	double capillary_pressure_coef;
 	double num_carbon_atoms;
 	double num_hydrogen_atoms;
@@ -109,6 +110,7 @@ typedef struct init_parameters_termogas {
 	double initial_temperature;
 	double injection_well_pressure;
 	double production_well_pressure;
+	int equation_num;
 } in_termogas;
 
 //typedef in_avalanche in;

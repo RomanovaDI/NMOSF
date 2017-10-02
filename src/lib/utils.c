@@ -492,7 +492,7 @@ int barotropy_density(in *I)
 #if TERMOGAS
 double saturation(in *I, int p, int i, int j, int k)
 {
-	return I->B_prev[B_IND(I, p, i, j, k)];
+	return I->B_prev[B_IND(I, p + 5, i, j, k)];
 }
 
 double concentration(in *I, int p, int i, int j, int k)
@@ -577,8 +577,8 @@ double relative_permeability(in *I, int p, int i, int j, int k)
 double viscosity_gas(in *I, int p, int i, int j, int k)
 {
 	return I->viscosity_coef_A_gas[p] *
-		(I->temperature_0 + I->viscosity_coef_C_gas[p]) *
-		pow(temperature_flow(I, i, j, k) / I->temperature_0, 3 / 2) /
+		(I->temperature_0_gas[p] + I->viscosity_coef_C_gas[p]) *
+		pow(temperature_flow(I, i, j, k) / I->temperature_0_gas[p], 3 / 2) /
 		(temperature_flow(I, i, j, k) + I->viscosity_coef_C_gas[p]);
 }
 
@@ -622,7 +622,7 @@ double Darsi_M_coef(in *I, int i, int j, int k)
 double capillary_pressure_derivative_by_saturation(in *I, int p, int i, int j, int k)
 {
 	return - I->capillary_pressure_at_maximum_saturation[p] *
-		pow(1 - I->residual_saturation[p], I->capillary_pressure_coef) *
+		pow(1 - I->residual_saturation_two_phase[p], I->capillary_pressure_coef) *
 		I->capillary_pressure_coef *
 		pow(saturation(I, p, i, j, k), - I->capillary_pressure_coef - 1);
 }
@@ -686,7 +686,7 @@ double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
 	if (p == 3) // H2O
 		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
 	if (p == 5) // water
-		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
+		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[3];
 	if (p == 6) // oil
 		return - mass_inflow_rate_func(I, 5, i, j, k) - mass_inflow_rate_func(I, 7, i, j, k);
 	if (p == 7) // gas

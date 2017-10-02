@@ -125,6 +125,8 @@ numbering faces of cells is so
 #if TERMOGAS
 #include "t_second_combined_FDM_termogas.h"
 #include "x_backward_euler_second_combined_FDM_termogas.h"
+#include "t_second_separated_FDM_termogas.h"
+#include "x_backward_euler_second_separated_FDM_termogas.h"
 #endif
 #include "t_test.h"
 #include "create_matrix.h"
@@ -172,11 +174,9 @@ void display_usage(void)
 
 int main(int argc, char **argv)
 {
-	int i, time_steps;
+	int i, time_steps, j;
 	in II;
 	in *I = &II;
-	//if (solve_test_matrix()) goto error;
-	//if (set_parameters_avalanche(I)) goto error;
 	if (set_parameters_termogas(I)) goto error;
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (do_interpolation(I)) goto error;
@@ -189,18 +189,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
-	//SET_CONDITION(initial, phase_fraction, fixed_value);
-	//SET_CONDITION(initial, pressure, fixed_value);
-	//SET_CONDITION(initial, velocity, fixed_value);
 	SET_CONDITION(initial, termogas, fixed_value);
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
 	for (i = 0; i <= time_steps; i++) {
-		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_and_upper_sides_no_slip_on_low); //mass
-		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving); //cavity
-		//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_sides_no_slip_on_other_upper_wall_is_mooving); //couette
-		//SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
-		//SET_CONDITION(boundary, pressure, zero_gradient_on_all);
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if (print_vtk(I, i) == 1) {
 			printf("Error printing vtk file\n");
@@ -208,21 +200,20 @@ int main(int argc, char **argv)
 		} else {
 			printf("Result printed to vtk file\n");
 		}
+		for (j = 0; j < 5; j++) {
+			printf("Equation %d\n", j);
+			I->equation_num = j;
 #if AVALANCHE
-		if (create_Ab_avalanche(I) == 1) goto error;
+			if (create_Ab_avalanche(I) == 1) goto error;
 #endif
 #if TERMOGAS
-		if (create_Ab_termogas(I) == 1) goto error;
+			if (create_Ab_termogas(I) == 1) goto error;
 #endif
-		if (i == 0)
-			I->flag_first_time_step = 0;
-		if (solve_matrix(I)) goto error;
-		//if (barotropy_density(I)) goto error;
-		//if (barotropy_pressure(I)) goto error;
-		write_B_to_B_prev(I);
-		//if (check_conservation_of_mass(I)) {
-		//	printf("Mass conservation equation failed\n");
-		//}
+			if (i == 0)
+				I->flag_first_time_step = 0;
+			if (solve_matrix(I)) goto error;
+			write_B_to_B_prev(I);
+		}
 		if (i == time_steps) {
 			if (print_vtk(I, i + 1) == 1) {
 				printf("Error printing vtk file\n");
@@ -241,3 +232,18 @@ error:
 	display_usage();
 	return 1;
 }
+//if (solve_test_matrix()) goto error;
+//if (set_parameters_avalanche(I)) goto error;
+//SET_CONDITION(initial, phase_fraction, fixed_value);
+//SET_CONDITION(initial, pressure, fixed_value);
+//SET_CONDITION(initial, velocity, fixed_value);
+//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_and_upper_sides_no_slip_on_low); //mass
+//SET_CONDITION(boundary, velocity, zero_gradient_on_y_sides_no_slip_on_other_upper_wall_is_mooving); //cavity
+//SET_CONDITION(boundary, velocity, zero_gradient_on_y_and_x_sides_no_slip_on_other_upper_wall_is_mooving); //couette
+//SET_CONDITION(boundary, phase_fraction, zero_gradient_on_all);
+//SET_CONDITION(boundary, pressure, zero_gradient_on_all);
+//if (barotropy_density(I)) goto error;
+//if (barotropy_pressure(I)) goto error;
+//if (check_conservation_of_mass(I)) {
+//	printf("Mass conservation equation failed\n");
+//}

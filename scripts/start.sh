@@ -25,6 +25,8 @@ gcc -g -O0 -shared src/lib/t_test.c -lm -I src/lib/ -L build/lib/ -linit_data -l
 #gcc -g -O0 -shared src/lib/x_backward_euler_second_ultra_combined_VOF_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_ultra_combined_VOF_avalanche.so -fPIC
 gcc -g -O0 -shared src/lib/t_second_combined_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libt_second_combined_FDM_termogas.so -fPIC
 gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_combined_FDM_termogas.so -fPIC
+gcc -g -O0 -shared src/lib/t_second_separated_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libt_second_separated_FDM_termogas.so -fPIC
+gcc -g -O0 -shared src/lib/x_backward_euler_second_separated_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_separated_FDM_termogas.so -fPIC
 gcc -g -O0 -shared src/lib/create_matrix.c \
 	-I src/lib/ \
 	-L build/lib \
@@ -33,6 +35,8 @@ gcc -g -O0 -shared src/lib/create_matrix.c \
 	-lutils \
 	-lt_second_combined_FDM_termogas \
 	-lx_backward_euler_second_combined_FDM_termogas \
+	-lt_second_separated_FDM_termogas \
+	-lx_backward_euler_second_separated_FDM_termogas \
 	-lt_test \
 	-o build/lib/libcreate_matrix.so \
 	-fPIC
@@ -52,6 +56,8 @@ gcc -g -O0  src/asc2Ab.c \
 	-lt_test \
 	-lt_second_combined_FDM_termogas \
 	-lx_backward_euler_second_combined_FDM_termogas \
+	-lt_second_separated_FDM_termogas \
+	-lx_backward_euler_second_separated_FDM_termogas \
 	-lcreate_matrix \
 	-lmatrix_functions \
 	-o build/NMOSF
