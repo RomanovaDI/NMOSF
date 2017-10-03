@@ -138,7 +138,7 @@ int print_vtk(in *I, int n)
 			}
 		}
 	}
-	fprintf(f, "COLOR_SCALARS saturation 4\n");
+	fprintf(f, "COLOR_SCALARS saturation 3\n");
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {

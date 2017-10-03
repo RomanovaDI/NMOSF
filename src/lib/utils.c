@@ -492,11 +492,19 @@ int barotropy_density(in *I)
 #if TERMOGAS
 double saturation(in *I, int p, int i, int j, int k)
 {
+	if (!((p == 0) || (p == 1) || (p == 2))) {
+		printf("Error saturation index\n");
+		return 0;
+	}
 	return I->B_prev[B_IND(I, p + 5, i, j, k)];
 }
 
 double concentration(in *I, int p, int i, int j, int k)
 {
+	if (!((p == 0) || (p == 1) || (p == 2) || (p == 3))) {
+		printf("Error concentration index\n");
+		return 0;
+	}
 	return I->B_prev[B_IND(I, p, i, j, k)];
 }
 
@@ -519,12 +527,15 @@ double density_t(in *I, int p, int i, int j, int k)
 {
 	if ((p == 0) || (p == 1))
 		return ((I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
-	if (p == 2)
+	else if (p == 2)
 		return (pressure(I, i, j, k) * (concentration(I, 0, i, j, k) * I->molar_weight[0] +
 										concentration(I, 1, i, j, k) * I->molar_weight[1] +
 										concentration(I, 2, i, j, k) * I->molar_weight[2] +
 										concentration(I, 3, i, j, k) * I->molar_weight[3]) / (I->R * temperature_flow(I, i, j, k)));
-	return 0;
+	else {
+		printf("Error density index\n");
+		return 0;
+	}
 }
 
 double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k)
@@ -534,48 +545,57 @@ double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k
 		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[2]);
 		return (pow(S, 4));
 	}
-	if ((p == 1) && (pr == 0)) {
+	else if ((p == 1) && (pr == 0)) {
 		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[2]);
 		return ((1 - S) * (1 - S) * (1 - S * S));
 	}
-	if ((p == 0) && (pr == 2)) {
+	else if ((p == 0) && (pr == 2)) {
 		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[1]);
 		return (pow(S, 4));
 	}
-	if ((p == 2) && (pr == 0)) {
+	else if ((p == 2) && (pr == 0)) {
 		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[1]);
 		return ((1 - S) * (1 - S) * (1 - S * S));
 	}
-	if ((p == 1) && (pr == 2)) {
+	else if ((p == 1) && (pr == 2)) {
 		S = (saturation(I, 1, i, j, k) - I->residual_saturation[1]) / (1 - I->residual_saturation[1] - I->residual_saturation[0]);
 		return (pow(S, 4));
 	}
-	if ((p == 2) && (pr == 1)) {
+	else if ((p == 2) && (pr == 1)) {
 		S = (saturation(I, 1, i, j, k) - I->residual_saturation[1]) / (1 - I->residual_saturation[1] - I->residual_saturation[0]);
 		return ((1 - S) * (1 - S) * (1 - S * S));
+	} else {
+		printf("Error two phase relative permeability index\n");
+		return 0;
 	}
-	return 0;
 }
 
 double relative_permeability(in *I, int p, int i, int j, int k)
 {
 	if (p == 0)
 		return ((saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k) +
-				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k)) / (
-				saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
-	if (p == 1)
+				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k)) /
+				(saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
+	else if (p == 1)
 		return ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k) +
-				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k)) / (
-				saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
-	if (p == 2)
+				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k)) /
+				(saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
+	else if (p == 2)
 		return ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
-				(saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) / (
-				saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 1, i, j, k) - I->residual_saturation[1]);
-	return 0;
+				(saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) /
+				(saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 1, i, j, k) - I->residual_saturation[1]);
+	else {
+		printf("Error relative permeability index\n");
+		return 0;
+	}
 }
 
 double viscosity_gas(in *I, int p, int i, int j, int k)
 {
+	if (!((p == 0) || (p == 1) || (p == 2) || (p == 3))) {
+		printf("Error viscosity gas index\n");
+		return 0;
+	}
 	return I->viscosity_coef_A_gas[p] *
 		(I->temperature_0_gas[p] + I->viscosity_coef_C_gas[p]) *
 		pow(temperature_flow(I, i, j, k) / I->temperature_0_gas[p], 3 / 2) /
@@ -584,6 +604,10 @@ double viscosity_gas(in *I, int p, int i, int j, int k)
 
 double molar_fraction(in *I, int p, int i, int j, int k)
 {
+	if (!((p == 0) || (p == 1) || (p == 2) || (p == 3))) {
+		printf("Error molar fraction index\n");
+		return 0;
+	}
 	double x = 0;
 	int l;
 	for (l = 0; l < 4; l++)
@@ -595,18 +619,24 @@ double viscosity(in *I, int p, int i, int j, int k)
 {
 	if ((p == 0) || (p == 1))
 		return (I->viscosity_coef_A[p] / (1 / density_t(I, p, i, j, k) - I->viscosity_coef_B[p]));
-	if (p == 2) {
+	else if (p == 2) {
 		double x = 1;
 		int l;
 		for (l = 0; l < 4; l++)
 			x *= pow(viscosity_gas(I, l, i, j, k), molar_fraction(I, l, i, j, k));
 		return x;
+	} else {
+		printf("Error viscosity index\n");
+		return 0;
 	}
-	return 0;
 }
 
 double Darsi_M_coef_phases(in *I, int p, int i, int j, int k)
 {
+	if (!((p == 0) || (p == 1) || (p == 2))) {
+		printf("Error Darsi M coefficient phases index\n");
+		return 0;
+	}
 	return density_t(I, p, i, j, k) * I->permeability * relative_permeability(I, p, i, j, k) / viscosity(I, p, i, j, k);
 }
 
@@ -621,6 +651,10 @@ double Darsi_M_coef(in *I, int i, int j, int k)
 
 double capillary_pressure_derivative_by_saturation(in *I, int p, int i, int j, int k)
 {
+	if (!((p == 0) || (p == 2))) {
+		printf("Error capillary pressure index\n");
+		return 0;
+	}
 	return - I->capillary_pressure_at_maximum_saturation[p] *
 		pow(1 - I->residual_saturation_two_phase[p], I->capillary_pressure_coef) *
 		I->capillary_pressure_coef *
@@ -629,6 +663,10 @@ double capillary_pressure_derivative_by_saturation(in *I, int p, int i, int j, i
 
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 {
+	if (!((pr == 0) || (pr == 1) || (pr == 2))) {
+		printf("Error avarage velocity index\n");
+		return 0;
+	}
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
@@ -641,7 +679,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
 			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
-	if (p == 1)
+	else if (p == 1)
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
 			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
@@ -650,7 +688,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
 			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
-	if (p == 2)
+	else if (p == 2)
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
 			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
@@ -659,7 +697,10 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
 			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
-	return 0;
+	else {
+		printf("Error avarage velocity index\n");
+		return 0;
+	}
 }
 
 double rate_of_reaction_coef(in *I, int i, int j, int k)
@@ -679,31 +720,38 @@ double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
 {
 	if (p == 0) // N2
 		return 0;
-	if (p == 1) // O2
+	else if (p == 1) // O2
 		return - rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[0] * I->molar_weight[p];
-	if (p == 2) // CO2
+	else if (p == 2) // CO2
 		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[1] * I->molar_weight[p];
-	if (p == 3) // H2O
+	else if (p == 3) // H2O
 		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
-	if (p == 5) // water
+	else if (p == 5) // water
 		return rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[3];
-	if (p == 6) // oil
+	else if (p == 6) // oil
 		return - mass_inflow_rate_func(I, 5, i, j, k) - mass_inflow_rate_func(I, 7, i, j, k);
-	if (p == 7) // gas
+	else if (p == 7) // gas
 		return mass_inflow_rate_func(I, 0, i, j, k) + mass_inflow_rate_func(I, 1, i, j, k) +
 			mass_inflow_rate_func(I, 2, i, j, k) + mass_inflow_rate_func(I, 3, i, j, k);
+	else {
+		printf("Error mass inflow rate index\n");
+		return 0;
+	}
 }
 
 double density_derivative_by_pressure(in *I, int p, int i, int j, int k)
 {
 	if ((p == 0) || (p == 1))
 		return pow(I->density_coef_a[p], -2) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0));
-	if (p == 2)
+	else if (p == 2)
 		return (concentration(I, 0, i, j, k) * I->molar_weight[0] +
 				concentration(I, 1, i, j, k) * I->molar_weight[1] +
 				concentration(I, 2, i, j, k) * I->molar_weight[2] +
 				concentration(I, 3, i, j, k) * I->molar_weight[3]) / (I->R * temperature_flow(I, i, j, k));
-	return 0;
+	else {
+		printf("Error density derivative by pressure index\n");
+		return 0;
+	}
 }
 
 double Darsi_A_coef(in *I, int i, int j, int k)
@@ -720,17 +768,43 @@ double internal_energy(in *I, int p, int i, int j, int k)
 {
 	if ((p == 0) || (p == 1)) // water, oil
 		return I->specific_heat[p] * (temperature_flow(I, i, j, k) - I->tempetarure_for_calculation_internal_energy) + I->initial_enthalpy[p];
-	if (p == 2) // gas
+	else if (p == 2) // gas
 		return internal_energy(I, 3, i, j, k) + internal_energy(I, 4, i, j, k) + internal_energy(I, 5, i, j, k) + internal_energy(I, 6, i, j, k);
-	if ((p == 3) || (p == 4) || (p == 5) || (p == 6)) // N2, O2, CO2, H2O
+	else if ((p == 3) || (p == 4) || (p == 5) || (p == 6)) // N2, O2, CO2, H2O
 		return (I->specific_heat[p - 1] * (temperature_flow(I, i, j, k) - I->tempetarure_for_calculation_internal_energy) + I->initial_enthalpy[p - 1]) * concentration(I, p - 3, i, j, k);
-	if (p == 7) // environment
+	else if (p == 7) // environment
 		return I->specific_heat[p - 1] * (temperature_environment(I, i, j, k) - I->tempetarure_for_calculation_internal_energy) + I->initial_enthalpy[p - 1];
-	return 0;
+	else {
+		printf("Error internal energy index\n");
+		return 0;
+	}
 }
 
 double enthalpy_flow(in *I, int i, int j, int k)
 {
 	return internal_energy(I, 0, i, j, k) - internal_energy(I, 1, i, j, k) - internal_energy(I, 2, i, j, k) + 2 * internal_energy(I, 5, i, j, k) + 2 * internal_energy(I, 6, i, j, k);
+}
+
+int check_sum(in *I)
+{
+	int i, j, k, p;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					if (saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k) != 1)
+						printf("Saturatins sum is not equal 1 at [%d, %d, %d]\n", i, j, k);
+					if (concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k) != 1)
+						printf("Concentration sum is not equal 1 at [%d, %d, %d]\n", i, j, k);
+					for (p = 0; p < 3; p++) {
+						if (saturation(I, p, i, j, k) < I->residual_saturation[p] + I->epsilon) {
+							printf("Too small saturation of %d phase at [%d, %d, %d]\n", p, i, j, k);
+						}
+					}
+				}
+			}
+		}
+	}
+	return 0;
 }
 #endif

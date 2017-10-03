@@ -212,7 +212,8 @@ int main(int argc, char **argv)
 			if (i == 0)
 				I->flag_first_time_step = 0;
 			if (solve_matrix(I)) goto error;
-			write_B_to_B_prev(I);
+			if (write_B_to_B_prev(I)) goto error;
+			if (check_sum(I)) goto error;
 		}
 		if (i == time_steps) {
 			if (print_vtk(I, i + 1) == 1) {
@@ -222,6 +223,7 @@ int main(int argc, char **argv)
 				printf("Result printed to vtk file\n");
 			}
 		}
+		break;
 	}
 	if (free_massives(I) == 1) goto error;
 

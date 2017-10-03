@@ -152,14 +152,14 @@ int SET_initial_CONDITION_termogas_fixed_value(in *I)
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					I->B_prev[B_IND(I, 0, i, j, k)] = 0;
-					I->B_prev[B_IND(I, 1, i, j, k)] = 0;
-					I->B_prev[B_IND(I, 2, i, j, k)] = 0;
-					I->B_prev[B_IND(I, 3, i, j, k)] = 1;
+					I->B_prev[B_IND(I, 0, i, j, k)] = I->epsilon;
+					I->B_prev[B_IND(I, 1, i, j, k)] = I->epsilon;
+					I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
+					I->B_prev[B_IND(I, 3, i, j, k)] = 1 - 3 * I->epsilon;
 					I->B_prev[B_IND(I, 4, i, j, k)] = I->initial_pressure;
-					I->B_prev[B_IND(I, 5, i, j, k)] = I->residual_saturation[0];
-					I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1];
-					I->B_prev[B_IND(I, 7, i, j, k)] = I->residual_saturation[2];
+					I->B_prev[B_IND(I, 5, i, j, k)] = I->residual_saturation[0] + I->epsilon;
+					I->B_prev[B_IND(I, 6, i, j, k)] = 1 - I->residual_saturation[0] - I->residual_saturation[2] - 2 * I->epsilon;
+					I->B_prev[B_IND(I, 7, i, j, k)] = I->residual_saturation[2] + I->epsilon;
 					I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
 					I->B_prev[B_IND(I, 9, i, j, k)] = I->initial_temperature;
 				}
