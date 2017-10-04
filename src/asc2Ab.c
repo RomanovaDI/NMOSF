@@ -192,6 +192,7 @@ int main(int argc, char **argv)
 	SET_CONDITION(initial, termogas, fixed_value);
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
+//	time_steps = 0;
 	for (i = 0; i <= time_steps; i++) {
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if (print_vtk(I, i) == 1) {
@@ -200,7 +201,8 @@ int main(int argc, char **argv)
 		} else {
 			printf("Result printed to vtk file\n");
 		}
-		for (j = 0; j < 5; j++) {
+		//for (j = 0; j < 5; j++) {
+		for (j = 0; j < 1; j++) {
 			printf("Equation %d\n", j);
 			I->equation_num = j;
 #if AVALANCHE
@@ -223,7 +225,6 @@ int main(int argc, char **argv)
 				printf("Result printed to vtk file\n");
 			}
 		}
-		break;
 	}
 	if (free_massives(I) == 1) goto error;
 

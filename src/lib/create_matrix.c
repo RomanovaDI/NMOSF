@@ -148,7 +148,7 @@ int create_Ab_termogas(in *I)
 			return 1;
 		}
 		memset((void *) I->B, 0, I->system_dimension * sizeof(double));
-		int num_el_in_row = pow((2 * I->stencil_size + 1) * I->num_parameters, 3);
+		int num_el_in_row = (2 * I->stencil_size * 3 + 1) * I->num_parameters;
 		I->non_zero_elem = num_el_in_row * I->system_dimension;
 		if ((I->Aelem_csr = (double *) malloc(I->non_zero_elem * sizeof(double))) == NULL) {
 			printf("Memory error\n");
@@ -184,7 +184,8 @@ int create_Ab_termogas(in *I)
 								I->A_ind_current++;
 							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 						}
-						if ((I->equation_num == 0) && (p == 3)) {
+						//if ((I->equation_num == 0) && (p == 3)) {
+						if (0) {
 							if (DDT(p, i, j, k, concentration_density_saturation_porousness, second, separated, FDM, termogas)) return 1;
 							if (DIV(p, i, j, k, concentration_density_average_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
 							if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, separated, FDM, termogas)) return 1;
@@ -199,7 +200,8 @@ int create_Ab_termogas(in *I)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if (I->equation_num == 1) {
+					//if (I->equation_num == 1) {
+					if (!(WELL(I, i, j, k))) {
 						if (DDT(p, i, j, k, coef_pressure, second, separated, FDM, termogas)) return 1;
 						if (LAPL(p, i, j, k, coef_pressure, backward_euler, second, separated, FDM, termogas)) return 1;
 					} else {
@@ -212,7 +214,8 @@ int create_Ab_termogas(in *I)
 								I->A_ind_current++;
 							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 						}
-						if (I->equation_num == 2) {
+						//if (I->equation_num == 2) {
+						if (0) {
 							if (DDT(p, i, j, k, density_saturation_porousness, second, separated, FDM, termogas)) return 1;
 							if (DIV(p, i, j, k, density_average_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
 							if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, separated, FDM, termogas)) return 1;
@@ -227,7 +230,8 @@ int create_Ab_termogas(in *I)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if (I->equation_num == 3) {
+					//if (I->equation_num == 3) {
+					if (0) {
 						if (DDT(p, i, j, k, porousness_density_energy_flow, second, separated, FDM, termogas)) return 1;
 						if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
 						if (DIV(p, i, j, k, heat_influx_vector_flow, backward_euler, second, separated, FDM, termogas)) return 1;
@@ -243,7 +247,8 @@ int create_Ab_termogas(in *I)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if (I->equation_num == 4) {
+					//if (I->equation_num == 4) {
+					if (0) {
 						if (DDT(p, i, j, k, porousness_density_energy_environment, second, separated, FDM, termogas)) return 1;
 						if (DIV(p, i, j, k, heat_influx_vector_environment, backward_euler, second, separated, FDM, termogas)) return 1;
 						if (SCAL(p, i, j, k, minus_heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;

@@ -41,6 +41,22 @@ int check_for_corrupt_cell(in *I, int i, int j, int k)
 	return 0;
 }
 
+int WELL(in *I, int i, int j, int k)
+{
+	if ((i == 0) && (j == 0) && (k == 0))
+		return 1;
+	else if ((i == 0) && (j == 0) && (k == I->nz - 1))
+		return 1;
+	else if ((i == I->nx - 1) && (j == 0) && (k == 0))
+		return 1;
+	else if ((i == I->nx - 1) && (j == 0) && (k == I->nz - 1))
+		return 1;
+	else if ((i == I->nx / 2) && (j == 0) && (k == I->nz / 2))
+		return 1;
+	else
+		return 0;
+}
+
 int write_to_A_csr(in *I, int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, int j, int k, int s, double value)
 {
 	if ((i >= 0) && (i < I->nx) && (j >= 0) && (j < I->ny) && (k >= 0) && (k < I->nz) && (I->ind_cell_multipl[i * I->ny + j] != -1) && (A_IND_S_SWITCH(I, i, j, k, s))) {

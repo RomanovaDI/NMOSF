@@ -597,21 +597,21 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out(in *I)
 		}
 	}
 	i = j = k = 0;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->injection_well_pressure;
-	i = k = 0;
-	j = I->ny;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->injection_well_pressure;
+	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
+	i = j = 0;
+	k = I->nz - 1;
+	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
 	j = k = 0;
-	i = I->nx;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->injection_well_pressure;
-	k = 0;
-	i = I->nx;
-	j = I->ny;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->injection_well_pressure;
-	k = 0;
+	i = I->nx - 1;
+	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
+	j = 0;
+	i = I->nx - 1;
+	k = I->nz - 1;
+	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
+	j = 0;
 	i = I->nx / 2;
-	j = I->ny / 2;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->production_well_pressure;
+	k = I->nz / 2;
+	I->B_prev[B_IND(I, 4, i, j, k)] = I->production_well_pressure;
 	return 0;
 }
 #endif

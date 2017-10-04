@@ -6,6 +6,7 @@ int AREA_IND(in *I, int i, int j, int k, int s);
 int NORMAL_IND(in *I, int p, int i, int j, int k, int s);
 int VOLUME_IND(in *I, int i, int j, int k);
 int check_for_corrupt_cell(in *I, int i, int j, int k);
+int WELL(in *I, int i, int j, int k);
 int write_to_A_csr(in *I, int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, int j, int k, int s, double value);
 int cell_of_computation_domain(in *I, int i, int j, int k);
 int internal_cell(in *I, int i, int j, int k);
