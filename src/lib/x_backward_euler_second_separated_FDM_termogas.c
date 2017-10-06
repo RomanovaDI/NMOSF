@@ -25,10 +25,12 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 	for (pr = 0; pr < 3; pr++) {
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
-		A_value = density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * I->dx[pr]);
-		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-		A_value = - density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * I->dx[pr]);
-		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
+			A_value = density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * I->dx[pr]);
+			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+			A_value = - density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * I->dx[pr]);
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		}
 	}
 	return 0;
 }
@@ -92,33 +94,35 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
 		A_value = 0;
-		for (pp = 0; pp < 2; pp++)
-			A_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-				saturation(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-				I->specific_heat[pp] *
-				avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-		for (pp = 0; pp < 4; pp++)
-			A_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-				saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-				I->specific_heat[pp + 2] *
-				concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-				avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-		A_value /= 2 * I->dx[pr];
-		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-		A_value = 0;
-		for (pp = 0; pp < 2; pp++)
-			A_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-				saturation(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-				I->specific_heat[pp] *
-				avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-		for (pp = 0; pp < 4; pp++)
-			A_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-				saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-				I->specific_heat[pp + 2] *
-				concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-				avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-		A_value /= 2 * I->dx[pr];
-		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
+			for (pp = 0; pp < 2; pp++)
+				A_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					saturation(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					I->specific_heat[pp] *
+					avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+			for (pp = 0; pp < 4; pp++)
+				A_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					I->specific_heat[pp + 2] *
+					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+			A_value /= 2 * I->dx[pr];
+			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+			A_value = 0;
+			for (pp = 0; pp < 2; pp++)
+				A_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					saturation(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					I->specific_heat[pp] *
+					avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+			for (pp = 0; pp < 4; pp++)
+				A_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					I->specific_heat[pp + 2] *
+					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+			A_value /= 2 * I->dx[pr];
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		}
 	}
 }
 
@@ -141,7 +145,7 @@ int DIV_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in 
 			I->thermal_conductivity_coef[2] * saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
 		WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 	}
-	if (LAPL(p, i, j, k, thermal_conductivity_coef_saturation_temperature_flow, backward_euler, second, separated, FDM, termogas)) return 1;
+//	if (LAPL(p, i, j, k, thermal_conductivity_coef_saturation_temperature_flow, backward_euler, second, separated, FDM, termogas)) return 1;
 	return 0;
 }
 
