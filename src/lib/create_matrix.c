@@ -185,9 +185,13 @@ int create_Ab_termogas(in *I)
 							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 						}
 						if (I->equation_num == 0) {
-							if (DDT(p, i, j, k, concentration_density_saturation_porousness, second, separated, FDM, termogas)) return 1;
-							if (DIV(p, i, j, k, concentration_density_average_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
-							if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, separated, FDM, termogas)) return 1;
+							if (production_well(I, i, j, k)) {
+								if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 0;
+							} else {
+								if (DDT(p, i, j, k, concentration_density_saturation_porousness, second, separated, FDM, termogas)) return 1;
+								if (DIV(p, i, j, k, concentration_density_average_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
+								if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, separated, FDM, termogas)) return 1;
+							}
 						} else {
 							if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 						}
@@ -199,7 +203,7 @@ int create_Ab_termogas(in *I)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if ((I->equation_num == 4) && (!(WELL(I, i, j, k)))) {
+					if ((I->equation_num == 4) && (!(well(I, i, j, k)))) {
 						if (DDT(p, i, j, k, coef_pressure, second, separated, FDM, termogas)) return 1;
 						if (LAPL(p, i, j, k, coef_pressure, backward_euler, second, separated, FDM, termogas)) return 1;
 					} else {
@@ -213,9 +217,13 @@ int create_Ab_termogas(in *I)
 							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 						}
 						if (I->equation_num == 1) {
-							if (DDT(p, i, j, k, density_saturation_porousness, second, separated, FDM, termogas)) return 1;
-							if (DIV(p, i, j, k, density_average_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
-							if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, separated, FDM, termogas)) return 1;
+							if (production_well(I, i, j, k)) {
+								if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 0;
+							} else {
+								if (DDT(p, i, j, k, density_saturation_porousness, second, separated, FDM, termogas)) return 1;
+								if (DIV(p, i, j, k, density_average_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
+								if (SCAL(p, i, j, k, mass_inflow_rate, backward_euler, second, separated, FDM, termogas)) return 1;
+							}
 						} else {
 							if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 						}

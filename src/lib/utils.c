@@ -41,7 +41,7 @@ int check_for_corrupt_cell(in *I, int i, int j, int k)
 	return 0;
 }
 
-int WELL(in *I, int i, int j, int k)
+int well(in *I, int i, int j, int k)
 {
 	if ((i == 0) && (j == 0) && (k == 0))
 		return 1;
@@ -52,6 +52,28 @@ int WELL(in *I, int i, int j, int k)
 	else if ((i == I->nx - 1) && (j == 0) && (k == I->nz - 1))
 		return 1;
 	else if ((i == I->nx / 2) && (j == 0) && (k == I->nz / 2))
+		return 1;
+	else
+		return 0;
+}
+
+int production_well(in *I, int i, int j, int k)
+{
+	if ((i == I->nx / 2) && (j == 0) && (k == I->nz / 2))
+		return 1;
+	else
+		return 0;
+}
+
+int injection_well(in *I, int i, int j, int k)
+{
+	if ((i == 0) && (j == 0) && (k == 0))
+		return 1;
+	else if ((i == 0) && (j == 0) && (k == I->nz - 1))
+		return 1;
+	else if ((i == I->nx - 1) && (j == 0) && (k == 0))
+		return 1;
+	else if ((i == I->nx - 1) && (j == 0) && (k == I->nz - 1))
 		return 1;
 	else
 		return 0;
@@ -804,18 +826,44 @@ double enthalpy_flow(in *I, int i, int j, int k)
 int check_sum(in *I)
 {
 	int i, j, k, p;
+	double C = 0;
+	for (p = 0; p < 3; p++)
+		C += I->residual_saturation[p] + I->epsilon;
+	double saturation_sum, concentration_sum;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					if (saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k) != 1)
-						printf("Saturatins sum is not equal 1 at [%d, %d, %d]: %.20f\n", i, j, k, saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k));
-					if (concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k) != 1)
-						printf("Concentration sum is not equal 1 at [%d, %d, %d]: %.20f\n", i, j, k, concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k));
+					saturation_sum = 0;
+					for (p = 0; p < 3; p++)
+						saturation_sum += saturation(I, p, i, j, k);
+					concentration_sum = 0;
+					for (p = 0; p < 4; p++)
+						concentration_sum += concentration(I, p, i, j, k);
 					for (p = 0; p < 3; p++) {
 						if (saturation(I, p, i, j, k) < I->residual_saturation[p] + I->epsilon) {
 							printf("Too small saturation of %d phase at [%d, %d, %d]: %.20f\n", p, i, j, k, saturation(I, p, i, j, k));
+							I->B_prev[B_IND(I, p + 5, i, j, k)] = I->residual_saturation[p] + I->epsilon;
 						}
+					}
+					if (saturation_sum != 1) {
+						printf("Saturatins sum is not equal 1 at [%d, %d, %d]: %.20f\n", i, j, k, saturation_sum);
+						I->B_prev[B_IND(I, 5, i, j, k)] = I->residual_saturation[0] + I->epsilon + (saturation(I, 0, i, j, k) - I->residual_saturation[0] - I->epsilon) * (1 - C) / (saturation_sum - C);
+						I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon + (saturation(I, 1, i, j, k) - I->residual_saturation[1] - I->epsilon) * (1 - C) / (saturation_sum - C);
+						I->B_prev[B_IND(I, 7, i, j, k)] = I->residual_saturation[2] + I->epsilon + (saturation(I, 2, i, j, k) - I->residual_saturation[2] - I->epsilon) * (1 - C) / (saturation_sum - C);
+					}
+					for (p = 0; p < 4; p++) {
+						if (concentration(I, p, i, j, k) < I->epsilon) {
+							printf("Too small concentration of %d component at [%d, %d, %d]: %.20f\n", p, i, j, k, concentration(I, p, i, j, k));
+							I->B_prev[B_IND(I, p, i, j, k)] = I->epsilon;
+						}
+					}
+					if (concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k) != 1) {
+						printf("Concentration sum is not equal 1 at [%d, %d, %d]: %.20f\n", i, j, k, concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k));
+						I->B_prev[B_IND(I, 0, i, j, k)] = I->epsilon + (concentration(I, 0, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
+						I->B_prev[B_IND(I, 1, i, j, k)] = I->epsilon + (concentration(I, 1, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
+						I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon + (concentration(I, 2, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
+						I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon + (concentration(I, 3, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
 					}
 				}
 			}

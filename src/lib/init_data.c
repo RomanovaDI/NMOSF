@@ -128,7 +128,7 @@ int set_parameters_termogas(in *I)
 	I->initial_pressure = 20000000;
 	I->initial_temperature = 600;
 	I->injection_well_pressure = 30000000;
-	I->production_well_pressure = 10000000;
+	I->production_well_pressure = 100000;
 	I->epsilon = 1e-10;
 #endif
 	return 0;

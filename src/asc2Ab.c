@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 			if (solve_matrix(I)) goto error;
 			if (write_B_to_B_prev(I)) goto error;
 			if (check_sum(I)) goto error;
-			if (print_vtk(I, j + 1001) == 1) {
+			if (print_vtk(I, j + 1000) == 1) {
 				printf("Error printing vtk file\n");
 				goto error;
 			} else {
