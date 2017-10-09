@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 			printf("Result printed to vtk file\n");
 		}
 		//for (j = 0; j < 5; j++) {
-		for (j = 0; j < 1; j++) {
+		for (j = 0; j < 5; j++) {
 			printf("Equation %d\n", j);
 			I->equation_num = j;
 #if AVALANCHE
@@ -216,6 +216,12 @@ int main(int argc, char **argv)
 			if (solve_matrix(I)) goto error;
 			if (write_B_to_B_prev(I)) goto error;
 			if (check_sum(I)) goto error;
+			if (print_vtk(I, j + 1001) == 1) {
+				printf("Error printing vtk file\n");
+				goto error;
+			} else {
+				printf("Result printed to vtk file\n");
+			}
 		}
 		if (i == time_steps) {
 			if (print_vtk(I, i + 1) == 1) {

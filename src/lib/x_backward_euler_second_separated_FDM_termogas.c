@@ -25,11 +25,17 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 	for (pr = 0; pr < 3; pr++) {
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
-		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
+		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) && (p != 1)) {
 			A_value = density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * I->dx[pr]);
 			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+			printf("density_t(2, %d, %d, %d) = %f\t avarage_velocity(I, 2, %d, %d, %d, %d) = %f\n",\
+				i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]),\
+				pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]));
 			A_value = - density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * I->dx[pr]);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+			printf("density_t(2, %d, %d, %d) = %f\t avarage_velocity(I, 2, %d, %d, %d, %d) = %f\n",\
+				i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]),\
+				pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]));
 		}
 	}
 	return 0;

@@ -809,12 +809,12 @@ int check_sum(in *I)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					if (saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k) != 1)
-						printf("Saturatins sum is not equal 1 at [%d, %d, %d]\n", i, j, k);
+						printf("Saturatins sum is not equal 1 at [%d, %d, %d]: %.20f\n", i, j, k, saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k));
 					if (concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k) != 1)
-						printf("Concentration sum is not equal 1 at [%d, %d, %d]\n", i, j, k);
+						printf("Concentration sum is not equal 1 at [%d, %d, %d]: %.20f\n", i, j, k, concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k));
 					for (p = 0; p < 3; p++) {
 						if (saturation(I, p, i, j, k) < I->residual_saturation[p] + I->epsilon) {
-							printf("Too small saturation of %d phase at [%d, %d, %d]\n", p, i, j, k);
+							printf("Too small saturation of %d phase at [%d, %d, %d]: %.20f\n", p, i, j, k, saturation(I, p, i, j, k));
 						}
 					}
 				}

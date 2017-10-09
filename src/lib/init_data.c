@@ -46,7 +46,7 @@ int set_parameters_termogas(in *I)
 	strcpy(I->map_name, "maps/map_termogas.asc");
 	strcpy(I->region_map_name, "maps/map_termogas_region.asc");
 	//strcpy(I->map_name, "maps/map_cavity.asc");
-	I->hight = 1;
+	I->hight = 0.05;
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
@@ -128,8 +128,8 @@ int set_parameters_termogas(in *I)
 	I->initial_pressure = 20000000;
 	I->initial_temperature = 600;
 	I->injection_well_pressure = 30000000;
-	I->production_well_pressure = 100000;
-	I->epsilon = 0.00000000000001;
+	I->production_well_pressure = 10000000;
+	I->epsilon = 1e-10;
 #endif
 	return 0;
 }
