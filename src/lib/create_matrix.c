@@ -248,7 +248,7 @@ int create_Ab_termogas(in *I)
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
 					//if (I->equation_num == 4) {
-					if (0) {
+					if (1) {
 						if (DDT(p, i, j, k, porousness_density_energy_environment, second, separated, FDM, termogas)) return 1;
 						if (DIV(p, i, j, k, heat_influx_vector_environment, backward_euler, second, separated, FDM, termogas)) return 1;
 						if (SCAL(p, i, j, k, minus_heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
