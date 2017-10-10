@@ -38,11 +38,14 @@ int DDT_arithmetic_mean_of_neighboring_cells_second_separated_FDM_termogas(in *I
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value = 1;
 	WRITE_TO_A(p, i, j, k, -1);
-	A_value = - 0.25;
-	WRITE_TO_A(p, i + 1, j, k, -1);
-	WRITE_TO_A(p, i - 1, j, k, -1);
-	WRITE_TO_A(p, i, j, k + 1, -1);
-	WRITE_TO_A(p, i, j, k - 1, -1);
+	I->B[A_IND(I, p, i, j, k)] += (I->B_prev[B_IND(I, p, i + 1, j, k)] + I->B_prev[B_IND(I, p, i - 1, j, k)] +
+		I->B_prev[B_IND(I, p, i, j, k + 1)] + I->B_prev[B_IND(I, p, i, j, k - 1)]) / 4;
+//	A_value = - 0.25;
+//	WRITE_TO_A(p, i + 1, j, k, -1);
+//	WRITE_TO_A(p, i - 1, j, k, -1);
+//	WRITE_TO_A(p, i, j, k + 1, -1);
+//	WRITE_TO_A(p, i, j, k - 1, -1);
+	return 0;
 }
 
 int DDT_coef_pressure_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)

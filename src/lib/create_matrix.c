@@ -187,6 +187,8 @@ int create_Ab_termogas(in *I)
 						if (I->equation_num == 0) {
 							if (production_well(I, i, j, k)) {
 								if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 0;
+							} else if (injection_well(I, i, j, k)) {
+								if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 							} else {
 								if (DDT(p, i, j, k, concentration_density_saturation_porousness, second, separated, FDM, termogas)) return 1;
 								if (DIV(p, i, j, k, concentration_density_average_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
@@ -219,6 +221,9 @@ int create_Ab_termogas(in *I)
 						if (I->equation_num == 1) {
 							if (production_well(I, i, j, k)) {
 								if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 0;
+								//if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
+							} else if (injection_well(I, i, j, k)) {
+								if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 							} else {
 								if (DDT(p, i, j, k, density_saturation_porousness, second, separated, FDM, termogas)) return 1;
 								if (DIV(p, i, j, k, density_average_velocity, backward_euler, second, separated, FDM, termogas)) return 1;

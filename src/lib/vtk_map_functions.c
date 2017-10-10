@@ -115,15 +115,27 @@ int print_vtk(in *I, int n)
 #endif
 
 #if TERMOGAS
-	fprintf(f, "COLOR_SCALARS concentration 4\n");
+//	fprintf(f, "COLOR_SCALARS concentration 4\n");
+//	for (k = 0; k < I->nz; k++) {
+//		for (i = 0; i < I->nx; i++) {
+//			for (j = 0; j < I->ny; j++) {
+//				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+//					for (p = 0; p < 4; p++)
+//						fprintf(f, "%20.10f\t", I->B_prev[B_IND(I, p, i, j, k)]);
+//					fprintf(f, "\n");
+//				}
+//			}
+//		}
+//	}
 	int p;
-	for (k = 0; k < I->nz; k++) {
-		for (i = 0; i < I->nx; i++) {
-			for (j = 0; j < I->ny; j++) {
-				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					for (p = 0; p < 4; p++)
-						fprintf(f, "%20.10f\t", I->B_prev[B_IND(I, p, i, j, k)]);
-					fprintf(f, "\n");
+	for (p = 0; p < 4; p++) {
+		fprintf(f, "SCALARS concentration_%d double 1\n", p);
+		fprintf(f, "LOOKUP_TABLE default\n");
+		for (k = 0; k < I->nz; k++) {
+			for (i = 0; i < I->nx; i++) {
+				for (j = 0; j < I->ny; j++) {
+					if (I->ind_cell_multipl[i * I->ny + j] != -1)
+						fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, p, i, j, k)]);
 				}
 			}
 		}
@@ -138,14 +150,26 @@ int print_vtk(in *I, int n)
 			}
 		}
 	}
-	fprintf(f, "COLOR_SCALARS saturation 3\n");
-	for (k = 0; k < I->nz; k++) {
-		for (i = 0; i < I->nx; i++) {
-			for (j = 0; j < I->ny; j++) {
-				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					for (p = 5; p < 8; p++)
-						fprintf(f, "%20.10f\t", I->B_prev[B_IND(I, p, i, j, k)]);
-					fprintf(f, "\n");
+//	fprintf(f, "COLOR_SCALARS saturation 3\n");
+//	for (k = 0; k < I->nz; k++) {
+//		for (i = 0; i < I->nx; i++) {
+//			for (j = 0; j < I->ny; j++) {
+//				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+//					for (p = 5; p < 8; p++)
+//						fprintf(f, "%20.10f\t", I->B_prev[B_IND(I, p, i, j, k)]);
+//					fprintf(f, "\n");
+//				}
+//			}
+//		}
+//	}
+	for (p = 5; p < 8; p++) {
+		fprintf(f, "SCALARS saturation_%d double 1\n", p);
+		fprintf(f, "LOOKUP_TABLE default\n");
+		for (k = 0; k < I->nz; k++) {
+			for (i = 0; i < I->nx; i++) {
+				for (j = 0; j < I->ny; j++) {
+					if (I->ind_cell_multipl[i * I->ny + j] != -1)
+						fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, p, i, j, k)]);
 				}
 			}
 		}
