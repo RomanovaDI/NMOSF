@@ -232,19 +232,21 @@ int LAPL_thermal_conductivity_coef_saturation_temperature_environment_backward_e
 	double A_value;
 	int pr, ind_pr[3];
 	for (pr = 0; pr < 3; pr++) {
-		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
-		ind_pr[pr] = 1;
-		if (! boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2])) {
-			A_value = (1 - I->porousness) * I->thermal_conductivity_coef[6] / (I->dx[pr] * I->dx[pr]);
-			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			A_value *= -1;
-			WRITE_TO_A(p, i, j, k, -1);
-		}
-		if (! boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) {
-			A_value = (1 - I->porousness) * I->thermal_conductivity_coef[6] / (I->dx[pr] * I->dx[pr]);
-			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-			A_value *= -1;
-			WRITE_TO_A(p, i, j, k, -1);
+		if (pr != 1) {
+			ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+			ind_pr[pr] = 1;
+			if (! boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2])) {
+				A_value = (1 - I->porousness) * I->thermal_conductivity_coef[3] / (I->dx[pr] * I->dx[pr]);
+				WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+				A_value *= -1;
+				WRITE_TO_A(p, i, j, k, -1);
+			}
+			if (! boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) {
+				A_value = (1 - I->porousness) * I->thermal_conductivity_coef[3] / (I->dx[pr] * I->dx[pr]);
+				WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+				A_value *= -1;
+				WRITE_TO_A(p, i, j, k, -1);
+			}
 		}
 	}
 	return 0;

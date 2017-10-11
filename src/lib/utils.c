@@ -684,6 +684,7 @@ double Darsi_M_coef(in *I, int i, int j, int k)
 	int l;
 	for (l = 0; l < 3; l++)
 		x += Darsi_M_coef_phases(I, l, i, j, k);
+	return 1;
 	return x;
 }
 
