@@ -254,7 +254,7 @@ int solve_test_matrix(void)
 	printf("Solving matrix\n");
 	SuperMatrix A_csr;
 	NCformat *Astore;
-	int nonzeros = 8, systemdim = 3;
+	int nonzeros = 3, systemdim = 3;
 	double a_csr[nonzeros], b[systemdim];
 	int a_iptr[systemdim + 1], a_jptr[nonzeros];
 //	double   *a;
@@ -283,17 +283,17 @@ int solve_test_matrix(void)
 	a_jptr[0] = 0;
 	a_jptr[1] = 1;
 	a_jptr[2] = 2;
-	a_jptr[3] = 1;
-	a_jptr[4] = 2;
-	a_jptr[5] = 0;
-	a_jptr[6] = 1;
-	a_jptr[7] = 2;
+//	a_jptr[3] = 3;
+//	a_jptr[4] = 2;
+//	a_jptr[5] = 0;
+//	a_jptr[6] = 1;
+//	a_jptr[7] = 2;
 	a_iptr[0] = 0;
-	a_iptr[1] = 3;
-	a_iptr[2] = 5;
-	a_iptr[3] = 8;
+	a_iptr[1] = 1;
+	a_iptr[2] = 2;
+	a_iptr[3] = 3;
 	b[0] = b[1] = 3;
-	b[3] = 4;
+	b[2] = 4;
 	/* Set the default input options:
 	options.Fact = DOFACT;
 	options.Equil = YES;
@@ -355,13 +355,6 @@ int solve_test_matrix(void)
 		}
 	}
 	if ( options.PrintStat ) StatPrint(&stat);
-//	for (i = 0; i < n_cells_multipl * nz; i++) {
-//		velocity[i * 3 + 0] = sol[i * num_parameters + 0];
-//		velocity[i * 3 + 1] = sol[i * num_parameters + 1];
-//		velocity[i * 3 + 3] = sol[i * num_parameters + 2];
-//		phase_fraction[i] = sol[i * num_parameters + 3];
-//		pressure[i] = sol[i * num_parameters + 4];
-//	}
 	printf("Matrix solved\n");
 	
 	StatFree(&stat);

@@ -1,5 +1,6 @@
 #include "init_data.h"
 #include "utils.h"
+#include "matrix_functions.h"
 #if AVALANCHE
 #include "x_crank_nikolson_second_combined_VOF_avalanche.h"
 #include "x_forward_euler_second_combined_VOF_avalanche.h"
@@ -206,7 +207,8 @@ int create_Ab_termogas(in *I)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
-					if ((I->equation_num == 4) && (!(well(I, i, j, k)))) {
+					//if ((I->equation_num == 4) && (!(well(I, i, j, k)))) {
+					if ((I->equation_num == -1) && (!(well(I, i, j, k)))) {
 					//	if (DDT(p, i, j, k, coef_pressure, second, separated, FDM, termogas)) return 1;
 						if (LAPL(p, i, j, k, coef_pressure, backward_euler, second, separated, FDM, termogas)) return 1;
 					} else {
@@ -284,7 +286,7 @@ int create_Ab_termogas(in *I)
 		}
 	}
 	//if (flag_first_time_step)
-	//	print_A_csr();
+	print_A_csr(I);
 #endif
 	return 0;
 }

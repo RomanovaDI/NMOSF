@@ -33,6 +33,7 @@ gcc -g -O0 -shared src/lib/create_matrix.c \
 	-lm \
 	-linit_data \
 	-lutils \
+	-lmatrix_functions \
 	-lt_second_combined_FDM_termogas \
 	-lx_backward_euler_second_combined_FDM_termogas \
 	-lt_second_separated_FDM_termogas \

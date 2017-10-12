@@ -177,6 +177,8 @@ int main(int argc, char **argv)
 	int i, time_steps, j;
 	in II;
 	in *I = &II;
+//	solve_test_matrix();
+//	return 0;
 	if (set_parameters_termogas(I)) goto error;
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (do_interpolation(I)) goto error;
@@ -192,7 +194,7 @@ int main(int argc, char **argv)
 	SET_CONDITION(initial, termogas, fixed_value);
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
-//	time_steps = 0;
+	time_steps = 0;
 	for (i = 0; i <= time_steps; i++) {
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if (print_vtk(I, i) == 1) {
