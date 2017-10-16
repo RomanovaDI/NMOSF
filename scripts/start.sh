@@ -63,9 +63,9 @@ gcc -g -O0  src/asc2Ab.c \
 	-lmatrix_functions \
 	-o build/NMOSF
 export LD_LIBRARY_PATH=./build/lib
-./build/NMOSF
+#./build/NMOSF
 #valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF
-#gdb ./build/NMOSF
+gdb ./build/NMOSF
 #rm tmp/*
 #gcc -g -O0 asc2Ab.c -lm -I/usr/include/superlu/ -L/usr/lib/x86_64-linux-gnu/ -lsuperlu
 #valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes

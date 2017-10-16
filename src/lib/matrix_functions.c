@@ -98,9 +98,9 @@ void print_A_csr(in *I)
 	memset(A_pattern, 0, I->system_dimension * I->system_dimension * sizeof(int));
 	for (i = 0; i < I->non_zero_elem; i++) {
 		j = 0;
-		while (!((i >= I->Aiptr_csr[j]) && (i <= I->Aiptr_csr[j + 1])))
+		while (!((i >= I->Aiptr_csr[j]) && (i < I->Aiptr_csr[j + 1])))
 			j++;
-		A_pattern[(I->system_dimension - 1 - j) * I->system_dimension + I->Ajptr_csr[i]] = 1;
+		A_pattern[j * I->system_dimension + I->Ajptr_csr[i]] = 1;
 	}
 	if ((f = fopen("A_pattern_matrix.dat","w")) == NULL) {
 		printf("error openning file");

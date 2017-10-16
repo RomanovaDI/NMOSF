@@ -9,8 +9,8 @@ set cbrange [0:1]
 unset cbtics
 unset tics
 set size square
-set xrange[-0.5:179.5]
-set yrange[-0.5:179.5]
+set xrange[-0.5:250.5]
+set yrange[-0.5:250.5]
 set output 'pattern.png'
 set cbrange [0:1]
 set view map

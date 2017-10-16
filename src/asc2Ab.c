@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 	SET_CONDITION(initial, termogas, fixed_value);
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
-	time_steps = 0;
+	time_steps = 1;
 	for (i = 0; i <= time_steps; i++) {
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if (print_vtk(I, i) == 1) {
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 			printf("Result printed to vtk file\n");
 		}
 		//for (j = 0; j < 5; j++) {
-		for (j = 0; j < 5; j++) {
+		for (j = 0; j < 2; j++) {
 			printf("Equation %d\n", j);
 			I->equation_num = j;
 #if AVALANCHE
@@ -218,12 +218,12 @@ int main(int argc, char **argv)
 			if (solve_matrix(I)) goto error;
 			if (write_B_to_B_prev(I)) goto error;
 			if (check_sum(I)) goto error;
-//			if (print_vtk(I, j + 1000) == 1) {
-//				printf("Error printing vtk file\n");
-//				goto error;
-//			} else {
-//				printf("Result printed to vtk file\n");
-//			}
+			if (print_vtk(I, j + (i + 1) * 1000) == 1) {
+				printf("Error printing vtk file\n");
+				goto error;
+			} else {
+				printf("Result printed to vtk file\n");
+			}
 		}
 		if (i == time_steps) {
 			if (print_vtk(I, i + 1) == 1) {

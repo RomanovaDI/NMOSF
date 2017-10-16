@@ -186,7 +186,7 @@ int create_Ab_termogas(in *I)
 							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 						}
 						//if (I->equation_num == 0) {
-						if (I->equation_num == -1) {
+						if (I->equation_num == 1) {
 							if (production_well(I, i, j, k)) {
 								if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 0;
 							} else if (injection_well(I, i, j, k)) {
@@ -208,7 +208,7 @@ int create_Ab_termogas(in *I)
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
 					//if ((I->equation_num == 4) && (!(well(I, i, j, k)))) {
-					if ((I->equation_num == -1) && (!(well(I, i, j, k)))) {
+					if ((I->equation_num == 0) && (!(well(I, i, j, k)))) {
 					//	if (DDT(p, i, j, k, coef_pressure, second, separated, FDM, termogas)) return 1;
 						if (LAPL(p, i, j, k, coef_pressure, backward_euler, second, separated, FDM, termogas)) return 1;
 					} else {
