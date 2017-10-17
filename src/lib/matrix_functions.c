@@ -45,7 +45,7 @@ void print_A_csr(in *I)
 	printf("Print matrix A in CSR format function\n");
 	FILE *f;
 	int i, j, k, fl_tmp;
-	if ((f = fopen("A_csr.txt","w")) == NULL) {
+	if ((f = fopen("tmp/A_csr.txt","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
@@ -60,7 +60,7 @@ void print_A_csr(in *I)
 		fprintf(f, "%20.10lf\t%10d\t%10d\n", I->Aelem_csr[i], j, I->Ajptr_csr[i]);
 	}
 	fclose(f);
-	if ((f = fopen("A_B.txt","w")) == NULL) {
+	if ((f = fopen("tmp/A_B.txt","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
@@ -81,7 +81,7 @@ void print_A_csr(in *I)
 		fprintf(f, "\t\t%20.10lf\n", I->B[i]);
 	}
 	fclose(f);
-	if ((f = fopen("A_pattern.dat","w")) == NULL) {
+	if ((f = fopen("tmp/A_pattern.dat","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
@@ -102,7 +102,7 @@ void print_A_csr(in *I)
 			j++;
 		A_pattern[j * I->system_dimension + I->Ajptr_csr[i]] = 1;
 	}
-	if ((f = fopen("A_pattern_matrix.dat","w")) == NULL) {
+	if ((f = fopen("tmp/A_pattern_matrix.dat","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
@@ -114,7 +114,7 @@ void print_A_csr(in *I)
 		fprintf(f, "\n");
 	}
 	fclose(f);
-	if ((f = fopen("A_elem_jprt.txt","w")) == NULL) {
+	if ((f = fopen("tmp/A_elem_jprt.txt","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
@@ -123,7 +123,7 @@ void print_A_csr(in *I)
 		fprintf(f, "%10d\t%20.10lf\t%10d\n", i, I->Aelem_csr[i], I->Ajptr_csr[i]);
 	}
 	fclose(f);
-	if ((f = fopen("A_iptr.txt","w")) == NULL) {
+	if ((f = fopen("tmp/A_iptr.txt","w")) == NULL) {
 		printf("error openning file");
 		return;
 	}

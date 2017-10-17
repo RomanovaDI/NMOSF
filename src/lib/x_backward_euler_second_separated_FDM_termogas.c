@@ -115,6 +115,7 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
 					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
 			A_value /= 2 * I->dx[pr];
+			printf("%f\t", A_value);
 			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 			A_value = 0;
 			for (pp = 0; pp < 2; pp++)
@@ -130,6 +131,7 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
 			A_value /= 2 * I->dx[pr];
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+			printf("%f\n", A_value);
 		}
 	}
 	return 0;

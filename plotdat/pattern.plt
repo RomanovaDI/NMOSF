@@ -14,4 +14,4 @@ set yrange[-0.5:250.5]
 set output 'pattern.png'
 set cbrange [0:1]
 set view map
-plot	'A_pattern_matrix.dat' matrix w image notitle
+plot	'tmp/A_pattern_matrix.dat' matrix w image notitle
