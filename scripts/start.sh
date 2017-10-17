@@ -27,6 +27,7 @@ gcc -g -O0 -shared src/lib/t_second_combined_FDM_termogas.c -lm -I src/lib/ -L b
 gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_combined_FDM_termogas.so -fPIC
 gcc -g -O0 -shared src/lib/t_second_separated_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libt_second_separated_FDM_termogas.so -fPIC
 gcc -g -O0 -shared src/lib/x_backward_euler_second_separated_FDM_termogas.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_separated_FDM_termogas.so -fPIC
+gcc -g -O0 -shared src/lib/matrix_functions.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -lsuperlu -o build/lib/libmatrix_functions.so -fPIC
 gcc -g -O0 -shared src/lib/create_matrix.c \
 	-I src/lib/ \
 	-L build/lib \
@@ -41,7 +42,6 @@ gcc -g -O0 -shared src/lib/create_matrix.c \
 	-lt_test \
 	-o build/lib/libcreate_matrix.so \
 	-fPIC
-gcc -g -O0 -shared src/lib/matrix_functions.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -lsuperlu -o build/lib/libmatrix_functions.so -fPIC
 gcc -g -O0  src/asc2Ab.c \
 	-I /usr/include/superlu/ -I src/lib/ \
 	-L /usr/lib/x86_64-linux-gnu/ -L build/lib/ \
