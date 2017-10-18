@@ -50,7 +50,7 @@ int set_parameters_termogas(in *I)
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
-	I->end_time = 500;
+	I->end_time = 300;
 	I->stencil_size = 2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
@@ -104,12 +104,12 @@ int set_parameters_termogas(in *I)
 	I->threshold_temperature = 400;
 	I->frequency_factor = 1;
 	I->activation_temperature = 400;
-	I->specific_heat[0] = 18000; // water
+	I->specific_heat[0] = 4180.6; // water
 	I->specific_heat[1] = 1800; // oil
-	I->specific_heat[2] = 1300; // N2
-	I->specific_heat[3] = 1400; // O2
-	I->specific_heat[4] = 2100; // CO2
-	I->specific_heat[5] = 1600; // H2O
+	I->specific_heat[2] = 1040; // N2
+	I->specific_heat[3] = 918; // O2
+	I->specific_heat[4] = 820; // CO2
+	I->specific_heat[5] = 2078.4; // H2O
 	I->specific_heat[6] = 1000; // environment
 	I->thermal_conductivity_coef[0] = 0.55; // water
 	I->thermal_conductivity_coef[1] = 0.128; // oil
