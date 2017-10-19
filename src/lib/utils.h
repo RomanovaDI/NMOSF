@@ -58,4 +58,5 @@ double Darsi_A_coef(in *I, int i, int j, int k);
 double internal_energy(in *I, int p, int i, int j, int k);
 double enthalpy_flow(in *I, int i, int j, int k);
 int check_sum(in *I);
+int print_oil_production(in *I);
 #endif

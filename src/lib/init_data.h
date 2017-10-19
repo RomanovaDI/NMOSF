@@ -112,6 +112,8 @@ typedef struct init_parameters_termogas {
 	double production_well_pressure;
 	int equation_num;
 	double epsilon;
+	double adiabatic_exponent[6];
+	double time_step;
 } in_termogas;
 
 //typedef in_avalanche in;

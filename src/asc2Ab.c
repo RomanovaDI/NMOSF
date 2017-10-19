@@ -196,6 +196,7 @@ int main(int argc, char **argv)
 	I->flag_first_time_step = 1;
 //	time_steps = 20;
 	for (i = 0; i <= time_steps; i++) {
+		I->time_step = i;
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if (print_vtk(I, i) == 1) {
 			printf("Error printing vtk file\n");
@@ -216,6 +217,7 @@ int main(int argc, char **argv)
 			if (i == 0)
 				I->flag_first_time_step = 0;
 			if (solve_matrix(I)) goto error;
+			if (print_oil_production(I)) goto error;
 			if (write_B_to_B_prev(I)) goto error;
 			if (check_sum(I)) goto error;
 //			if (print_vtk(I, j + (i + 1) * 1000) == 1) {

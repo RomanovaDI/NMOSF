@@ -872,4 +872,26 @@ int check_sum(in *I)
 	}
 	return 0;
 }
+
+int print_oil_production(in *I)
+{
+	FILE *f;
+	if (I->time_step == 0) {
+		if ((f = fopen("plotdat/oil_production.dat","w")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+		fprintf(f, "#total oil volume %lf", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1));
+	} else {
+		if ((f = fopen("plotdat/oil_production.dat","a")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	}
+	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, (I->B[A_IND(I, 6, I->nx / 2, 0, I->nz / 2)] - I->B_prev[B_IND(I, 6, I->nx / 2, 0, I->nz / 2)]) *
+		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, I->nx / 2, 0, I->nz / 2) * I->porousness);
+	fclose(f);
+	return 0;
+}
+
 #endif

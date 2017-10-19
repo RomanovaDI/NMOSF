@@ -245,12 +245,12 @@ int create_Ab_termogas(in *I)
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
 					//if (I->equation_num == 2) {
-					if (1) {
+					if (0) {
 						if (DDT(p, i, j, k, porousness_density_energy_flow, second, separated, FDM, termogas)) return 1;
-					//	if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
-					//	if (DIV(p, i, j, k, heat_influx_vector_flow, backward_euler, second, separated, FDM, termogas)) return 1;
-					//	if (SCAL(p, i, j, k, heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
-					//	if (SCAL(p, i, j, k, chemical_reaction_heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
+						if (DIV(p, i, j, k, density_saturation_internal_energy_avarage_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
+						if (DIV(p, i, j, k, heat_influx_vector_flow, backward_euler, second, separated, FDM, termogas)) return 1;
+						if (SCAL(p, i, j, k, heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
+						if (SCAL(p, i, j, k, chemical_reaction_heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
 					} else {
 						if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 					}
@@ -262,7 +262,7 @@ int create_Ab_termogas(in *I)
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
 					//if (I->equation_num == 3) {
-					if (1) {
+					if (0) {
 						if (DDT(p, i, j, k, porousness_density_energy_environment, second, separated, FDM, termogas)) return 1;
 					//	if (DIV(p, i, j, k, heat_influx_vector_environment, backward_euler, second, separated, FDM, termogas)) return 1;
 					//	if (SCAL(p, i, j, k, minus_heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;

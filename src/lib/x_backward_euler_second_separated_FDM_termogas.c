@@ -105,39 +105,50 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
 			for (pp = 0; pp < 2; pp++) {
 				A_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-			//		saturation(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					I->specific_heat[pp] *
+					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
 					avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
 				B_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-			//		saturation(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					(- I->specific_heat[pp] * 1) *
+					(- I->specific_heat[pp] * I->adiabatic_exponent[pp] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp]) *
 					avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
 			}
-			for (pp = 0; pp < 4; pp++)
+			for (pp = 0; pp < 4; pp++) {
 				A_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-			//		saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					I->specific_heat[pp + 2] *
+					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
 					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
 					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+				B_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					(- I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp + 2]) *
+					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+			}
 			A_value /= 2 * I->dx[pr];
 			printf("%d:\t%d\t%d\t", pr, i, k);
 			printf("%f\t", A_value);
 			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			A_value = 0;
-			for (pp = 0; pp < 2; pp++)
+			I->B[A_IND(I, p, i, j, k)] += B_value;
+			A_value = B_value = 0;
+			for (pp = 0; pp < 2; pp++) {
 				A_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-			//		saturation(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					I->specific_heat[pp] *
+					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
 					avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			for (pp = 0; pp < 4; pp++)
+				B_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					(- I->specific_heat[pp] * I->adiabatic_exponent[pp] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp]) *
+					avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+			}
+			for (pp = 0; pp < 4; pp++) {
 				A_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-			//		saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					I->specific_heat[pp + 2] *
+					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
 					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+				B_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					(- I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp + 2]) *
+					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+			}
 			A_value /= 2 * I->dx[pr];
 			printf("%f\n", A_value);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+			I->B[A_IND(I, p, i, j, k)] += B_value;
 		}
 	}
 	return 0;
