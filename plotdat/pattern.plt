@@ -11,7 +11,7 @@ unset tics
 set size square
 set xrange[-0.5:250.5]
 set yrange[-0.5:250.5]
-set output 'pattern.png'
+set output 'images/pattern.png'
 set cbrange [0:1]
 set view map
 plot	'tmp/A_pattern_matrix.dat' matrix w image notitle

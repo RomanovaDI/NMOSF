@@ -100,7 +100,8 @@ void print_A_csr(in *I)
 		j = 0;
 		while (!((i >= I->Aiptr_csr[j]) && (i < I->Aiptr_csr[j + 1])))
 			j++;
-		A_pattern[j * I->system_dimension + I->Ajptr_csr[i]] = 1;
+		//A_pattern[j * I->system_dimension + I->Ajptr_csr[i]] = 1;
+		A_pattern[(I->system_dimension - 1 - j) * I->system_dimension + I->Ajptr_csr[i]] = 1;
 	}
 	if ((f = fopen("tmp/A_pattern_matrix.dat","w")) == NULL) {
 		printf("error openning file");

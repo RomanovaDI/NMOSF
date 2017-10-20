@@ -285,9 +285,9 @@ int create_Ab_termogas(in *I)
 			return 1;
 		}
 	}
-	//if (flag_first_time_step)
-	if (I->equation_num == 1)
-		print_A_csr(I);
+	// (I->equation_num == 1)
+	//if (I->flag_first_time_step)
+	//	print_A_csr(I);
 #endif
 	return 0;
 }

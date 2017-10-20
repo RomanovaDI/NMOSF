@@ -196,6 +196,7 @@ int main(int argc, char **argv)
 	I->flag_first_time_step = 1;
 //	time_steps = 20;
 	for (i = 0; i <= time_steps; i++) {
+		printf("Time step %d of %d\n", i + 1, time_steps);
 		I->time_step = i;
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if (print_vtk(I, i) == 1) {
