@@ -1,22 +1,26 @@
 #!/usr/bin/gnuplot
 reset
-set term png size 550, 450
+set term pngcairo size 550, 500
 set xlabel "Насыщенность нефтью"
 set ylabel "Относительная проницаемость"
+#set key box spacing 3 outside
+set key box outside
+set key bottom center
 set termoption dashed
 set grid x y
-set linestyle  1 linetype 1 lc 1 lw 3
-set linestyle  2 linetype 2 lc 2 lw 3
-set linestyle  3 linetype 3 lc 3 lw 3
-set linestyle  4 linetype 4 lc 4 lw 3
-set linestyle  5 linetype 5 lc 5 lw 3
-set linestyle  6 linetype 6 lc 6 lw 3
-set linestyle  7 linetype 7 lc 7 lw 3
-set linestyle  8 linetype 8 lc 8 lw 3
-set linestyle  9 linetype 9 lc 9 lw 3
+set linestyle  1 linetype 1 dt 1 lc 1 lw 3
+set linestyle  2 linetype 1 dt 2 lc 2 lw 3
+set linestyle  3 linetype 1 dt 3 lc 3 lw 3
+set linestyle  4 linetype 1 dt 4 lc 4 lw 3
+set linestyle  5 linetype 1 dt 5 lc 5 lw 3
+set linestyle  6 linetype 1 dt 6 lc 6 lw 3
+set linestyle  7 linetype 1 dt 7 lc 7 lw 3
+set linestyle  8 linetype 1 dt 8 lc 8 lw 3
+set linestyle  9 linetype 1 dt 9 lc 9 lw 3
 set yrange [0:1]
 set xrange [0:1]
 #set format y "%1.6f"
+set key vert
 set title "Относительные проницаемости по модели Брукса-Кори"
 set output 'images/relative_permeability_two_phase_oil.png'
 plot	(x < 0.2) ? (1 / 0) : (((x - 0.2) / (1 - 0.2 - 0.15)) ** 4)															w l ls 1 title 'Относительная проницаемость нефти в газе', \
@@ -67,6 +71,7 @@ sg6(x) = 1 - so6(x) - sw6(x)
 f6(x) = ((sw6(x) - 0.15) * (((1 - (sw6(x) - 0.15) / (1 - 0.15)) ** 2) * (1 - ((sw6(x) - 0.15) / (1 - 0.15)) ** 2)) + (sg6(x) - 0) * (((so6(x) - 0.2) / (1 - 0.2 - 0.15)) ** 4)) / (sw6(x) - 0.15 + sg6(x) - 0)
 ff6(x) = ((sw6(x) < 0.15) || (so6(x) < 0.2) || (sg6(x) < 0)) ? (1 / 0) : (f6(x))
 
+set key horiz
 plot 	ff1(x) w l ls 1 title 'при s_o = 0', \
 		ff2(x) w l ls 2 title 'при s_o = 0.2', \
 		ff3(x) w l ls 3 title 'при s_o = 0.4', \
