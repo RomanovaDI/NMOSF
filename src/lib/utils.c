@@ -655,7 +655,9 @@ double molar_fraction(in *I, int p, int i, int j, int k)
 
 double viscosity(in *I, int p, int i, int j, int k)
 {
-	if ((p == 0) || (p == 1))
+	if (p == 0)
+		return (I->viscosity_coef_A[p] / (1 / density_t(I, p, i, j, k) - I->viscosity_coef_B[p]));
+	else if (p == 1)
 		return (I->viscosity_coef_A[p] / (1 / density_t(I, p, i, j, k) - I->viscosity_coef_B[p]));
 	else if (p == 2) {
 		double x = 1;
@@ -888,10 +890,10 @@ int print_oil_production(in *I)
 			return 1;
 		}
 	}
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, (I->B[A_IND(I, 6, I->nx / 2, 0, I->nz / 2)] - I->B_prev[B_IND(I, 6, I->nx / 2, 0, I->nz / 2)]) *
+	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->B[A_IND(I, 6, I->nx / 2, 0, I->nz / 2)] *
 		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, I->nx / 2, 0, I->nz / 2) * I->porousness);
 	fclose(f);
-	I->volume_producted_oil += (I->B[A_IND(I, 6, I->nx / 2, 0, I->nz / 2)] - I->B_prev[B_IND(I, 6, I->nx / 2, 0, I->nz / 2)]) *
+	I->volume_producted_oil += I->B[A_IND(I, 6, I->nx / 2, 0, I->nz / 2)] *
 		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, I->nx / 2, 0, I->nz / 2) * I->porousness;
 	if (I->time_step == 0) {
 		if ((f = fopen("plotdat/oil_production.dat","w")) == NULL) {

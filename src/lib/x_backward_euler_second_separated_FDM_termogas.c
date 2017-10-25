@@ -81,6 +81,7 @@ int LAPL_coef_pressure_backward_euler_second_separated_FDM_termogas(in *I, int p
 int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double A_value;
 	int pr, ind_pr[3];
 	for (pr = 0; pr < 3; pr++) {
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
@@ -88,6 +89,10 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
 			I->B[A_IND(I, p, i, j, k)] -= (density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
 				density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
+		//	A_value = density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * I->dx[pr]);
+		//	WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		//	A_value = density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * I->dx[pr]);
+		//	WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 		}
 	}
 	return 0;

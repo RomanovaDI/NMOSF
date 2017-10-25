@@ -1,39 +1,29 @@
 #!/usr/bin/gnuplot
 reset
-set term pngcairo size 550, 500
+#set term pngcairo size 550, 500
+set term pngcairo size 	800, 600 enhanced dashed font 'Helvetica,20'
 set xlabel "Насыщенность нефтью"
 set ylabel "Относительная проницаемость"
-#set key box spacing 3 outside
-set key box outside
-set key bottom center
-set termoption dashed
 set grid x y
-set linestyle  1 linetype 1 dt 1 lc 1 lw 3
-set linestyle  2 linetype 1 dt 2 lc 2 lw 3
-set linestyle  3 linetype 1 dt 3 lc 3 lw 3
-set linestyle  4 linetype 1 dt 4 lc 4 lw 3
-set linestyle  5 linetype 1 dt 5 lc 5 lw 3
-set linestyle  6 linetype 1 dt 6 lc 6 lw 3
-set linestyle  7 linetype 1 dt 7 lc 7 lw 3
-set linestyle  8 linetype 1 dt 8 lc 8 lw 3
-set linestyle  9 linetype 1 dt 9 lc 9 lw 3
+set linestyle  1 linetype 1 dt 1 lc 1 lw 4
+set linestyle  2 linetype 1 dt 2 lc 2 lw 4
+set linestyle  3 linetype 1 dt 3 lc 3 lw 4
+set linestyle  4 linetype 1 dt 4 lc 4 lw 4
+set linestyle  5 linetype 1 dt 5 lc 5 lw 4
+set linestyle  6 linetype 1 dt 6 lc 6 lw 4
+set linestyle  7 linetype 1 dt 7 lc 7 lw 4
+set linestyle  8 linetype 1 dt 8 lc 8 lw 4
+set linestyle  9 linetype 1 dt 9 lc 9 lw 4
 set yrange [0:1]
 set xrange [0:1]
 #set format y "%1.6f"
-set key vert
-set title "Относительные проницаемости по модели Брукса-Кори"
-set output 'images/relative_permeability_two_phase_oil.png'
-plot	(x < 0.2) ? (1 / 0) : (((x - 0.2) / (1 - 0.2 - 0.15)) ** 4)															w l ls 1 title 'Относительная проницаемость нефти в газе', \
-		(x < 0.2) ? (1 / 0) : (((1 - (x - 0.2) / (1 - 0.2 - 0.15)) ** 2) * (1 - ((x - 0.2) / (1 - 0.2 - 0.15)) ** 2))		w l ls 2 title 'Относительная проницаемость газа в нефти'
-set output 'images/relative_permeability_two_phase_water.png'
-set xlabel "Насыщенность водой"
-plot	(x < 0.15) ? (1 / 0) : (((x - 0.15) / (1 - 0.15)) ** 4)																w l ls 1 title 'Относительная проницаемость воды в нефти', \
-		(x < 0.15) ? (1 / 0) : (((1 - (x - 0.15) / (1 - 0.15)) ** 2) * (1 - ((x - 0.15) / (1 - 0.15)) ** 2))				w l ls 2 title 'Относительная проницаемость нефти в воде', \
-		(x < 0.15) ? (1 / 0) : (((x - 0.15) / (1 - 0.15 - 0.2)) ** 4)														w l ls 3 title 'Относительная проницаемость воды в газе', \
-		(x < 0.15) ? (1 / 0) : (((1 - (x - 0.15) / (1 - 0.15 - 0.2)) ** 2) * (1 - ((x - 0.15) / (1 - 0.15 - 0.2)) ** 2))	w l ls 4 title 'Относительная проницаемость газа в воде'
-set xlabel "Насыщенность водой"
-set title 'Относительная проницаемость нефти по модели Бэкера'
 
+set key box outside
+set key bottom center
+set key samplen 2
+set title 'Относительная проницаемость нефти по модели Бэкера'
+set xlabel "Насыщенность водой"
+set ylabel "Относительная проницаемость"
 set output 'images/relative_permeability_oil_on_water_oil_fixed.png'
 so1(x) = 0
 sw1(x) = x
@@ -171,3 +161,18 @@ plot 	ff1(x) w l ls 1 title 'при s_g = 0', \
 		ff5(x) w l ls 5 title 'при s_g = 0.8', \
 		ff6(x) w l ls 6 title 'при s_g = 1'
 
+set key vertical width -37
+set key nobox
+set title "Относительные проницаемости по модели Брукса-Кори"
+set xlabel "Насыщенность нефтью"
+set ylabel "Относительная проницаемость"
+set output 'images/relative_permeability_two_phase_oil.png'
+plot	(x < 0.2) ? (1 / 0) : (((x - 0.2) / (1 - 0.2 - 0.15)) ** 4)															w l ls 1 title 'Относительная проницаемость нефти в газе k_{rog}', \
+		(x < 0.2) ? (1 / 0) : (((1 - (x - 0.2) / (1 - 0.2 - 0.15)) ** 2) * (1 - ((x - 0.2) / (1 - 0.2 - 0.15)) ** 2))		w l ls 2 title 'Относительная проницаемость газа в нефти k_{rgo}'
+set output 'images/relative_permeability_two_phase_water.png'
+set xlabel "Насыщенность водой"
+set ylabel "Относительная проницаемость"
+plot	(x < 0.15) ? (1 / 0) : (((x - 0.15) / (1 - 0.15)) ** 4)																w l ls 1 title 'Относительная проницаемость воды в нефти k_{rwo}', \
+		(x < 0.15) ? (1 / 0) : (((1 - (x - 0.15) / (1 - 0.15)) ** 2) * (1 - ((x - 0.15) / (1 - 0.15)) ** 2))				w l ls 2 title 'Относительная проницаемость нефти в воде k_{row}', \
+		(x < 0.15) ? (1 / 0) : (((x - 0.15) / (1 - 0.15 - 0.2)) ** 4)														w l ls 3 title 'Относительная проницаемость воды в газе k_{rwg}', \
+		(x < 0.15) ? (1 / 0) : (((1 - (x - 0.15) / (1 - 0.15 - 0.2)) ** 2) * (1 - ((x - 0.15) / (1 - 0.15 - 0.2)) ** 2))	w l ls 4 title 'Относительная проницаемость газа в воде k_{rgw}'

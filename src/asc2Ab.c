@@ -199,11 +199,13 @@ int main(int argc, char **argv)
 		printf("Time step %d of %d\n", i + 1, time_steps);
 		I->time_step = i;
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
-		if (print_vtk(I, i) == 1) {
-			printf("Error printing vtk file\n");
-			goto error;
-		} else {
-			printf("Result printed to vtk file\n");
+		if (i % 10 == 0) {
+			if (print_vtk(I, i / 10) == 1) {
+				printf("Error printing vtk file\n");
+				goto error;
+			} else {
+				printf("Result printed to vtk file\n");
+			}
 		}
 		//for (j = 0; j < 5; j++) {
 		//for (j = 0; j < 2; j++) {
@@ -229,7 +231,7 @@ int main(int argc, char **argv)
 //			}
 		//}
 		if (i == time_steps) {
-			if (print_vtk(I, i + 1) == 1) {
+			if (print_vtk(I, i / 10 + 1) == 1) {
 				printf("Error printing vtk file\n");
 				goto error;
 			} else {

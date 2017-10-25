@@ -4,16 +4,18 @@ reset
 #set output 'test.eps'
 #test
 #set term png size 550, 450
-set term pngcairo size 550, 450
+set term pngcairo size 	800, 600 enhanced dashed font 'Helvetica,20'
+#set term pngcairo size 550, 450
 #set output 'test.png'
 #test
+set key samplen 2
 set xlabel "Температура, К"
 set ylabel "Плотность, кг/м^3"
 set termoption dashed
 set grid x y
-set style line 1 lc 1 lt 1 dt 1 lw 3
-set style line 2 lc 2 lt 2 dt 2 lw 3
-set style line 3 lc 3 lt 3 dt 3 lw 3
+set style line 1 lc 1 lt 1 dt 1 lw 4
+set style line 2 lc 2 lt 2 dt 2 lw 4
+set style line 3 lc 3 lt 3 dt 3 lw 4
 #set linestyle  1 linetype 1 lc 1 lw 3
 #set linestyle  2 linetype 2 lc 2 lw 3
 #set linestyle  3 linetype 3 lc 3 lw 3
@@ -37,6 +39,7 @@ set output 'images/density_gas_temperature.png'
 plot	[500:1200]	20000000 * 0.25 * (0.02801 + 0.032 + 0.04401 + 0.01802) / (8.314 * x)	w l ls 1 title 'Плотность газа при p = 2*10^7 Па', \
 					30000000 * 0.25 * (0.02801 + 0.032 + 0.04401 + 0.01802) / (8.314 * x)	w l ls 2 title 'Плотность газа при p = 3*10^7 Па', \
 					1000000 * 0.25 * (0.02801 + 0.032 + 0.04401 + 0.01802) / (8.314 * x)	w l ls 3 title 'Плотность газа при p = 10^6 Па'
+set key width -50 left top at 3500000, 570 Left samplen 2
 set title "Зависимость плотности газа от давления"
 set output 'images/density_gas_pressure.png'
 set xlabel "Давление, Па"
