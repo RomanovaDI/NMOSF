@@ -126,11 +126,11 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
 					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
 			}
-			A_value /= 2 * I->dx[pr];
-			printf("%d:\t%d\t%d\t", pr, i, k);
-			printf("%f\t", A_value);
+			A_value /= (2 * I->dx[pr]);
+			//printf("%d:\t%d\t%d\t", pr, i, k);
+			//printf("%f\t", A_value);
 			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] += B_value;
+			I->B[A_IND(I, p, i, j, k)] -= B_value;
 			A_value = B_value = 0;
 			for (pp = 0; pp < 2; pp++) {
 				A_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
@@ -150,10 +150,10 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
 			}
-			A_value /= 2 * I->dx[pr];
-			printf("%f\n", A_value);
+			A_value /= (2 * I->dx[pr]);
+			//printf("%f\n", A_value);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] += B_value;
+			I->B[A_IND(I, p, i, j, k)] -= B_value;
 		}
 	}
 	return 0;
