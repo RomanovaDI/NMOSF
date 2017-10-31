@@ -94,6 +94,9 @@ int DDT_porousness_density_energy_flow_second_separated_FDM_termogas(in *I, int 
 //		temperature_flow(I, i + 1, j, k) + temperature_flow(I, i - 1, j, k) +
 //		temperature_flow(I, i, j + 1, k) + temperature_flow(I, i, j - 1, k) +
 //		temperature_flow(I, i, j, k + 1) + temperature_flow(I, i, j, k - 1)) / 6;
+//	I->B[A_IND(I, p, i, j, k)] += A_value * (
+//		temperature_flow(I, i + 1, j, k) + temperature_flow(I, i - 1, j, k) +
+//		temperature_flow(I, i, j, k + 1) + temperature_flow(I, i, j, k - 1)) / 4;
 	I->B[A_IND(I, p, i, j, k)] += A_value * temperature_flow(I, i, j, k);
 	return 0;
 }
@@ -108,6 +111,9 @@ int DDT_porousness_density_energy_environment_second_separated_FDM_termogas(in *
 //		temperature_environment(I, i + 1, j, k) + temperature_environment(I, i - 1, j, k) +
 //		temperature_environment(I, i, j + 1, k) + temperature_environment(I, i, j - 1, k) +
 //		temperature_environment(I, i, j, k + 1) + temperature_environment(I, i, j, k - 1)) / 6;
+//	I->B[A_IND(I, p, i, j, k)] += A_value * (
+//		temperature_environment(I, i + 1, j, k) + temperature_environment(I, i - 1, j, k) +
+//		temperature_environment(I, i, j, k + 1) + temperature_environment(I, i, j, k - 1)) / 4;
 	I->B[A_IND(I, p, i, j, k)] += A_value * temperature_environment(I, i, j, k);
 	return 0;
 }
