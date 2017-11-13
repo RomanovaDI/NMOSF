@@ -136,7 +136,7 @@ void print_A_csr(in *I)
 	return;
 }
 
-int solve_matrix(in *I)
+int SuperLU_solver(in *I)
 {
 	printf("Solving matrix\n");
 	SuperMatrix A_csr;
@@ -247,6 +247,18 @@ int solve_matrix(in *I)
 	CHECK_MALLOC("Exit main()");
 #endif
 	printf("End of function solve matrix\n");
+	return 0;
+}
+
+int handmade_solver(in *I)
+{
+	return 0;
+}
+
+int solve_matrix(in *I)
+{
+#	if (SuperLU_solver(I)) return 1;
+	if (handmade_solver(I)) return 1;
 	return 0;
 }
 
