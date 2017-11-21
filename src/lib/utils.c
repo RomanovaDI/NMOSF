@@ -84,7 +84,7 @@ int write_to_A_csr(in *I, int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, 
 	if ((i >= 0) && (i < I->nx) && (j >= 0) && (j < I->ny) && (k >= 0) && (k < I->nz) && (I->ind_cell_multipl[i * I->ny + j] != -1) && (A_IND_S_SWITCH(I, i, j, k, s))) {
 		int l, m, column, row;
 		if (!((i_eq >= 0) && (i_eq < I->nx) && (j_eq >= 0) && (j_eq < I->ny) && (k_eq >= 0) && (k_eq < I->nz) && (I->ind_cell_multipl[i_eq * I->ny + j_eq] != -1)))
-			printf("something wery strange\n");
+			printf("something very strange in ./src/lib/utils.c:87\n");
 		if (s == -1) {
 			column = A_IND(I, p, i, j, k);
 		} else {

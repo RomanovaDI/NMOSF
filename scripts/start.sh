@@ -3,6 +3,7 @@ set -x
 rm -rf result
 mkdir result
 mkdir tmp
+rm -rf build
 mkdir build
 mkdir build/lib
 export NMOSF=/home/daria/cases/NMOSF/

@@ -250,6 +250,30 @@ int SuperLU_solver(in *I)
 	return 0;
 }
 
+int csr_to_csc(double *csr_a, double *csr_row_ptr, double *csr_col_ind, int nonzeros, int dim, double *csc_a, double *csc_col_ptr, double *csc_row_ind)
+{
+	int i, j, a_ind = 0, row_ind;
+	for (j = 0; j < dim; j++) {
+		csc_col_ptr[j] = a_ind;
+		for (i = 0; i < nonzeros; i++) {
+			if (csr_col_ind[i] == j) {
+				for (row_ind = 0; row_ind < dim; row_ind++)
+					if ((i >= csr_row_ptr[row_ind]) && (i < csr_row_ptr[row_ind + 1]))
+						break;
+				csc_a[a_ind] = csr_a[i];
+				csc_row_ind[a_ind++] = row_ind;
+			}
+		}
+	}
+	return 0;
+}
+
+int csr_multiply_by_csc_eq_csr(double *csr_a, double *csr_row_ptr, double *csr_col_ind, int csr_nonzeros, double *csc_a, double csc_col_ptr, double *csc_row_ind, int csc_nonzeros, int dim)
+{
+	int i;
+	return 0;
+}
+
 int handmade_solver(in *I)
 {
 	return 0;
@@ -257,7 +281,7 @@ int handmade_solver(in *I)
 
 int solve_matrix(in *I)
 {
-#	if (SuperLU_solver(I)) return 1;
+//	if (SuperLU_solver(I)) return 1;
 	if (handmade_solver(I)) return 1;
 	return 0;
 }
