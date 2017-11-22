@@ -43,7 +43,7 @@ gcc -g -O0 -shared src/lib/create_matrix.c \
 	-lt_test \
 	-o build/lib/libcreate_matrix.so \
 	-fPIC
-gcc -g -O0  src/asc2Ab.c \
+mpicc -g -O0  src/asc2Ab.c \
 	-I /usr/include/superlu/ -I src/lib/ \
 	-L /usr/lib/x86_64-linux-gnu/ -L build/lib/ \
 	-lm \

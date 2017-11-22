@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "matrix_functions.h"
 #include "slu_ddefs.h"
+#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -276,6 +277,10 @@ int csr_multiply_by_csc_eq_csr(double *csr_a, double *csr_row_ptr, double *csr_c
 
 int handmade_solver(in *I)
 {
+	int i, j;
+	for (i = I->system_dimension; i > 0; i--) {
+		for (j = 0; j < i; j++)
+	}
 	return 0;
 }
 

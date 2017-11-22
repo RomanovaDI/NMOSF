@@ -132,6 +132,7 @@ numbering faces of cells is so
 #include "create_matrix.h"
 #include "matrix_functions.h"
 #include "slu_ddefs.h"
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -177,6 +178,7 @@ int main(int argc, char **argv)
 	int i, time_steps, j;
 	in II;
 	in *I = &II;
+	MPI_Init(&argc, &argv);
 //	solve_test_matrix();
 //	return 0;
 	if (set_parameters_termogas(I)) goto error;
@@ -242,10 +244,12 @@ int main(int argc, char **argv)
 	if (free_massives(I) == 1) goto error;
 
 	printf("Calculations finished successfully\n");
+	MPI_Finalize();
 	return 0;
 error:
 	printf("Error\n");
 	display_usage();
+	MPI_Finalize();
 	return 1;
 }
 //if (solve_test_matrix()) goto error;
