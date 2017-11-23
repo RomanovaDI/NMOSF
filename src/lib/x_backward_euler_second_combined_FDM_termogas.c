@@ -1,6 +1,7 @@
 #include "init_data.h"
 #include "utils.h"
 #include "x_backward_euler_second_combined_FDM_termogas.h"
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

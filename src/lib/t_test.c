@@ -1,6 +1,7 @@
 #include "init_data.h"
 #include "utils.h"
 #include "t_test.h"
+#include "mpi.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

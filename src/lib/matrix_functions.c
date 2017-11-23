@@ -251,7 +251,7 @@ int SuperLU_solver(in *I)
 	return 0;
 }
 
-int csr_to_csc(double *csr_a, double *csr_row_ptr, double *csr_col_ind, int nonzeros, int dim, double *csc_a, double *csc_col_ptr, double *csc_row_ind)
+int csr_to_csc(double *csr_a, int *csr_row_ptr, int *csr_col_ind, int nonzeros, int dim, double *csc_a, int *csc_col_ptr, int *csc_row_ind)
 {
 	int i, j, a_ind = 0, row_ind;
 	for (j = 0; j < dim; j++) {
@@ -269,7 +269,7 @@ int csr_to_csc(double *csr_a, double *csr_row_ptr, double *csr_col_ind, int nonz
 	return 0;
 }
 
-int csr_multiply_by_csc_eq_csr(double *csr_a, double *csr_row_ptr, double *csr_col_ind, int csr_nonzeros, double *csc_a, double csc_col_ptr, double *csc_row_ind, int csc_nonzeros, int dim)
+int csr_multiply_by_csc_eq_csr(double *csr_a, int *csr_row_ptr, int *csr_col_ind, int csr_nonzeros, double *csc_a, int *csc_col_ptr, int *csc_row_ind, int csc_nonzeros, int dim)
 {
 	int i;
 	return 0;
@@ -277,9 +277,41 @@ int csr_multiply_by_csc_eq_csr(double *csr_a, double *csr_row_ptr, double *csr_c
 
 int handmade_solver(in *I)
 {
-	int i, j;
-	for (i = I->system_dimension; i > 0; i--) {
-		for (j = 0; j < i; j++)
+	int i, j, k, *tmp_csc_row_ind, *tmp_csc_col_ptr;
+	double *tmp_csc_a, *tmp_up_tr_matr, cosa, sina, diag, coef1, coef2;
+	if ((tmp_csc_a = (double *) malloc(I->non_zero_elem * sizeof(double))) == NULL) {
+		printf("Memory error in function %s\n", __func__);
+		return 1;
+	}
+	if ((tmp_csc_row_ind = (int *) malloc(I->non_zero_elem * sizeof(int))) == NULL) {
+		printf("Memory error in function %s\n", __func__);
+		return 1;
+	}
+	if ((tmp_csc_col_ptr = (int *) malloc((I->system_dimension + 1) * sizeof(int))) == NULL) {
+		printf("Memory error in function %s\n", __func__);
+		return 1;
+	}
+	if ((tmp_up_tr_matr = (double *) malloc((I->system_dimension + 1) * I->system_dimension * 0.5 * sizeof(double))) == NULL) {
+		printf("Memory error in function %s\n", __func__);
+		return 1;
+	}
+	if (csr_to_csc(I->Aelem_csr, I->Aiptr_csr, I->Ajptr_csr, I->non_zero_elem, I->system_dimension, tmp_csc_a, tmp_csc_col_ptr, tmp_csc_row_ind)) return 1;
+	for (i = 0; i < I->system_dimension; i++) {
+		for (j = tmp_csc_col_ptr[i]; j < tmp_csc_col_ptr[i + 1]; j++) {
+			diag = 0;
+			if (tmp_csc_row_ind[j] == i) diag = tmp_csc_a[j];
+			if (tmp_csc_row_ind[j] < i) {
+				cosa = diag / (sqrt(diag * diag + tmp_csc_a[j] * tmp_csc_a[j]));
+				sina = - tmp_csc_a[j] / (sqrt(diag * diag + tmp_csc_a[j] * tmp_csc_a[j]));
+				for (k = tmp_csc_col_ptr[i]; k < tmp_csc_col_ptr[i + 1]; k++) {
+					coef1 = coef2 = 0;
+					if (tmp_csc_row_ind[k] == i)
+						coef1 = tmp_csc_a[k];
+					if (tmp_csc_row_ind[k] == j)
+						coef2 = tmp_csc_a[k];
+				}
+			}
+		}
 	}
 	return 0;
 }

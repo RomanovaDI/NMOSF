@@ -1,5 +1,6 @@
 #include "init_data.h"
 #include "utils.h"
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

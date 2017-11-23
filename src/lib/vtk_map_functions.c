@@ -1,6 +1,7 @@
 #include "init_data.h"
 #include "utils.h"
 #include "vtk_map_functions.h"
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

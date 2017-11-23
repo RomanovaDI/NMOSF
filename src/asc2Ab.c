@@ -175,44 +175,46 @@ void display_usage(void)
 
 int main(int argc, char **argv)
 {
-	int i, time_steps, j;
+	int i, time_steps, j, rank;
 	in II;
 	in *I = &II;
 	MPI_Init(&argc, &argv);
-//	solve_test_matrix();
-//	return 0;
-	if (set_parameters_termogas(I)) goto error;
-	if (read_asc_and_declare_variables(I)) goto error;
-	if (do_interpolation(I)) goto error;
-	if (set_arrays(I)) goto error;
-	if (make_boundary(I)) goto error;
-	I->system_dimension = I->n_cells_multipl * I->nz * I->num_parameters;
-	I->system_dimension_with_boundary = I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->num_parameters;
-	if ((I->B_prev = (double *) malloc(I->system_dimension_with_boundary * sizeof(double))) == NULL) {
-		printf("Memory error\n");
-		return 1;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	if (rank == 1) {
+		solve_test_matrix();
+		return 0;
 	}
-	memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
-	SET_CONDITION(initial, termogas, fixed_value);
-	time_steps = I->end_time / I->dt;
-	I->flag_first_time_step = 1;
-//	time_steps = 20;
-	for (i = 0; i <= time_steps; i++) {
-		printf("Time step %d of %d\n", i + 1, time_steps);
-		I->time_step = i;
-		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
-		if (i % 10 == 0) {
-			if (print_vtk(I, i / 10) == 1) {
-				printf("Error printing vtk file\n");
-				goto error;
-			} else {
-				printf("Result printed to vtk file\n");
-			}
+	if (rank == 0) {
+		if (set_parameters_termogas(I)) goto error;
+		if (read_asc_and_declare_variables(I)) goto error;
+		if (do_interpolation(I)) goto error;
+		if (set_arrays(I)) goto error;
+		if (make_boundary(I)) goto error;
+		I->system_dimension = I->n_cells_multipl * I->nz * I->num_parameters;
+		I->system_dimension_with_boundary = I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->num_parameters;
+		if ((I->B_prev = (double *) malloc(I->system_dimension_with_boundary * sizeof(double))) == NULL) {
+			printf("Memory error\n");
+			return 1;
 		}
-		//for (j = 0; j < 5; j++) {
-		//for (j = 0; j < 2; j++) {
-		//	printf("Equation %d\n", j);
-		//	I->equation_num = j;
+		memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
+		SET_CONDITION(initial, termogas, fixed_value);
+		time_steps = I->end_time / I->dt;
+		I->flag_first_time_step = 1;
+//	time_steps = 20;
+	}
+	for (i = 0; i <= time_steps; i++) {
+		if (rank == 0) {
+			printf("Time step %d of %d\n", i + 1, time_steps);
+			I->time_step = i;
+			SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
+			if (i % 10 == 0) {
+				if (print_vtk(I, i / 10) == 1) {
+					printf("Error printing vtk file\n");
+					goto error;
+				} else {
+					printf("Result printed to vtk file\n");
+				}
+			}
 #if AVALANCHE
 			if (create_Ab_avalanche(I) == 1) goto error;
 #endif
@@ -221,33 +223,36 @@ int main(int argc, char **argv)
 #endif
 			if (i == 0)
 				I->flag_first_time_step = 0;
-			if (solve_matrix(I)) goto error;
+		}
+		if (rank == 0) if (solve_matrix(I)) goto error;
+		if (rank == 0) {
 			if (print_oil_production(I)) goto error;
 			if (write_B_to_B_prev(I)) goto error;
 			if (check_sum(I)) goto error;
-//			if (print_vtk(I, j + (i + 1) * 1000) == 1) {
-//				printf("Error printing vtk file\n");
-//				goto error;
-//			} else {
-//				printf("Result printed to vtk file\n");
-//			}
-		//}
-		if (i == time_steps) {
-			if (print_vtk(I, i / 10 + 1) == 1) {
-				printf("Error printing vtk file\n");
-				goto error;
-			} else {
-				printf("Result printed to vtk file\n");
+//				if (print_vtk(I, j + (i + 1) * 1000) == 1) {
+//					printf("Error printing vtk file\n");
+//					goto error;
+//				} else {
+//					printf("Result printed to vtk file\n");
+//				}
+			//}
+			if (i == time_steps) {
+				if (print_vtk(I, i / 10 + 1) == 1) {
+					printf("Error printing vtk file\n");
+					goto error;
+				} else {
+					printf("Result printed to vtk file\n");
+				}
 			}
 		}
 	}
-	if (free_massives(I) == 1) goto error;
+	if (rank == 0) if (free_massives(I) == 1) goto error;
 
-	printf("Calculations finished successfully\n");
+	if (rank == 0) printf("Calculations finished successfully\n");
 	MPI_Finalize();
 	return 0;
 error:
-	printf("Error\n");
+	printf("Error in process %d\n", rank);
 	display_usage();
 	MPI_Finalize();
 	return 1;

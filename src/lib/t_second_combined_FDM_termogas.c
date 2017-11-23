@@ -1,6 +1,7 @@
 #include "init_data.h"
 #include "utils.h"
 #include "t_second_combined_FDM_termogas.h"
+#include "mpi.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

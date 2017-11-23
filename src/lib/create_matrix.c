@@ -1,6 +1,7 @@
 #include "init_data.h"
 #include "utils.h"
 #include "matrix_functions.h"
+#include "mpi.h"
 #if AVALANCHE
 #include "x_crank_nikolson_second_combined_VOF_avalanche.h"
 #include "x_forward_euler_second_combined_VOF_avalanche.h"

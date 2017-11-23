@@ -1,6 +1,7 @@
 #include "init_data.h"
 #include "utils.h"
 #include "x_crank_nikolson_second_combined_VOF_avalanche.h"
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
