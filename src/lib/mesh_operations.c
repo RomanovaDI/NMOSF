@@ -228,7 +228,7 @@ int do_interpolation(in *I)
 		printf("Memory error\n");
 		return 1;
 	}
-	memset((void *) I->ind_cell_multipl, 0, (I->nrows - 1) * I->kx * (I->ncols - 1) * I->ky * sizeof(int));
+//	memset((void *) I->ind_cell_multipl, 0, (I->nrows - 1) * I->kx * (I->ncols - 1) * I->ky * sizeof(int));
 
 	for (i = 0; i < (I->nrows - 1) * I->kx * (I->ncols - 1) * I->ky; i++) {
 		I->ind_cell_multipl[i] = -1;
@@ -294,3 +294,22 @@ int make_boundary(in *I)
 	return 0;
 }
 
+int do_decomposition(in *I)
+{
+	printf("Making decomposition\n");
+	int i, j, x_regions, y_regions, num_el_in_x_region, num_el_in_y_region;
+	x_regions = (int) round(sqrt((double) I->nproc * ((double) I->nx / (double) I->ny)));
+	y_regions = I->nproc / x_regions;
+	num_el_in_x_region = I->nx / x_regions;
+	num_el_in_y_region = I->ny / y_regions;
+	if ((I->ind_proc = (int *) malloc(I->nx * I->ny * sizeof(int))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	for (i = 0; i < nx; i++) {
+		for (j = 0; j < I->ny; j++) {
+			I->ind_proc[i * I->ny + j] = (j / num_el_in_y_region) * y_regions + i / num_el_in_x_region;
+		}
+	}
+	return 0;
+}

@@ -64,10 +64,10 @@ $(NAME):
 clean:
 	rm -rf result
 	mkdir result
-	mkdir tmp
 	rm -rf build
 	mkdir build
 	mkdir build/lib
+#	mkdir tmp
 
 #	-lt_second_combined_VOF_avalanche \
 #	-lt_second_ultra_combined_VOF_avalanche \

@@ -271,7 +271,7 @@ int csr_to_csc(double *csr_a, int *csr_row_ptr, int *csr_col_ind, int nonzeros, 
 
 int csr_to_full_matrix(double *csr_a, int *csr_row_ptr, int *csr_col_ind, int nonzeros, int dim, double *full_matr)
 {
-	int i, int j;
+	int i, j;
 	for (i = 0; i < dim; i++) {
 		for (j = csr_row_ptr[i]; j < csr_row_ptr[i + 1]; j++) {
 			full_matr[csr_col_ind[j] * dim + i] = csr_a[j]; //матрица располагается в памяти по столбцам!!!!!!!
@@ -280,16 +280,11 @@ int csr_to_full_matrix(double *csr_a, int *csr_row_ptr, int *csr_col_ind, int no
 	return 0;
 }
 
-int csr_multiply_by_csc_eq_csr(double *csr_a, int *csr_row_ptr, int *csr_col_ind, int csr_nonzeros, double *csc_a, int *csc_col_ptr, int *csc_row_ind, int csc_nonzeros, int dim)
-{
-	int i;
-	return 0;
-}
-
 int handmade_solver(in *I)
 {
-	int i, j, k, l, *tmp_csc_row_ind, *tmp_csc_col_ptr;
-	double *tmp_csc_a, *tmp_full_matr, cosa, sina, diag, coef1, coef2;
+	printf("Solving matrix\n");
+	int i, j, k, l;
+	double *tmp_full_matr, cosa, sina, diag, coef1, coef2, zeroing, denom;
 	if ((tmp_csc_a = (double *) malloc(I->non_zero_elem * sizeof(double))) == NULL) {
 		printf("Memory error in function %s\n", __func__);
 		return 1;
@@ -307,25 +302,39 @@ int handmade_solver(in *I)
 		return 1;
 	}
 	memset((void *) tmp_full_matr, 0, I->system_dimension * I->system_dimension * sizeof(double));
-	if (csr_to_csc(I->Aelem_csr, I->Aiptr_csr, I->Ajptr_csr, I->non_zero_elem, I->system_dimension, tmp_full_matr)) return 1;
+	printf("All variables are declared\n");
+	if (csr_to_full_matrix(I->Aelem_csr, I->Aiptr_csr, I->Ajptr_csr, I->non_zero_elem, I->system_dimension, tmp_full_matr)) return 1;
+	printf("Convertation matrix done\n");
+	printf("I->system_dimension = %d\n", I->system_dimension);
 	for (i = 0; i < I->system_dimension; i++) {
-		for (j = 0; j < I->system_dimension; j++) {
-			if (tmp_csc_row_ind[j] < i) {
-				cosa = diag / (sqrt(diag * diag + tmp_csc_a[j] * tmp_csc_a[j]));
-				sina = - tmp_csc_a[j] / (sqrt(diag * diag + tmp_csc_a[j] * tmp_csc_a[j]));
-				for (l = 0; l < I->system_dimension; l++) {
-					for (k = tmp_csc_col_ptr[i]; k < tmp_csc_col_ptr[i + 1]; k++) {
-						coef1 = coef2 = 0;
-						if (tmp_csc_row_ind[k] == i)
-							coef1 = tmp_csc_a[k];
-						if (tmp_csc_row_ind[k] == j)
-							coef2 = tmp_csc_a[k];
-					}
-					tmp_up_tr_matr[]
+		for (j = i + 1; j < I->system_dimension; j++) {
+			zeroing = tmp_full_matr[i * I->system_dimension + j];
+			if (zeroing != 0) {
+				diag = tmp_full_matr[i * I->system_dimension + i];
+				denom = sqrt(diag * diag + zeroing * zeroing);
+				cosa = diag / denom;
+				sina = - zeroing / denom;
+				tmp_full_matr[i * I->system_dimension + j] = 0;
+				for (l = i + 1; l < I->system_dimension; l++) {
+					tmp_full_matr[l * I->system_dimension + i] = cosa * tmp_full_matr[l * I->system_dimension + i] - sina * tmp_full_matr[l * I->system_dimension + j];
+					tmp_full_matr[l * I->system_dimension + j] = sina * tmp_full_matr[l * I->system_dimension + i] + cosa * tmp_full_matr[l * I->system_dimension + j];
 				}
+				I->B[i] = cosa * I->B[i] - sina * I->B[j];
+				I->B[j] = sina * I->B[i] + cosa * I->B[j];
 			}
 		}
 	}
+	printf("Rotation method done\n");
+	for (i = I->system_dimension - 1; i>= 0; i--) {
+		I->B[i] /= tmp_full_matr[i * I->system_dimension + i];
+		tmp_full_matr[i * I->system_dimension + i] = 1;
+		for (j = i - 1; j >= 0; j--) {
+			I->B[j] -= I->B[i] * tmp_full_matr[i * I->system_dimension + j];
+			tmp_full_matr[i * I->system_dimension + j] = 0;
+		}
+	}
+	free(tmp_full_matr);
+	printf("Matrix leaded to identity\n");
 	return 0;
 }
 

@@ -41,6 +41,9 @@ typedef struct init_parameters_avalanche {
 	int stencil_size;
 	int *ind_boundary_cells, n_boundary_cells;
 	double mass_quantity;
+	int my_rank;
+	int nproc;
+	int *ind_proc;
 } in_avalanche;
 
 typedef struct init_parameters_termogas {
@@ -115,6 +118,9 @@ typedef struct init_parameters_termogas {
 	double adiabatic_exponent[6];
 	double time_step;
 	double volume_producted_oil;
+	int my_rank;
+	int nproc;
+	int *ind_proc;
 } in_termogas;
 
 //typedef in_avalanche in;

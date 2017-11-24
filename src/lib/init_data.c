@@ -139,6 +139,8 @@ int set_parameters_termogas(in *I)
 	I->adiabatic_exponent[5] = 1.3; // H2O(g)
 	I->time_step = 0;
 	I->volume_producted_oil = 0;
+	MPI_Comm_rank(MPI_COMM_WORLD, &I->my_rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &I->nproc);
 #endif
 	return 0;
 }

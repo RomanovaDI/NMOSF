@@ -64,7 +64,8 @@
 #	-lmatrix_functions \
 #	-o build/NMOSF
 export LD_LIBRARY_PATH=./build/lib
-./build/NMOSF
+mpirun -np 2 ./build/NMOSF
+#./build/NMOSF
 #valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF
 #gdb ./build/NMOSF
 #rm tmp/*
