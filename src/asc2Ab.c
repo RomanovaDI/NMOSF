@@ -184,13 +184,15 @@ int main(int argc, char **argv)
 //		solve_test_matrix();
 //		return 0;
 //	}
+	if (set_parameters_termogas(I)) goto error;
+	if (read_asc_and_declare_variables(I)) goto error;
 	if (rank == 0) {
-		if (set_parameters_termogas(I)) goto error;
-		if (read_asc_and_declare_variables(I)) goto error;
 		if (do_interpolation(I)) goto error;
-		if (set_arrays(I)) goto error;
-		if (make_boundary(I)) goto error;
 		if (I->nproc > 1) if (do_decomposition(I)) goto error;
+#if AVALANCHE
+		if (set_arrays(I)) goto error;
+#endif
+		if (make_boundary(I)) goto error;
 		I->system_dimension = I->n_cells_multipl * I->nz * I->num_parameters;
 		I->system_dimension_with_boundary = I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->num_parameters;
 		if ((I->B_prev = (double *) malloc(I->system_dimension_with_boundary * sizeof(double))) == NULL) {

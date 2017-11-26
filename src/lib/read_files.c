@@ -6,7 +6,7 @@
 #include <string.h>
 #include <math.h>
 
-int read_asc_and_declare_variables(in *I)
+int read_asc(in *I)
 {
 	printf("Reading maps.\n");
 	//printf("!%100s!\n", I->map_name);
@@ -17,7 +17,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("No such file of map\n");
 		return 1;
 	}
-
 	FILE *f1 = fopen("map.txt", "w");
 	int i, j;
 	while ((i = getc(f)) != EOF) {
@@ -26,7 +25,6 @@ int read_asc_and_declare_variables(in *I)
 	}
 	fclose(f1);
 	fclose(f);
-
 #if AVALANCHE
 	f = fopen(I->region_map_name,"r");
 	//f = fopen("maps/map_for_verification_Ab_region_2.asc","r");
@@ -34,7 +32,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("No such file of region\n");
 		return 1;
 	}
-
 	f1 = fopen("regions_map.txt", "w");
 	while ((i = getc(f)) != EOF) {
 		if (i == ',') i = '.';
@@ -43,14 +40,12 @@ int read_asc_and_declare_variables(in *I)
 	fclose(f1);
 	fclose(f);
 #endif
-
 	f = fopen("map.txt", "r");
 #if AVALANCHE
 	f1 = fopen("regions_map.txt", "r");
 #endif
 	int err;
 	char str[20];
-
 	if ((err = fscanf(f, "%s %d", str, &I->ncols)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
@@ -59,7 +54,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of map: no \"ncols\" tag\n");
 		return 1;
 	}
-
 	if ((err = fscanf(f, "%s %d", str, &I->nrows)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
@@ -68,7 +62,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of map: no \"nrows\" tag\n");
 		return 1;
 	}
-
 	double xllcorner;
 	if ((err = fscanf(f, "%s %lf", str, &xllcorner)) == EOF) {
 		printf("Error file of map\n");
@@ -78,7 +71,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of map: no \"xllcorner\" tag\n");
 		return 1;
 	}
-	
 	double yllcorner;
 	if ((err = fscanf(f, "%s %lf", str, &yllcorner)) == EOF) {
 		printf("Error file of map\n");
@@ -88,7 +80,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of map: no \"yllcorner\" tag\n");
 		return 1;
 	}
-	
 	if ((err = fscanf(f, "%s %lf", str, &I->cellsize)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
@@ -97,7 +88,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of map: no \"cellsize\" tag\n");
 		return 1;
 	}
-
 	if ((err = fscanf(f, "%s %lf", str, &I->nodata_value)) == EOF) {
 		printf("Error file of map\n");
 		return 1;
@@ -106,7 +96,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of map: no \"NODATA_value\" tag\n");
 		return 1;
 	}
-
 #if AVALANCHE
 	int ncols1;
 	if ((err = fscanf(f1, "%s %d", str, &ncols1)) == EOF) {
@@ -117,7 +106,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of region: no \"ncols\" tag\n");
 		return 1;
 	}
-
 	int nrows1;
 	if ((err = fscanf(f1, "%s %d", str, &nrows1)) == EOF) {
 		printf("Error file of region\n");
@@ -127,7 +115,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of region: no \"nrows\" tag\n");
 		return 1;
 	}
-
 	double xllcorner1;
 	if ((err = fscanf(f1, "%s %lf", str, &xllcorner1)) == EOF) {
 		printf("Error file of region\n");
@@ -137,7 +124,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of region: no \"xllcorner\" tag\n");
 		return 1;
 	}
-	
 	double yllcorner1;
 	if ((err = fscanf(f1, "%s %lf", str, &yllcorner1)) == EOF) {
 		printf("Error file of region\n");
@@ -147,7 +133,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of region: no \"yllcorner\" tag\n");
 		return 1;
 	}
-	
 	double cellsize1;
 	if ((err = fscanf(f1, "%s %lf", str, &cellsize1)) == EOF) {
 		printf("Error file of region\n");
@@ -157,7 +142,6 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of region: no \"cellsize\" tag\n");
 		return 1;
 	}
-
 	double nodata_value1;
 	if ((err = fscanf(f1, "%s %lf", str, &nodata_value1)) == EOF) {
 		printf("Error file of region\n");
@@ -167,13 +151,11 @@ int read_asc_and_declare_variables(in *I)
 		printf("Error file of region: no \"NODATA_value\" tag\n");
 		return 1;
 	}
-
 	if (I->cellsize != cellsize1) {
 		printf("Cellsize in both maps need to be the same\n");
 		return 1;
 	}
 #endif
-
 	if ((I->mass = (double *) malloc(I->ncols * I->nrows * sizeof(double))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -189,7 +171,6 @@ int read_asc_and_declare_variables(in *I)
 		return 1;
 	}
 	memset((void *) I->bl_cond, 0, (I->ncols - 1) * (I->nrows - 1) * sizeof(int));
-
 	for (i = 0; i < I->ncols * I->nrows; i++) {
 		if (err = fscanf(f, "%lf", &I->mass[i]) == EOF) {
 			printf("Error file of map\n");
@@ -201,7 +182,6 @@ int read_asc_and_declare_variables(in *I)
 	}
 	fclose(f);
 	remove("map.txt");
-	
 #if AVALANCHE
 	double *mass_tmp;
 	if ((mass_tmp = (double *) malloc(ncols1 * nrows1 * sizeof(double))) == NULL) {
@@ -216,7 +196,6 @@ int read_asc_and_declare_variables(in *I)
 		}
 	}
 	remove("regions_map.txt");
-
 	if ((I->snow_region = (int *) malloc(I->ncols * I->nrows * sizeof(int))) == NULL) {
 		printf("Memory error\n");
 		return 1;
@@ -251,7 +230,6 @@ int read_asc_and_declare_variables(in *I)
 	}
 	free(mass_tmp);
 #endif
-
 	I->n_points = 0;
 	I->n_cells = 0;
 	for (i = 0; i < I->nrows; i++) {
@@ -305,10 +283,27 @@ int read_asc_and_declare_variables(in *I)
 				I->mass[i * I->ncols + j] = I->nodata_value;
 		}
 	}
-	I->nx = (I->nrows - 1) * I->kx;
-	I->ny = (I->ncols - 1) * I->ky;
-	I->nz = (int) (I->hight / I->cellsize) * I->kz;
+	I->gl_nx = I->nx = (I->nrows - 1) * I->kx;
+	I->gl_ny = I->ny = (I->ncols - 1) * I->ky;
+	I->gl_nz = I->nz = (int) (I->hight / I->cellsize) * I->kz;
 	I->dx[0] = I->dx[1] = I->dx[2] = I->cellsize;
 	printf("Maps entered correctly.\n");
+	return 0;
+}
+
+int declare_variables(in *I)
+{
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Bcast(&I->gl_nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->gl_ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->gl_nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(I->dx, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	return 0;
+}
+
+int read_asc_and_declare_variables(in *I)
+{
+	if (I->my_rank == 0) if (read_asc(I)) return 1;
+	if (I->nproc > 1) if (declare_variables(I)) return 1;
 	return 0;
 }

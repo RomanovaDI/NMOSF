@@ -44,6 +44,10 @@ typedef struct init_parameters_avalanche {
 	int my_rank;
 	int nproc;
 	int *ind_proc;
+	int boundary_marker[4];
+	int gl_nx, gl_ny, gl_nz;
+	int *gl_ind_cell_multipl;
+	int x_regions, y_regions;
 } in_avalanche;
 
 typedef struct init_parameters_termogas {
@@ -121,6 +125,9 @@ typedef struct init_parameters_termogas {
 	int my_rank;
 	int nproc;
 	int *ind_proc;
+	int boundary_marker[4];
+	int gl_nx, gl_ny, gl_nz;
+	int *gl_ind_cell_multipl;
 } in_termogas;
 
 //typedef in_avalanche in;
