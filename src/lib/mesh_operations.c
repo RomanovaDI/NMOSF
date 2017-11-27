@@ -303,9 +303,9 @@ int do_decomposition(in *I)
 		I->x_regions = (int) round(sqrt((double) I->nproc * ((double) I->nx / (double) I->ny)));
 		if (I->x_regions < 1) I->x_regions = 1;
 		I->y_regions = I->nproc / I->x_regions;
-		I->nx = num_el_in_x_region = I->gl_nx / I->x_regions;
-		I->ny = num_el_in_y_region = I->gl_ny / I->y_regions;
-		if ((I->ind_proc = (int *) malloc(I->gl_nx * I->gl_ny * sizeof(int))) == NULL) {
+		I->nx = num_el_in_x_region = (int) round((double) I->gl_nx / (double) I->x_regions);
+		I->ny = num_el_in_y_region = (int) round((double) I->gl_ny / (double) I->y_regions);
+		if ((I->ind_proc = (int *) malloc(2 * I->gl_nx * I->gl_ny * sizeof(int))) == NULL) {
 			printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 			return 1;
 		}
@@ -314,9 +314,16 @@ int do_decomposition(in *I)
 			return 1;
 		}
 		memset(boundary_marker, 0, I->nproc * 4 * sizeof(int));
-		for (i = 0; i < gl_nx; i++) {
+		int ind_cell_proc[I->nproc];
+		memset(ind_cell_proc, 0, I->nproc * sizeof(int));
+		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
 				I->ind_proc[i * I->gl_ny + j] = (j / num_el_in_y_region) * I->y_regions + i / num_el_in_x_region;
+				if (I->ind_cell_multipl[i * I->gl_ny + j] != -1) {
+					I->ind_proc[2 * I->gl_nx * I->gl_ny + i * I->gl_ny + j] = ind_cell_proc[(j / num_el_in_y_region) * I->y_regions + i / num_el_in_x_region]++;
+				} else {
+					I->ind_proc[2 * I->gl_nx * I->gl_ny + i * I->gl_ny + j] = -1;
+				}
 				if (i == I->gl_nx - 1) boundary_marker[I->ind_proc[i * I->gl_ny + j]] += 1;
 				if (i == 0) boundary_marker[I->ind_proc[i * I->gl_ny + j] + 1] += 1;
 				if (j == I->gl_ny - 1) boundary_marker[I->ind_proc[i * I->gl_ny + j] + 2] += 1;
@@ -325,7 +332,7 @@ int do_decomposition(in *I)
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Bcast(I->ind_proc, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(I->ind_proc, 2 * I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(boundary_marker, I->nproc * 4, MPI_INT, 0, MPI_COMM_WORLD);
 	for (i = 0; i < 4; i++)
 		I->boundary_marker[i] = boundary_marker[I->my_rank + i];
@@ -338,7 +345,10 @@ int do_decomposition(in *I)
 	MPI_Bcast(I->ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	if (I->my_rank + 1 % I->y_regions == 0) {
-		I->nx = 
+		I->ny = I->gl_ny - (I->y_regions - 1) * I->ny;
+	}
+	if (I->my_rank >= I->y_regions * (I->x_regions - 1)) {
+		I->nx = I->gl_nx - (I->x_regions - 1) * I->nx;
 	}
 	return 0;
 }
