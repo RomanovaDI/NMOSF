@@ -175,36 +175,35 @@ void display_usage(void)
 
 int main(int argc, char **argv)
 {
-	int i, time_steps, j, rank;
+	int i, time_steps, j;
 	in II;
 	in *I = &II;
 	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 //	if (rank == 1) {
 //		solve_test_matrix();
 //		return 0;
 //	}
 	if (set_parameters_termogas(I)) goto error;
-	if (read_asc_and_declare_variables(I)) goto error;
 	if (rank == 0) {
+		if (read_asc_and_declare_variables(I)) goto error;
 		if (do_interpolation(I)) goto error;
-		if (I->nproc > 1) if (do_decomposition(I)) goto error;
-#if AVALANCHE
-		if (set_arrays(I)) goto error;
-#endif
-		if (make_boundary(I)) goto error;
-		I->system_dimension = I->n_cells_multipl * I->nz * I->num_parameters;
-		I->system_dimension_with_boundary = I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->num_parameters;
-		if ((I->B_prev = (double *) malloc(I->system_dimension_with_boundary * sizeof(double))) == NULL) {
-			printf("Memory error\n");
-			return 1;
-		}
-		memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
-		SET_CONDITION(initial, termogas, fixed_value);
-		time_steps = I->end_time / I->dt;
-		I->flag_first_time_step = 1;
-//	time_steps = 20;
 	}
+	if (I->nproc > 1) if (do_decomposition(I)) goto error;
+#if AVALANCHE
+	if (set_arrays(I)) goto error;
+#endif
+	if (make_boundary(I)) goto error;
+	I->system_dimension = I->n_cells_multipl * I->nz * I->num_parameters;
+	I->system_dimension_with_boundary = I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->num_parameters;
+	if ((I->B_prev = (double *) malloc(I->system_dimension_with_boundary * sizeof(double))) == NULL) {
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
+	SET_CONDITION(initial, termogas, fixed_value);
+	time_steps = I->end_time / I->dt;
+	I->flag_first_time_step = 1;
+//	time_steps = 20;
 	for (i = 0; i <= time_steps; i++) {
 		if (rank == 0) {
 			printf("Time step %d of %d\n", i + 1, time_steps);

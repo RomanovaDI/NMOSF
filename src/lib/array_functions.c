@@ -9,23 +9,36 @@
 int free_massives(in *I)
 {
 	free(I->B);
+#if AVALANCHE
 	free(I->area);
 	free(I->normal);
 	free(I->volume);
+#endif
 	free(I->ind_cell_multipl);
-	free(I->mass1);
 	free(I->ind_multipl);
 #if AVALANCHE
 	free(I->snow_region);
 #endif
-	free(I->bl_cond);
-	free(I->ind);
-	free(I->mass);
 	free(I->Aelem_csr);
 	free(I->Ajptr_csr);
 	free(I->Aiptr_csr);
 	free(I->B_prev);
 	free(I->ind_boundary_cells);
+	if (I->my_rank == 0) {
+		free_initial_arrays(I);
+	}
+	if (I->nproc > 1) {
+		free(I->gl_ind_cell_multipl);
+	}
+	return 0;
+}
+
+int free_initial_arrays(in *I)
+{
+	free(I->bl_cond);
+	free(I->ind);
+	free(I->mass);
+	free(I->mass1);
 	return 0;
 }
 

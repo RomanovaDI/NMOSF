@@ -1,6 +1,8 @@
 #define AVALANCHE 0
 #define TERMOGAS 1
 
+#define DEBUG 0
+
 typedef struct init_parameters_avalanche {
 	char map_name[100];
 	char region_map_name[100];
@@ -44,10 +46,11 @@ typedef struct init_parameters_avalanche {
 	int my_rank;
 	int nproc;
 	int *ind_proc;
-	int boundary_marker[4];
 	int gl_nx, gl_ny, gl_nz;
 	int *gl_ind_cell_multipl;
 	int x_regions, y_regions;
+	int num_el_in_x_region, num_el_in_y_region;
+	int *coordinates_of_cell;
 } in_avalanche;
 
 typedef struct init_parameters_termogas {
@@ -125,9 +128,11 @@ typedef struct init_parameters_termogas {
 	int my_rank;
 	int nproc;
 	int *ind_proc;
-	int boundary_marker[4];
 	int gl_nx, gl_ny, gl_nz;
 	int *gl_ind_cell_multipl;
+	int x_regions, y_regions;
+	int num_el_in_x_region, num_el_in_y_region;
+	int *coordinates_of_cell;
 } in_termogas;
 
 //typedef in_avalanche in;

@@ -7,7 +7,9 @@
 
 int do_interpolation(in *I)
 {
-	//printf("Interpolating mesh.\n");
+#if DEBUG
+	printf("Interpolating mesh.\n");
+#endif
 	int i, j, k, l = 0;
 	double a, b, d;
 	double *c;
@@ -37,14 +39,14 @@ int do_interpolation(in *I)
 	}
 
 	if ((I->ind_multipl = (int *) malloc(((I->ncols - 1) * I->ky + 1) * ((I->nrows - 1) * I->kx + 1) * sizeof(int))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	memset((void *) I->ind_multipl, 0, ((I->ncols - 1) * I->ky + 1) * ((I->nrows - 1) * I->kx + 1) * sizeof(int));
 
 	int count_ind_multipl = 0;
 	if ((I->mass1 = (double *) malloc(((I->ncols - 1) * I->ky + 1) * ((I->nrows - 1) * I->kx + 1) * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	memset((void *) I->mass1, 0, ((I->ncols - 1) * I->ky + 1) * ((I->nrows - 1) * I->kx + 1) * sizeof(double));
@@ -59,17 +61,17 @@ int do_interpolation(in *I)
 	//	printf("%f\n", mass1[i]);
 
 	if ((c = (double *) malloc(I->ncols * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 
 	if ((e = (double *) malloc(I->ncols * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 
 	if ((f = (double *) malloc(I->ncols * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 
@@ -121,22 +123,23 @@ int do_interpolation(in *I)
 			memset((void *) e, 0, I->ncols * sizeof(double));
 			memset((void *) f, 0, I->ncols * sizeof(double));
 		}
-
+#if DEBUG
 		printf("Interpolation along the y axis have been done\n");
+#endif
 	}
 	
 	if ((c = (double *) realloc(c, I->nrows * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 
 	if ((e = (double *) realloc(e, I->nrows * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 
 	if ((f = (double *) realloc(f, I->nrows * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 
@@ -204,8 +207,9 @@ int do_interpolation(in *I)
 				if (j == I->ncols - 1) break;
 			}
 		}
-
+#if DEBUG
 		printf("Interpolation along the x axes have been done\n");
+#endif
 	}
 
 	free(c);
@@ -225,7 +229,7 @@ int do_interpolation(in *I)
 	}
 
 	if ((I->ind_cell_multipl = (int *) malloc((I->nrows - 1) * I->kx * (I->ncols - 1) * I->ky * sizeof(int))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 //	memset((void *) I->ind_cell_multipl, 0, (I->nrows - 1) * I->kx * (I->ncols - 1) * I->ky * sizeof(int));
@@ -255,9 +259,11 @@ int do_interpolation(in *I)
 
 int make_boundary(in *I)
 {
+#if DEBUG
 	printf("Make boundary function\n");
+#endif
 	if ((I->ind_boundary_cells = (int *) malloc((I->nx + 2 * I->stencil_size) * (I->ny + 2 * I->stencil_size) * sizeof(int))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	memset((void *) I->ind_boundary_cells, -1, (I->nx + 2 * I->stencil_size) * (I->ny + 2 * I->stencil_size) * sizeof(int));
@@ -283,7 +289,10 @@ int make_boundary(in *I)
 		}
 	}
 	I->n_boundary_cells = k;
-	FILE *f = fopen("tmp/boundary.txt", "w");
+#if DEBUG
+	char file_name[50];
+	sprintf(file_name, "tmp/boundary_%d.txt", I->my_rank);
+	FILE *f = fopen(file_name, "w");
 	for (i = 0; i < I->nx + 2 * I->stencil_size; i++) {
 		for (j = 0; j < I->ny + 2 * I->stencil_size; j++) {
 			fprintf(f, "%d ", I->ind_boundary_cells[i * (I->ny + 2 * I->stencil_size) + j]);
@@ -291,64 +300,100 @@ int make_boundary(in *I)
 		fprintf(f, "\n");
 	}
 	fclose(f);
+#endif
 	return 0;
 }
 
 int do_decomposition(in *I)
 {
-	int *boundary_marker;
 	if (I->my_rank == 0) {
+#if DEBUG
 		printf("Making decomposition\n");
-		int i, j, num_el_in_x_region, num_el_in_y_region;
+#endif
+		int i, j;
 		I->x_regions = (int) round(sqrt((double) I->nproc * ((double) I->nx / (double) I->ny)));
 		if (I->x_regions < 1) I->x_regions = 1;
 		I->y_regions = I->nproc / I->x_regions;
-		I->nx = num_el_in_x_region = (int) round((double) I->gl_nx / (double) I->x_regions);
-		I->ny = num_el_in_y_region = (int) round((double) I->gl_ny / (double) I->y_regions);
+		I->nx = I->num_el_in_x_region = (int) round((double) I->gl_nx / (double) I->x_regions);
+		I->ny = I->num_el_in_y_region = (int) round((double) I->gl_ny / (double) I->y_regions);
 		if ((I->ind_proc = (int *) malloc(2 * I->gl_nx * I->gl_ny * sizeof(int))) == NULL) {
 			printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 			return 1;
 		}
-		if ((boundary_marker = (int *) malloc(I->nproc * 4 * sizeof(int))) == NULL) {
-			printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
-			return 1;
-		}
-		memset(boundary_marker, 0, I->nproc * 4 * sizeof(int));
 		int ind_cell_proc[I->nproc];
 		memset(ind_cell_proc, 0, I->nproc * sizeof(int));
 		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
-				I->ind_proc[i * I->gl_ny + j] = (j / num_el_in_y_region) * I->y_regions + i / num_el_in_x_region;
-				if (I->ind_cell_multipl[i * I->gl_ny + j] != -1) {
-					I->ind_proc[2 * I->gl_nx * I->gl_ny + i * I->gl_ny + j] = ind_cell_proc[(j / num_el_in_y_region) * I->y_regions + i / num_el_in_x_region]++;
-				} else {
-					I->ind_proc[2 * I->gl_nx * I->gl_ny + i * I->gl_ny + j] = -1;
-				}
-				if (i == I->gl_nx - 1) boundary_marker[I->ind_proc[i * I->gl_ny + j]] += 1;
-				if (i == 0) boundary_marker[I->ind_proc[i * I->gl_ny + j] + 1] += 1;
-				if (j == I->gl_ny - 1) boundary_marker[I->ind_proc[i * I->gl_ny + j] + 2] += 1;
-				if (j == 0) boundary_marker[I->ind_proc[i * I->gl_ny + j] + 3] += 1;
+				I->ind_proc[i * I->gl_ny + j] = (j / I->num_el_in_y_region) * I->y_regions + i / I->num_el_in_x_region;
 			}
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Bcast(I->ind_proc, 2 * I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(boundary_marker, I->nproc * 4, MPI_INT, 0, MPI_COMM_WORLD);
-	for (i = 0; i < 4; i++)
-		I->boundary_marker[i] = boundary_marker[I->my_rank + i];
 	if (I->my_rank == 0) {
 		I->gl_ind_cell_multipl = I->ind_cell_multipl;
 	}
+	MPI_Bcast(I->gl_ind_cell_multipl, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->x_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->y_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(I->num_el_in_x_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(I->num_el_in_y_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	if (I->my_rank + 1 % I->y_regions == 0) {
-		I->ny = I->gl_ny - (I->y_regions - 1) * I->ny;
+	int i_start, j_start;
+	if (I->y_regions > 1) {
+		if ((I->my_rank + 1) % I->y_regions == 0) {
+			I->ny = I->gl_ny - (I->y_regions - 1) * I->num_el_in_y_region + I->stencil_size;
+			j_start = (I->y_regions - 1) * I->num_el_in_y_region - I->stencil_size;
+		} else if (I->my_rank % I->y_regions == 0) {
+			I->ny += I->stencil_size;
+			j_start = 0;
+		} else {
+			I->ny += 2 * I->stencil_size;
+			j_start = (I->my_rank % I->y_regions) * I->num_el_in_y_region - I->stencil_size;
+		}
 	}
-	if (I->my_rank >= I->y_regions * (I->x_regions - 1)) {
-		I->nx = I->gl_nx - (I->x_regions - 1) * I->nx;
+	if (I->x_regions > 1) {
+		if (I->my_rank >= I->y_regions * (I->x_regions - 1)) {
+			I->nx = I->gl_nx - (I->x_regions - 1) * I->num_el_in_x_region + I->stencil_size;
+			i_start = (I->x_regions - 1) * I->num_el_in_x_region - I->stencil_size;
+		} else if (I->my_rank < I->x_regions) {
+			I->nx += I->stencil_size;
+			i_start = 0;
+		} else {
+			I->nx += 2 * I->stencil_size;
+			i_start = (I->my_rank / I->y_regions) * I->num_el_in_x_region - I->stencil_size;
+		}
 	}
+	if ((I->coordinates_of_cell = (int *) malloc(I->nx * I->ny * 2)) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	if ((I->ind_cell_multipl = (int *) malloc(I->nx * I->ny * sizeof(int))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	int ind_tmp = 0, ind_write;
+	MPI_Status status;
+	for (i = i_start; i < i_start + I->nx; i++) {
+		for (j = j_start; j < j_start + I->ny; j++) {
+			if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+				I->ind_cell_multipl[(i - i_start) * (I->ny) + j - j_start] = ind_tmp;
+				if (I->ind_proc[i * I->gl_ny + j] == I->my_rank) {
+					if (I->my_rank == 0) {
+						I->ind_proc[I->gl_nx * I->gl_ny + i * I->gl_ny + j] = ind_tmp;
+					} else {
+						MPI_Send(&ind_tmp, 1, MPI_INT, 0, i * I->gl_ny + j, MPI_COMM_WORLD);
+					}
+				} else if (I->my_rank == 0) {
+					MPI_Recv(&ind_write, 1, MPI_INT, MPI_ANY_SOURCE, i * I->gl_ny + j, MPI_COMM_WORLD, &status);
+					I->ind_proc[I->gl_nx * I->gl_ny + i * I->gl_ny + j] = ind_write;
+				}
+				ind_tmp++;
+			}
+		}
+	}	
+	MPI_Bcast(I->ind_proc, 2 * I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	return 0;
 }

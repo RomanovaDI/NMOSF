@@ -8,12 +8,11 @@
 
 int read_asc(in *I)
 {
+#if DEBUG
 	printf("Reading maps.\n");
-	//printf("!%100s!\n", I->map_name);
+#endif
 	FILE *f = fopen(I->map_name,"r");
-	//FILE *f = fopen("maps/map_for_verification_Ab_21.asc","r");
 	if (f == NULL) {
-		//printf("!%100s!\n", I->map_name);
 		printf("No such file of map\n");
 		return 1;
 	}
@@ -27,7 +26,6 @@ int read_asc(in *I)
 	fclose(f);
 #if AVALANCHE
 	f = fopen(I->region_map_name,"r");
-	//f = fopen("maps/map_for_verification_Ab_region_2.asc","r");
 	if (f == NULL) {
 		printf("No such file of region\n");
 		return 1;
@@ -157,17 +155,17 @@ int read_asc(in *I)
 	}
 #endif
 	if ((I->mass = (double *) malloc(I->ncols * I->nrows * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	memset((void *) I->mass, 0.0, I->ncols * I->nrows * sizeof(double));
 	if ((I->ind = (int *) malloc(I->ncols * I->nrows * sizeof(int))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	memset((void *) I->ind, 0, I->ncols * I->nrows * sizeof(int));
 	if ((I->bl_cond = (int *) malloc((I->ncols - 1) * (I->nrows - 1) * sizeof(int))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	memset((void *) I->bl_cond, 0, (I->ncols - 1) * (I->nrows - 1) * sizeof(int));
@@ -185,7 +183,7 @@ int read_asc(in *I)
 #if AVALANCHE
 	double *mass_tmp;
 	if ((mass_tmp = (double *) malloc(ncols1 * nrows1 * sizeof(double))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	memset((void *) mass_tmp, 0.0, ncols1 * nrows1 * sizeof(double));
@@ -197,7 +195,7 @@ int read_asc(in *I)
 	}
 	remove("regions_map.txt");
 	if ((I->snow_region = (int *) malloc(I->ncols * I->nrows * sizeof(int))) == NULL) {
-		printf("Memory error\n");
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	memset((void *) I->snow_region, 0, I->ncols * I->nrows * sizeof(int));
@@ -287,7 +285,9 @@ int read_asc(in *I)
 	I->gl_ny = I->ny = (I->ncols - 1) * I->ky;
 	I->gl_nz = I->nz = (int) (I->hight / I->cellsize) * I->kz;
 	I->dx[0] = I->dx[1] = I->dx[2] = I->cellsize;
+#if DEBUG
 	printf("Maps entered correctly.\n");
+#endif
 	return 0;
 }
 
