@@ -566,7 +566,9 @@ int SET_boundary_CONDITION_pressure_zero_gradient_on_all(in *I)
 #if TERMOGAS
 int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out(in *I)
 {
+#if DEBUG
 	printf("Set the boundary condition in termogas case for all values with no boundaries condition, 4 injection well and 1 production well.\n");
+#endif
 	int i, j, k, p, l, m, fl_tmp;
 	int search[2 * I->stencil_size + 1];
 	double x;
@@ -574,6 +576,25 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out(in *I)
 	for (i = 1; i <= I->stencil_size; i++) {
 		search[i * 2 - 1] = i;
 		search[i * 2] = -i;
+	}
+	if ((I->gl_B_prev = (double *) malloc(I->gl_n_cells_multipl * sizeof(double))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	for (i = 0; i < I->nx; i++) {
+		for (j = 0; j < I->ny; j++) {
+			if ((I->ind_cell_multipl[i * I->ny + j] != -1) &&
+				(I->ind_proc[I->gl_nx * I->gl_ny + (I->ind_start_region_proc[0] + i) * I->gl_ny + I->ind_start_region_proc[1] + j] == I->my_rank)) {
+					I->gl_B_prev[I->gl_ind_cell_multipl[I->gl_nx * I->gl_ny + (I->ind_start_region_proc[0] + i) * I->gl_ny + I->ind_start_region_proc[1] + j]] = I->b_prev[]
+			}
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	for (i = 0; i < I->nproc; i++) {
+		if (I->my_rank == i) {
+			MPI_Bcast();
+		} else {
+		}
 	}
 	for (p = 0; p < 10; p++) {
 		for (k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
