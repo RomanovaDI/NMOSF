@@ -1,6 +1,7 @@
 int A_IND_S(in *I, int p, int i, int j, int k, int s);
 int A_IND_S_SWITCH(in *I, int i, int j, int k, int s);
 int A_IND(in *I, int p, int i, int j, int k);
+int GL_A_IND(in *I, int p, int i, int j, int k);
 int B_IND(in *I, int p, int i, int j, int k);
 int AREA_IND(in *I, int i, int j, int k, int s);
 int NORMAL_IND(in *I, int p, int i, int j, int k, int s);

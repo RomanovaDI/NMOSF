@@ -577,22 +577,25 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out(in *I)
 		search[i * 2 - 1] = i;
 		search[i * 2] = -i;
 	}
-	if ((I->gl_B_prev = (double *) malloc(I->gl_n_cells_multipl * sizeof(double))) == NULL) {
+	if ((I->gl_B = (double *) malloc(I->gl_n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
-	for (i = 0; i < I->nx; i++) {
-		for (j = 0; j < I->ny; j++) {
-			if ((I->ind_cell_multipl[i * I->ny + j] != -1) &&
-				(I->ind_proc[I->gl_nx * I->gl_ny + (I->ind_start_region_proc[0] + i) * I->gl_ny + I->ind_start_region_proc[1] + j] == I->my_rank)) {
-					I->gl_B_prev[I->gl_ind_cell_multipl[I->gl_nx * I->gl_ny + (I->ind_start_region_proc[0] + i) * I->gl_ny + I->ind_start_region_proc[1] + j]] = I->b_prev[]
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if ((I->ind_cell_multipl[i * I->ny + j] != -1) &&
+					(I->ind_proc[I->gl_nx * I->gl_ny + (I->ind_start_region_proc[0] + i) * I->gl_ny + I->ind_start_region_proc[1] + j] == I->my_rank)) {
+						I->gl_B[GL_A_IND(I, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[1], k)] = I->B[A_IND(I, i, j, k)];
+				}
 			}
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Allgather(I->gl_B, );
 	for (i = 0; i < I->nproc; i++) {
 		if (I->my_rank == i) {
-			MPI_Bcast();
+			MPI_Allgather(I->gl);
 		} else {
 		}
 	}

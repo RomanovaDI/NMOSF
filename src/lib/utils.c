@@ -10,6 +10,11 @@ int A_IND(in *I, int p, int i, int j, int k)
 	return (I->num_parameters * (k * I->n_cells_multipl + I->ind_cell_multipl[i * I->ny + j]) + p);
 }
 
+int GL_A_IND(in *I, int p, int i, int j, int k)
+{
+	return (I->num_parameters * (k * I->gl_n_cells_multipl + I->gl_ind_cell_multipl[i * I->gl_ny + j]) + p);
+}
+
 int B_IND(in *I, int p, int i, int j, int k)
 {
 	return (I->num_parameters * ((k + I->stencil_size) * I->n_boundary_cells + I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size]) + p);
