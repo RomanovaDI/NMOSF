@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int print_vtk(in *I, int n)
+int print_vtk_avalanche(in *I, int n)
 {
 	int nn = n;
 	int i = 0, j, k, a;
@@ -22,7 +22,6 @@ int print_vtk(in *I, int n)
 	fprintf(f, "slope\n");
 	fprintf(f, "ASCII\n");
 	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
-
 	printf("n_points_multipl = %d\n", I->n_points_multipl);
 	printf("points in z direction %d\n", ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
 	fprintf(f, "POINTS %d double\n", I->n_points_multipl * ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
@@ -35,7 +34,6 @@ int print_vtk(in *I, int n)
 			}
 		}
 	}
-	
 	a = 0;
 	fprintf(f, "CELLS %d %d\n", I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize),
 		I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize) * 9);
@@ -63,10 +61,7 @@ int print_vtk(in *I, int n)
 	for (i = 0; i < I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize); i++) {
 		fprintf(f, "%d\n", 12);
 	}
-
 	fprintf(f, "CELL_DATA %d\n", I->n_cells_multipl * I->nz);
-
-#if AVALANCHE
 	fprintf(f, "VECTORS velocity double\n");
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
@@ -113,9 +108,66 @@ int print_vtk(in *I, int n)
 			}
 		}
 	}
-#endif
+	fclose(f);
+	return 0;
+}
 
-#if TERMOGAS
+int print_vtk_termogas(in *I, int n)
+{
+	int nn = n;
+	int i = 0, j, k, a;
+	while (nn > 0) {
+		nn /= 10;
+		i++;
+	}
+	//char file_name[8 + i];
+	char file_name[20 + i];
+	sprintf(file_name, "result/map%d.vtk", n);
+	FILE *f = fopen(file_name, "w");
+	fprintf(f, "# vtk DataFile Version 2.0\n");
+	fprintf(f, "slope\n");
+	fprintf(f, "ASCII\n");
+	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+	printf("n_points_multipl = %d\n", I->n_points_multipl);
+	printf("points in z direction %d\n", ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
+	fprintf(f, "POINTS %d double\n", I->n_points_multipl * ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
+	for (k = 0; k <= (int) (I->hight / I->cellsize) * I->kz; k++) {
+		for (i = 0; i < (I->nrows - 1) * I->kx + 1; i ++) {
+			for (j = 0; j < (I->ncols - 1) * I->ky + 1; j++) {
+				if (I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j] != -1)
+					fprintf(f, "%f %f %f\n", i * I->cellsize / (double) I->kx, j * I->cellsize / (double) I->ky,
+						I->mass1[i * ((I->ncols - 1) * I->ky + 1) + j] + k * I->cellsize / (double) I->kz);
+			}
+		}
+	}
+	a = 0;
+	fprintf(f, "CELLS %d %d\n", I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize),
+		I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize) * 9);
+	for (k = 0; k < (int) (I->hight / I->cellsize) * I->kz; k++) {
+		for (i = 1; i < (I->nrows - 1) * I->kx + 1; i++) {
+			for (j = 1; j < (I->ncols - 1) * I->ky + 1; j++) {
+				if ((I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j] != -1) &&
+					(I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j] != -1) &&
+					(I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j - 1] != -1) &&
+					(I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j - 1] != -1)) {
+						fprintf(f, "%d %d %d %d %d %d %d %d %d\n", 8,
+							k * I->n_points_multipl + I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j - 1],
+							k * I->n_points_multipl + I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j - 1],
+							k * I->n_points_multipl + I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j],
+							k * I->n_points_multipl + I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j],
+							(k + 1) * I->n_points_multipl + I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j - 1],
+							(k + 1) * I->n_points_multipl + I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j - 1],
+							(k + 1) * I->n_points_multipl + I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j],
+							(k + 1) * I->n_points_multipl + I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j]);
+				}
+			}
+		}
+	}
+	fprintf(f, "CELL_TYPES %d\n", I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize));
+	for (i = 0; i < I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize); i++) {
+		fprintf(f, "%d\n", 12);
+	}
+	fprintf(f, "CELL_DATA %d\n", I->n_cells_multipl * I->nz);
 //	fprintf(f, "COLOR_SCALARS concentration 4\n");
 //	for (k = 0; k < I->nz; k++) {
 //		for (i = 0; i < I->nx; i++) {
@@ -231,9 +283,227 @@ int print_vtk(in *I, int n)
 			}
 		}
 	}
-#endif
-
 	fclose(f);
 	return 0;
 }
 
+int reconstruct_src(in *I)
+{
+	if (I->my_rank == 0) {
+		memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
+		double B_tmp[I->num_parameters];
+		MPI_Status status;
+	}
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+					if (I->ind_proc[i * I->gl_ny + j] == I->my_rank) {
+						if (I->my_rank == 0)
+							for (p = 0; p < I->num_parameters; p++)
+								I->gl_B[GL_A_IND(I, p, i, j, k)] = I->B[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)];
+						else
+							MPI_Send(&I->B[B_IND(I, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)], I->num_parameters, MPI_DOUBLE, 0, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD);
+					} else if (I->my_rank == 0) {
+						MPI_Recv(&B_tmp, I->num_parameters, MPI_DOUBLE, MPI_ANY_SOURCE, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD, &status);
+						for (p = 0; p < I->num_parameters; p ++)
+							I->gl_B[GL_A_IND(I, p, i, j, k)] = B_tmp[p];
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int print_vtk_termogas_parallel(in *I, int n)
+{
+	int nn = n;
+	int i = 0, j, k, a;
+	while (nn > 0) {
+		nn /= 10;
+		i++;
+	}
+	//char file_name[8 + i];
+	char file_name[20 + i];
+	sprintf(file_name, "result/map%d.vtk", n);
+	FILE *f = fopen(file_name, "w");
+	fprintf(f, "# vtk DataFile Version 2.0\n");
+	fprintf(f, "slope\n");
+	fprintf(f, "ASCII\n");
+	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+	printf("n_points_multipl = %d\n", I->n_points_multipl);
+	printf("points in z direction %d\n", ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
+	fprintf(f, "POINTS %d double\n", I->n_points_multipl * ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
+	for (k = 0; k <= (int) (I->hight / I->cellsize) * I->kz; k++) {
+		for (i = 0; i < (I->nrows - 1) * I->kx + 1; i ++) {
+			for (j = 0; j < (I->ncols - 1) * I->ky + 1; j++) {
+				if (I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j] != -1)
+					fprintf(f, "%f %f %f\n", i * I->cellsize / (double) I->kx, j * I->cellsize / (double) I->ky,
+						I->mass1[i * ((I->ncols - 1) * I->ky + 1) + j] + k * I->cellsize / (double) I->kz);
+			}
+		}
+	}
+	a = 0;
+	fprintf(f, "CELLS %d %d\n", I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize),
+		I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize) * 9);
+	for (k = 0; k < (int) (I->hight / I->cellsize) * I->kz; k++) {
+		for (i = 1; i < (I->nrows - 1) * I->kx + 1; i++) {
+			for (j = 1; j < (I->ncols - 1) * I->ky + 1; j++) {
+				if ((I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j] != -1) &&
+					(I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j] != -1) &&
+					(I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j - 1] != -1) &&
+					(I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j - 1] != -1)) {
+						fprintf(f, "%d %d %d %d %d %d %d %d %d\n", 8,
+							k * I->n_points_multipl + I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j - 1],
+							k * I->n_points_multipl + I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j - 1],
+							k * I->n_points_multipl + I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j],
+							k * I->n_points_multipl + I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j],
+							(k + 1) * I->n_points_multipl + I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j - 1],
+							(k + 1) * I->n_points_multipl + I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j - 1],
+							(k + 1) * I->n_points_multipl + I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j],
+							(k + 1) * I->n_points_multipl + I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j]);
+				}
+			}
+		}
+	}
+	fprintf(f, "CELL_TYPES %d\n", I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize));
+	for (i = 0; i < I->n_cells * I->kx * I->ky * I->kz * (int) (I->hight / I->cellsize); i++) {
+		fprintf(f, "%d\n", 12);
+	}
+	fprintf(f, "CELL_DATA %d\n", I->gl_n_cells_multipl * I->gl_nz);
+//	fprintf(f, "COLOR_SCALARS concentration 4\n");
+//	for (k = 0; k < I->gl_nz; k++) {
+//		for (i = 0; i < I->gl_nx; i++) {
+//			for (j = 0; j < I->gl_ny; j++) {
+//				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+//					for (p = 0; p < 4; p++)
+//						fprintf(f, "%20.10f\t", I->gl_B[GL_A_IND(I, p, i, j, k)]);
+//					fprintf(f, "\n");
+//				}
+//			}
+//		}
+//	}
+	int p;
+	for (p = 0; p < 4; p++) {
+		fprintf(f, "SCALARS concentration_%d double 1\n", p);
+		fprintf(f, "LOOKUP_TABLE default\n");
+		for (k = 0; k < I->gl_nz; k++) {
+			for (i = 0; i < I->gl_nx; i++) {
+				for (j = 0; j < I->gl_ny; j++) {
+					if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
+						fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, p, i, j, k)]);
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS pressure double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
+					fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, 4, i, j, k)]);
+			}
+		}
+	}
+//	fprintf(f, "COLOR_SCALARS saturation 3\n");
+//	for (k = 0; k < I->gl_nz; k++) {
+//		for (i = 0; i < I->gl_nx; i++) {
+//			for (j = 0; j < I->gl_ny; j++) {
+//				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+//					for (p = 5; p < 8; p++)
+//						fprintf(f, "%20.10f\t", I->gl_B[GL_A_IND(I, p, i, j, k)]);
+//					fprintf(f, "\n");
+//				}
+//			}
+//		}
+//	}
+	for (p = 5; p < 8; p++) {
+		fprintf(f, "SCALARS saturation_%d double 1\n", p);
+		fprintf(f, "LOOKUP_TABLE default\n");
+		for (k = 0; k < I->gl_nz; k++) {
+			for (i = 0; i < I->gl_nx; i++) {
+				for (j = 0; j < I->gl_ny; j++) {
+					if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
+						fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, p, i, j, k)]);
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS temperature_flow double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
+					fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, 8, i, j, k)]);
+			}
+		}
+	}
+	fprintf(f, "SCALARS temperature_environment double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
+					fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, 9, i, j, k)]);
+			}
+		}
+	}
+/*
+//there is no function for avarage velocity
+	fprintf(f, "VECTORS avarage_velocity_water double\n");
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.10f\t", avarage_velocity(I, 0, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS avarage_velocity_oil double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.10f\t", avarage_velocity(I, 1, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS avarage_velocity_gas double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.10f\t", avarage_velocity(I, 2, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+*/
+	fclose(f);
+	return 0;
+}
+
+int print_vtk(in *I, int n)
+{
+#if AVALANCHE
+	if (print_vtk_avalanche(I, n)) return 1;
+#endif
+#if TERMOGAS
+	if (I->nproc > 1) {
+		if (reconstruct_src(I)) return 1;
+		if (print_vtk_termogas_parallel(I, n)) return 1;
+	} else
+		if (print_vtk_termogas(I, n)) return 1;
+#endif
+}

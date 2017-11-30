@@ -29,6 +29,8 @@ int free_massives(in *I)
 	}
 	if (I->nproc > 1) {
 		free(I->gl_ind_cell_multipl);
+		free(I->ind_proc);
+		free(I->gl_B);
 	}
 	return 0;
 }

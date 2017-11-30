@@ -5,7 +5,7 @@
 #include <string.h>
 #include <math.h>
 
-int do_interpolation(in *I)
+int do_interpolation(in *I) // is running just on 0 process
 {
 #if DEBUG
 	printf("Interpolating mesh.\n");
@@ -310,11 +310,11 @@ int do_decomposition(in *I)
 	printf("Making decomposition\n");
 #endif
 	int i, j;
-	if ((I->ind_proc = (int *) malloc(2 * I->gl_nx * I->gl_ny * sizeof(int))) == NULL) {
+	if ((I->ind_proc = (int *) malloc(I->gl_nx * I->gl_ny * sizeof(int))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
-	for (i = 0; i < 2 * I->gl_nx * I->gl_ny; i++)
+	for (i = 0; i < I->gl_nx * I->gl_ny; i++)
 		I->ind_proc[i] = -1;
 	if (I->my_rank == 0) {
 		I->x_regions = (int) round(sqrt((double) I->nproc * ((double) I->nx / (double) I->ny)));
@@ -329,7 +329,7 @@ int do_decomposition(in *I)
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Bcast(I->ind_proc, 2 * I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(I->ind_proc, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	if (I->my_rank == 0) {
 		I->gl_ind_cell_multipl = I->ind_cell_multipl;
 	} else {
@@ -341,14 +341,14 @@ int do_decomposition(in *I)
 	MPI_Bcast(I->gl_ind_cell_multipl, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	if (I->my_rank == 0)
 		I->gl_n_cells_multipl = I->n_cells_multipl;
-	MPI_Bcast(I->gl_n_cells_multipl, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(I->x_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(I->y_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(I->num_el_in_x_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(I->num_el_in_y_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(I->nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(I->ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(I->nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->gl_n_cells_multipl, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->x_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->y_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->num_el_in_x_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->num_el_in_y_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	int i_start, j_start;
 	if (I->y_regions > 1) {
 		if ((I->my_rank + 1) % I->y_regions == 0) {
@@ -390,21 +390,13 @@ int do_decomposition(in *I)
 	for (i = i_start; i < i_start + I->nx; i++) {
 		for (j = j_start; j < j_start + I->ny; j++) {
 			if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
-				I->ind_cell_multipl[(i - i_start) * (I->ny) + j - j_start] = I->n_cells_multipl;
-				if (I->ind_proc[i * I->gl_ny + j] == I->my_rank) {
-					if (I->my_rank == 0) {
-						I->ind_proc[I->gl_nx * I->gl_ny + i * I->gl_ny + j] = I->n_cells_multipl;
-					} else {
-						MPI_Send(&I->n_cells_multipl, 1, MPI_INT, 0, i * I->gl_ny + j, MPI_COMM_WORLD);
-					}
-				} else if (I->my_rank == 0) {
-					MPI_Recv(&ind_write, 1, MPI_INT, MPI_ANY_SOURCE, i * I->gl_ny + j, MPI_COMM_WORLD, &status);
-					I->ind_proc[I->gl_nx * I->gl_ny + i * I->gl_ny + j] = ind_write;
-				}
-				I->n_cells_multipl++;
+				I->ind_cell_multipl[(i - i_start) * (I->ny) + j - j_start] = I->n_cells_multipl++;
 			}
 		}
 	}	
-	MPI_Bcast(I->ind_proc, 2 * I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
+	if ((I->gl_B = (double *) malloc(I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
 	return 0;
 }
