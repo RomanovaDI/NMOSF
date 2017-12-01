@@ -184,8 +184,8 @@ int main(int argc, char **argv)
 //		return 0;
 //	}
 	if (set_parameters_termogas(I)) goto error;
-	if (rank == 0) {
-		if (read_asc_and_declare_variables(I)) goto error;
+	if (read_asc_and_declare_variables(I)) goto error;
+	if (I->my_rank == 0) {
 		if (do_interpolation(I)) goto error;
 	}
 	if (I->nproc > 1) if (do_decomposition(I)) goto error;
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 	I->flag_first_time_step = 1;
 //	time_steps = 20;
 	for (i = 0; i <= time_steps; i++) {
-		if (rank == 0) {
+		if (I->my_rank == 0) {
 			printf("Time step %d of %d\n", i + 1, time_steps);
 			I->time_step = i;
 			SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
@@ -226,8 +226,8 @@ int main(int argc, char **argv)
 			if (i == 0)
 				I->flag_first_time_step = 0;
 		}
-		if (rank == 0) if (solve_matrix(I)) goto error;
-		if (rank == 0) {
+		if (I->my_rank == 0) if (solve_matrix(I)) goto error;
+		if (I->my_rank == 0) {
 			if (print_oil_production(I)) goto error;
 			if (write_B_to_B_prev(I)) goto error;
 			if (check_sum(I)) goto error;
@@ -248,13 +248,13 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	if (rank == 0) if (free_massives(I) == 1) goto error;
+	if (I->my_rank == 0) if (free_massives(I) == 1) goto error;
 
-	if (rank == 0) printf("Calculations finished successfully\n");
+	if (I->my_rank == 0) printf("Calculations finished successfully\n");
 	MPI_Finalize();
 	return 0;
 error:
-	printf("Error in process %d\n", rank);
+	printf("Error in process %d\n", I->my_rank);
 	display_usage();
 	MPI_Finalize();
 	return 1;

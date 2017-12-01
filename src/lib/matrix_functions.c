@@ -285,18 +285,6 @@ int handmade_solver(in *I)
 	printf("Solving matrix\n");
 	int i, j, k, l;
 	double *tmp_full_matr, cosa, sina, diag, coef1, coef2, zeroing, denom;
-	if ((tmp_csc_a = (double *) malloc(I->non_zero_elem * sizeof(double))) == NULL) {
-		printf("Memory error in function %s\n", __func__);
-		return 1;
-	}
-	if ((tmp_csc_row_ind = (int *) malloc(I->non_zero_elem * sizeof(int))) == NULL) {
-		printf("Memory error in function %s\n", __func__);
-		return 1;
-	}
-	if ((tmp_csc_col_ptr = (int *) malloc((I->system_dimension + 1) * sizeof(int))) == NULL) {
-		printf("Memory error in function %s\n", __func__);
-		return 1;
-	}
 	if ((tmp_full_matr = (double *) malloc(I->system_dimension * I->system_dimension * sizeof(double))) == NULL) {
 		printf("Memory error in function %s\n", __func__);
 		return 1;
@@ -340,8 +328,8 @@ int handmade_solver(in *I)
 
 int solve_matrix(in *I)
 {
-//	if (SuperLU_solver(I)) return 1;
-	if (handmade_solver(I)) return 1;
+	if (SuperLU_solver(I)) return 1;
+//	if (handmade_solver(I)) return 1;
 	return 0;
 }
 

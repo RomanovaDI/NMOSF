@@ -1,7 +1,7 @@
 #define AVALANCHE 0
 #define TERMOGAS 1
 
-#define DEBUG 0
+#define DEBUG 1
 
 typedef struct init_parameters_avalanche {
 	char map_name[100];

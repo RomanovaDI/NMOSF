@@ -63,6 +63,7 @@
 #	-lcreate_matrix \
 #	-lmatrix_functions \
 #	-o build/NMOSF
+make all
 export LD_LIBRARY_PATH=./build/lib
 mpirun -np 2 ./build/NMOSF
 #./build/NMOSF

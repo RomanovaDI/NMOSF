@@ -307,7 +307,7 @@ int make_boundary(in *I)
 int do_decomposition(in *I)
 {
 #if DEBUG
-	printf("Making decomposition\n");
+	printf("Making decomposition in process %d\n", I->my_rank);
 #endif
 	int i, j;
 	if ((I->ind_proc = (int *) malloc(I->gl_nx * I->gl_ny * sizeof(int))) == NULL) {
@@ -317,9 +317,9 @@ int do_decomposition(in *I)
 	for (i = 0; i < I->gl_nx * I->gl_ny; i++)
 		I->ind_proc[i] = -1;
 	if (I->my_rank == 0) {
-		I->x_regions = (int) round(sqrt((double) I->nproc * ((double) I->nx / (double) I->ny)));
-		if (I->x_regions < 1) I->x_regions = 1;
-		I->y_regions = I->nproc / I->x_regions;
+	//	I->x_regions = (int) round(sqrt((double) I->nproc * ((double) I->nx / (double) I->ny)));
+	//	if (I->x_regions < 1) I->x_regions = 1;
+	//	I->y_regions = I->nproc / I->x_regions;
 		I->nx = I->num_el_in_x_region = (int) round((double) I->gl_nx / (double) I->x_regions);
 		I->ny = I->num_el_in_y_region = (int) round((double) I->gl_ny / (double) I->y_regions);
 		for (i = 0; i < I->gl_nx; i++) {

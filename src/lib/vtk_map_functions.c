@@ -289,11 +289,11 @@ int print_vtk_termogas(in *I, int n)
 
 int reconstruct_src(in *I)
 {
-	if (I->my_rank == 0) {
+	if (I->my_rank == 0)
 		memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
-		double B_tmp[I->num_parameters];
-		MPI_Status status;
-	}
+	MPI_Status status;
+	double B_tmp[I->num_parameters];
+	int i, j, k, p;
 	for (k = 0; k < I->gl_nz; k++) {
 		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
@@ -303,9 +303,9 @@ int reconstruct_src(in *I)
 							for (p = 0; p < I->num_parameters; p++)
 								I->gl_B[GL_A_IND(I, p, i, j, k)] = I->B[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)];
 						else
-							MPI_Send(&I->B[B_IND(I, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)], I->num_parameters, MPI_DOUBLE, 0, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD);
+							MPI_Send(&I->B[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)], I->num_parameters, MPI_DOUBLE, 0, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD);
 					} else if (I->my_rank == 0) {
-						MPI_Recv(&B_tmp, I->num_parameters, MPI_DOUBLE, MPI_ANY_SOURCE, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD, &status);
+						MPI_Recv(B_tmp, I->num_parameters, MPI_DOUBLE, MPI_ANY_SOURCE, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD, &status);
 						for (p = 0; p < I->num_parameters; p ++)
 							I->gl_B[GL_A_IND(I, p, i, j, k)] = B_tmp[p];
 					}

@@ -9,7 +9,7 @@
 int read_asc(in *I)
 {
 #if DEBUG
-	printf("Reading maps.\n");
+	printf("Reading maps in process %d.\n", I->my_rank);
 #endif
 	FILE *f = fopen(I->map_name,"r");
 	if (f == NULL) {
@@ -286,13 +286,16 @@ int read_asc(in *I)
 	I->gl_nz = I->nz = (int) (I->hight / I->cellsize) * I->kz;
 	I->dx[0] = I->dx[1] = I->dx[2] = I->cellsize;
 #if DEBUG
-	printf("Maps entered correctly.\n");
+	printf("Maps entered correctly in process %d.\n", I->my_rank);
 #endif
 	return 0;
 }
 
 int declare_variables(in *I)
 {
+#if DEBUG
+	printf("Setting up global parameters in process %d\n", I->my_rank);
+#endif
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Bcast(&I->gl_nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->gl_ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
