@@ -642,7 +642,7 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_consistent(in *I)
 int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 {
 #if DEBUG
-	printf("Set the boundary condition in termogas case for all values with no boundaries condition, 4 injection well and 1 production well.\n");
+	printf("Set the boundary condition in termogas case for all values with no boundaries condition, 4 injection well and 1 production well in process %d.\n", I->my_rank);
 #endif
 	int i, j, k, p, l, m, fl_tmp;
 	memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
@@ -659,7 +659,10 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 			}
 		}
 	}
-	MPI_Allgather(B_tmp, I->n_cells_multipl * I->nz * I->num_parameters, MPI_DOUBLE, I->gl_B, I->gl_n_cells_multipl * I->gl_nz * I->num_parameters, MPI_DOUBLE, MPI_COMM_WORLD);
+	printf("1\n");
+	printf("Process %d: I->n_cells_multipl = %d, I->nz = %d\n", I->my_rank, I->n_cells_multipl, I->nz);
+	MPI_Allgather(B_tmp, I->gl_n_cells_multipl * I->gl_nz * I->num_parameters / I->nproc, MPI_DOUBLE, I->gl_B, I->gl_n_cells_multipl * I->gl_nz * I->num_parameters, MPI_DOUBLE, MPI_COMM_WORLD);
+	printf("2\n");
 	for (k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
 		for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
 			for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
@@ -699,6 +702,7 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 			}
 		}
 	}
+	printf("3\n");
 	if (I->my_rank == 0) {
 		i = j = 0;
 		for (k = 0; k < I->nz; k++) {

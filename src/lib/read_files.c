@@ -297,6 +297,10 @@ int declare_variables(in *I)
 	printf("Setting up global parameters in process %d\n", I->my_rank);
 #endif
 	MPI_Barrier(MPI_COMM_WORLD);
+#if DEBUG
+	printf("Process %d, function %s\n", I->my_rank, __func__);
+#endif
+	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Bcast(&I->gl_nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->gl_ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->gl_nz, 1, MPI_INT, 0, MPI_COMM_WORLD);

@@ -179,6 +179,19 @@ int main(int argc, char **argv)
 	in II;
 	in *I = &II;
 	MPI_Init(&argc, &argv);
+#if DEBUG
+	int qwerty;
+	MPI_Comm_rank(MPI_COMM_WORLD, &qwerty);
+	printf("Synchronization in start in process %d\n", qwerty);
+	int qwerty1;
+	if (qwerty == 0)
+		qwerty1 = 5;
+	else
+		qwerty1 = 6;
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Bcast(&qwerty1, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	printf("Process %d: qwerty1 = %d\n", qwerty, qwerty1);
+#endif
 //	if (rank == 1) {
 //		solve_test_matrix();
 //		return 0;
@@ -207,30 +220,37 @@ int main(int argc, char **argv)
 	for (i = 0; i <= time_steps; i++) {
 		if (I->my_rank == 0) {
 			printf("Time step %d of %d\n", i + 1, time_steps);
-			I->time_step = i;
-			SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
-			if (i % 10 == 0) {
-				if (print_vtk(I, i / 10) == 1) {
-					printf("Error printing vtk file\n");
-					goto error;
-				} else {
-					printf("Result printed to vtk file\n");
-				}
-			}
+		}
+		I->time_step = i;
+		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
+		if (print_vtk(I, i) == 1) {
+			printf("Error printing vtk file\n");
+			goto error;
+		} else {
+			printf("Result printed to vtk file\n");
+		}
+//		if (i % 10 == 0) {
+//			if (print_vtk(I, i / 10) == 1) {
+//				printf("Error printing vtk file\n");
+//				goto error;
+//			} else {
+//				printf("Result printed to vtk file\n");
+//			}
+//		}
 #if AVALANCHE
-			if (create_Ab_avalanche(I) == 1) goto error;
+		if (create_Ab_avalanche(I) == 1) goto error;
 #endif
 #if TERMOGAS
-			if (create_Ab_termogas(I) == 1) goto error;
+		if (create_Ab_termogas(I) == 1) goto error;
 #endif
-			if (i == 0)
-				I->flag_first_time_step = 0;
-		}
-		if (I->my_rank == 0) if (solve_matrix(I)) goto error;
+		if (i == 0)
+			I->flag_first_time_step = 0;
+		if (solve_matrix(I)) goto error;
 		if (I->my_rank == 0) {
 			if (print_oil_production(I)) goto error;
-			if (write_B_to_B_prev(I)) goto error;
-			if (check_sum(I)) goto error;
+		}
+		if (write_B_to_B_prev(I)) goto error;
+		if (check_sum(I)) goto error;
 //				if (print_vtk(I, j + (i + 1) * 1000) == 1) {
 //					printf("Error printing vtk file\n");
 //					goto error;
@@ -238,17 +258,16 @@ int main(int argc, char **argv)
 //					printf("Result printed to vtk file\n");
 //				}
 			//}
-			if (i == time_steps) {
-				if (print_vtk(I, i / 10 + 1) == 1) {
-					printf("Error printing vtk file\n");
-					goto error;
-				} else {
-					printf("Result printed to vtk file\n");
-				}
+		if (i == time_steps) {
+			if (print_vtk(I, i / 10 + 1) == 1) {
+				printf("Error printing vtk file\n");
+				goto error;
+			} else {
+				printf("Result printed to vtk file\n");
 			}
 		}
 	}
-	if (I->my_rank == 0) if (free_massives(I) == 1) goto error;
+	if (free_massives(I) == 1) goto error;
 
 	if (I->my_rank == 0) printf("Calculations finished successfully\n");
 	MPI_Finalize();

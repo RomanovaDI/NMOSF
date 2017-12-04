@@ -393,7 +393,10 @@ int do_decomposition(in *I)
 				I->ind_cell_multipl[(i - i_start) * (I->ny) + j - j_start] = I->n_cells_multipl++;
 			}
 		}
-	}	
+	}
+#if DEBUG
+	printf("Process %d, func %s\n", I->my_rank, __func__);
+#endif
 	if ((I->gl_B = (double *) malloc(I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
