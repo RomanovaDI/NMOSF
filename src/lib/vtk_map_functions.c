@@ -287,35 +287,6 @@ int print_vtk_termogas(in *I, int n)
 	return 0;
 }
 
-int reconstruct_src(in *I)
-{
-	if (I->my_rank == 0)
-		memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
-	MPI_Status status;
-	double B_tmp[I->num_parameters];
-	int i, j, k, p;
-	for (k = 0; k < I->gl_nz; k++) {
-		for (i = 0; i < I->gl_nx; i++) {
-			for (j = 0; j < I->gl_ny; j++) {
-				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
-					if (I->ind_proc[i * I->gl_ny + j] == I->my_rank) {
-						if (I->my_rank == 0)
-							for (p = 0; p < I->num_parameters; p++)
-								I->gl_B[GL_A_IND(I, p, i, j, k)] = I->B[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)];
-						else
-							MPI_Send(&I->B[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)], I->num_parameters, MPI_DOUBLE, 0, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD);
-					} else if (I->my_rank == 0) {
-						MPI_Recv(B_tmp, I->num_parameters, MPI_DOUBLE, MPI_ANY_SOURCE, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD, &status);
-						for (p = 0; p < I->num_parameters; p ++)
-							I->gl_B[GL_A_IND(I, p, i, j, k)] = B_tmp[p];
-					}
-				}
-			}
-		}
-	}
-	return 0;
-}
-
 int print_vtk_termogas_parallel(in *I, int n)
 {
 	int nn = n;
@@ -332,8 +303,10 @@ int print_vtk_termogas_parallel(in *I, int n)
 	fprintf(f, "slope\n");
 	fprintf(f, "ASCII\n");
 	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+#if DEBUG
 	printf("n_points_multipl = %d\n", I->n_points_multipl);
 	printf("points in z direction %d\n", ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
+#endif
 	fprintf(f, "POINTS %d double\n", I->n_points_multipl * ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
 	for (k = 0; k <= (int) (I->hight / I->cellsize) * I->kz; k++) {
 		for (i = 0; i < (I->nrows - 1) * I->kx + 1; i ++) {
@@ -496,12 +469,15 @@ int print_vtk_termogas_parallel(in *I, int n)
 
 int print_vtk(in *I, int n)
 {
+#if DEBUG
+	printf("Process %d: printing result.\n", I->my_rank);
+#endif
 #if AVALANCHE
 	if (print_vtk_avalanche(I, n)) return 1;
 #endif
 #if TERMOGAS
 	if (I->nproc > 1) {
-		if (reconstruct_src(I)) return 1;
+		//if (reconstruct_src(I)) return 1;
 		if (print_vtk_termogas_parallel(I, n)) return 1;
 	} else
 		if (print_vtk_termogas(I, n)) return 1;

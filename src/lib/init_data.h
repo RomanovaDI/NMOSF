@@ -50,10 +50,9 @@ typedef struct init_parameters_avalanche {
 	int *gl_ind_cell_multipl;
 	int x_regions, y_regions;
 	int num_el_in_x_region, num_el_in_y_region;
-	int *coordinates_of_cell;
 	int gl_n_cells_multipl;
 	double *gl_B;
-	int ind_start_region_proc[2];
+	int *ind_start_region_proc;
 } in_avalanche;
 
 typedef struct init_parameters_termogas {
@@ -135,7 +134,6 @@ typedef struct init_parameters_termogas {
 	int *gl_ind_cell_multipl;
 	int x_regions, y_regions;
 	int num_el_in_x_region, num_el_in_y_region;
-	int *coordinates_of_cell;
 	int gl_n_cells_multipl;
 	double *gl_B;
 	int *ind_start_region_proc;

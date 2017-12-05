@@ -26,13 +26,20 @@ int free_massives(in *I)
 	free(I->B_prev);
 	free(I->ind_boundary_cells);
 	if (I->my_rank == 0) {
-		free_initial_arrays(I);
+		if (free_initial_arrays(I)) return 1;
 	}
 	if (I->nproc > 1) {
-		free(I->gl_ind_cell_multipl);
-		free(I->ind_proc);
-		free(I->gl_B);
+		if (free_parallel_arrays(I)) return 1;
 	}
+	return 0;
+}
+
+int free_parallel_arrays(in *I)
+{
+	free(I->gl_ind_cell_multipl);
+	free(I->ind_proc);
+	free(I->gl_B);
+	free(I->ind_start_region_proc);
 	return 0;
 }
 

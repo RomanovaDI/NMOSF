@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 int A_IND(in *I, int p, int i, int j, int k)
 {
@@ -283,6 +284,43 @@ int count_other_corner_neighbor_internal_cells(in *I, int i, int j, int k)
 	if (boundary_cell(I, i + 2, j - 2, k)) x++;
 	if (boundary_cell(I, i + 2, j + 2, k)) x++;
 	return x;
+}
+
+int reconstruct_src(in *I)
+{
+#if DEBUG
+	printf("Reconstructing domain in process %d.\n", I->my_rank);
+#endif
+	memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
+	MPI_Status status;
+	double B_tmp[I->num_parameters];
+	int i, j, k, p;
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+					if (I->ind_proc[i * I->gl_ny + j] == I->my_rank) {
+						if (I->my_rank == 0)
+							for (p = 0; p < I->num_parameters; p++)
+								I->gl_B[GL_A_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)];
+						else {
+							p = 0;
+							MPI_Send(&I->B_prev[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)], I->num_parameters, MPI_DOUBLE, 0, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD);
+						}
+					} else if (I->my_rank == 0) {
+						p = 0;
+						MPI_Recv(B_tmp, I->num_parameters, MPI_DOUBLE, MPI_ANY_SOURCE, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD, &status);
+						for (p = 0; p < I->num_parameters; p ++)
+							I->gl_B[GL_A_IND(I, p, i, j, k)] = B_tmp[p];
+					}
+				}
+			}
+		}
+	}
+#if DEBUG
+	printf("Finish reconstructing domain in process %d.\n", I->my_rank);
+#endif
+	return 0;
 }
 
 #if AVALANCHE

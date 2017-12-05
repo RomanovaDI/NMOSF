@@ -294,6 +294,7 @@ int read_asc(in *I)
 int declare_variables(in *I)
 {
 #if DEBUG
+	MPI_Barrier(MPI_COMM_WORLD);
 	printf("Setting up global parameters in process %d\n", I->my_rank);
 #endif
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -305,6 +306,7 @@ int declare_variables(in *I)
 	MPI_Bcast(&I->gl_ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->gl_nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->dx, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->cellsize, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	return 0;
 }
 

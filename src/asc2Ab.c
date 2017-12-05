@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 #if DEBUG
 	int qwerty;
 	MPI_Comm_rank(MPI_COMM_WORLD, &qwerty);
-	printf("Synchronization in start in process %d\n", qwerty);
+	printf("Synchronization in start in process %d, PID %d\n", qwerty, getpid());
 	int qwerty1;
 	if (qwerty == 0)
 		qwerty1 = 5;
@@ -208,6 +208,9 @@ int main(int argc, char **argv)
 	if (make_boundary(I)) goto error;
 	I->system_dimension = I->n_cells_multipl * I->nz * I->num_parameters;
 	I->system_dimension_with_boundary = I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->num_parameters;
+#if DEBUG
+	printf("Process %d: I->system_dimension = %d, I->system_dimension_with_boundary = %d\n", I->my_rank, I->system_dimension, I->system_dimension_with_boundary);
+#endif
 	if ((I->B_prev = (double *) malloc(I->system_dimension_with_boundary * sizeof(double))) == NULL) {
 		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
 		return 1;
@@ -222,8 +225,9 @@ int main(int argc, char **argv)
 			printf("Time step %d of %d\n", i + 1, time_steps);
 		}
 		I->time_step = i;
+		if ((I->nproc > 1) && (reconstruct_src(I))) return 1;
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
-		if (print_vtk(I, i) == 1) {
+		if (print_vtk(I, i)) {
 			printf("Error printing vtk file\n");
 			goto error;
 		} else {
@@ -257,17 +261,16 @@ int main(int argc, char **argv)
 //				} else {
 //					printf("Result printed to vtk file\n");
 //				}
-			//}
-		if (i == time_steps) {
-			if (print_vtk(I, i / 10 + 1) == 1) {
-				printf("Error printing vtk file\n");
-				goto error;
-			} else {
-				printf("Result printed to vtk file\n");
-			}
-		}
+//		if (i == time_steps) {
+//			if (print_vtk(I, i / 10 + 1)) {
+//				printf("Error printing vtk file\n");
+//				goto error;
+//			} else {
+//				printf("Result printed to vtk file\n");
+//			}
+//		}
 	}
-	if (free_massives(I) == 1) goto error;
+	if (free_massives(I)) goto error;
 
 	if (I->my_rank == 0) printf("Calculations finished successfully\n");
 	MPI_Finalize();
@@ -275,6 +278,7 @@ int main(int argc, char **argv)
 error:
 	printf("Error in process %d\n", I->my_rank);
 	display_usage();
+	free_massives(I);
 	MPI_Finalize();
 	return 1;
 }

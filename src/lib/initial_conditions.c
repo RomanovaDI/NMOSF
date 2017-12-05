@@ -147,7 +147,10 @@ int SET_initial_CONDITION_pressure_fixed_value(in *I)
 #if TERMOGAS
 int SET_initial_CONDITION_termogas_fixed_value(in *I)
 {
-	printf("Set the initial condition for all parameters in termogas case with fixed value for all calculation domain\n");
+#if DEBUG
+	MPI_Barrier(MPI_COMM_WORLD);
+	printf("Set the initial condition for all parameters in termogas case with fixed value for all calculation domain in process %d\n", I->my_rank);
+#endif
 	int i, j, k;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {

@@ -8,7 +8,7 @@
 int do_interpolation(in *I) // is running just on 0 process
 {
 #if DEBUG
-	printf("Interpolating mesh.\n");
+	printf("Interpolating mesh in process %d.\n", I->my_rank);
 #endif
 	int i, j, k, l = 0;
 	double a, b, d;
@@ -124,7 +124,7 @@ int do_interpolation(in *I) // is running just on 0 process
 			memset((void *) f, 0, I->ncols * sizeof(double));
 		}
 #if DEBUG
-		printf("Interpolation along the y axis have been done\n");
+		printf("Interpolation along the y axis have been done in process %d\n", I->my_rank);
 #endif
 	}
 	
@@ -208,7 +208,7 @@ int do_interpolation(in *I) // is running just on 0 process
 			}
 		}
 #if DEBUG
-		printf("Interpolation along the x axes have been done\n");
+		printf("Interpolation along the x axes have been done in process %d\n", I->my_rank);
 #endif
 	}
 
@@ -260,7 +260,7 @@ int do_interpolation(in *I) // is running just on 0 process
 int make_boundary(in *I)
 {
 #if DEBUG
-	printf("Make boundary function\n");
+	printf("Make boundary function in process %d.\n", I->my_rank);
 #endif
 	if ((I->ind_boundary_cells = (int *) malloc((I->nx + 2 * I->stencil_size) * (I->ny + 2 * I->stencil_size) * sizeof(int))) == NULL) {
 		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
@@ -307,6 +307,7 @@ int make_boundary(in *I)
 int do_decomposition(in *I)
 {
 #if DEBUG
+	MPI_Barrier(MPI_COMM_WORLD);
 	printf("Making decomposition in process %d\n", I->my_rank);
 #endif
 	int i, j;
@@ -349,6 +350,7 @@ int do_decomposition(in *I)
 	MPI_Bcast(&I->nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->n_points_multipl, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	int i_start, j_start;
 	if (I->y_regions > 1) {
 		if ((I->my_rank + 1) % I->y_regions == 0) {
@@ -361,7 +363,8 @@ int do_decomposition(in *I)
 			I->ny += 2 * I->stencil_size;
 			j_start = (I->my_rank % I->y_regions) * I->num_el_in_y_region - I->stencil_size;
 		}
-	}
+	} else
+		j_start = 0;
 	if (I->x_regions > 1) {
 		if (I->my_rank >= I->y_regions * (I->x_regions - 1)) {
 			I->nx = I->gl_nx - (I->x_regions - 1) * I->num_el_in_x_region + I->stencil_size;
@@ -373,20 +376,19 @@ int do_decomposition(in *I)
 			I->nx += 2 * I->stencil_size;
 			i_start = (I->my_rank / I->y_regions) * I->num_el_in_x_region - I->stencil_size;
 		}
-	}
-	I->ind_start_region_proc[0] = i_start;
-	I->ind_start_region_proc[1] = j_start;
-	if ((I->coordinates_of_cell = (int *) malloc(I->nx * I->ny * 2)) == NULL) {
+	} else
+		i_start = 0;
+	if ((I->ind_start_region_proc = (int *) malloc(I->nproc * 2 * sizeof(int))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
+	I->ind_start_region_proc[0] = i_start;
+	I->ind_start_region_proc[1] = j_start;
 	if ((I->ind_cell_multipl = (int *) malloc(I->nx * I->ny * sizeof(int))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
-	int ind_write;
 	I->n_cells_multipl = 0;
-	MPI_Status status;
 	for (i = i_start; i < i_start + I->nx; i++) {
 		for (j = j_start; j < j_start + I->ny; j++) {
 			if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
@@ -394,9 +396,6 @@ int do_decomposition(in *I)
 			}
 		}
 	}
-#if DEBUG
-	printf("Process %d, func %s\n", I->my_rank, __func__);
-#endif
 	if ((I->gl_B = (double *) malloc(I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;

@@ -142,7 +142,9 @@ int create_Ab_avalanche(in *I)
 int create_Ab_termogas(in *I)
 {
 #if TERMOGAS
-	printf("Creating matrix A and vector B function\n");
+#if DEBUG
+	printf("Creating matrix A and vector B function in process %d\n", I->my_rank);
+#endif
 	int i, j, k, p;
 	if (I->flag_first_time_step) {
 		if ((I->B = (double *) malloc(I->system_dimension * sizeof(double))) == NULL) {
