@@ -748,10 +748,11 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 
 int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out(in *I)
 {
-	if (I->nproc > 1)
+	if (I->nproc > 1) {
 		if (SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(I)) return 1;
-	else
+	} else {
 		if (SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_consistent(I)) return 1;
+	}
 	return 0;
 }
 #endif

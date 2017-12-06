@@ -678,6 +678,13 @@ double viscosity_gas(in *I, int p, int i, int j, int k)
 		printf("Error viscosity gas index\n");
 		return 0;
 	}
+#if DEBUG==3
+	printf("Process %d: I->viscosity_coef_A_gas[%d] = %lf\n", I->my_rank, p, I->viscosity_coef_A_gas[p]);
+	printf("Process %d: I->temperature_0_gas[%d] = %lf\n", I->my_rank, p, I->temperature_0_gas[p]);
+	printf("Process %d: I->viscosity_coef_C_gas[%d] = %lf\n", I->my_rank, p, I->viscosity_coef_C_gas[p]);
+	printf("Process %d: temperature_flow(I, %d, %d, %d) = %lf\n", I->my_rank, i, j, k, temperature_flow(I, i, j, k));
+#endif
+	//printf("Process %d: \n", I->my_rank);
 	return I->viscosity_coef_A_gas[p] *
 		(I->temperature_0_gas[p] + I->viscosity_coef_C_gas[p]) *
 		pow(temperature_flow(I, i, j, k) / I->temperature_0_gas[p], 3 / 2) /
@@ -706,8 +713,14 @@ double viscosity(in *I, int p, int i, int j, int k)
 	else if (p == 2) {
 		double x = 1;
 		int l;
-		for (l = 0; l < 4; l++)
+		for (l = 0; l < 4; l++) {
+#if DEBUG==3
+			printf("Process %d: l = %d, i = %d, j = %d, k = %d\n", I->my_rank, l, i, j, k);
+			printf("Process %d: viscosity_gas(I, l, i, j, k) = %lf\n", I->my_rank, viscosity_gas(I, l, i, j, k));
+			printf("Process %d: molar_fraction(I, l, i, j, k) = %lf\n", I->my_rank, molar_fraction(I, l, i, j, k));
+#endif
 			x *= pow(viscosity_gas(I, l, i, j, k), molar_fraction(I, l, i, j, k));
+		}
 		return x;
 	} else {
 		printf("Error viscosity index\n");

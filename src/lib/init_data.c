@@ -83,9 +83,9 @@ int set_parameters_termogas(in *I)
 	I->viscosity_coef_B[0] = 0.000984; // water
 	I->viscosity_coef_B[1] = 0.00117; // oil
 	I->viscosity_coef_C_gas[0] = 111; // N2
-	I->viscosity_coef_C_gas[0] = 127; // O2
-	I->viscosity_coef_C_gas[0] = 240; // CO2
-	I->viscosity_coef_C_gas[0] = 0; // H2O(g)
+	I->viscosity_coef_C_gas[1] = 127; // O2
+	I->viscosity_coef_C_gas[2] = 240; // CO2
+	I->viscosity_coef_C_gas[3] = 0; // H2O(g)
 	I->temperature_0_gas[0] = 300.55; // N2
 	I->temperature_0_gas[1] = 292.25; // O2
 	I->temperature_0_gas[2] = 293.15; // CO2

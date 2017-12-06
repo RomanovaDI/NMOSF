@@ -307,6 +307,10 @@ int declare_variables(in *I)
 	MPI_Bcast(&I->gl_nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->dx, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->cellsize, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->ncols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->nrows, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->n_cells, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->n_points, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	return 0;
 }
 

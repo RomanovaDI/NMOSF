@@ -478,8 +478,10 @@ int print_vtk(in *I, int n)
 #if TERMOGAS
 	if (I->nproc > 1) {
 		//if (reconstruct_src(I)) return 1;
-		if (print_vtk_termogas_parallel(I, n)) return 1;
-	} else
+		if ((I->my_rank == 0) && (print_vtk_termogas_parallel(I, n))) return 1;
+	} else {
 		if (print_vtk_termogas(I, n)) return 1;
+	}
 #endif
+	return 0;
 }
