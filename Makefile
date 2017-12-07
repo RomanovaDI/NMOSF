@@ -8,10 +8,10 @@ LDFLAGS	=	$(DEBUG) -I src/lib/ -L build/lib/ -I /usr/include/superlu/ -L /usr/li
 OBJ0	=	init_data
 LIB0	=	-lm
 
-OBJ1	=	read_files mesh_operations utils
+OBJ1	=	read_files utils
 LIB1	=	$(LIB0) $(addprefix -l,$(OBJ0))
 
-OBJ2	=	vtk_map_functions boundary_conditions initial_conditions array_functions t_test t_second_combined_FDM_termogas x_backward_euler_second_combined_FDM_termogas t_second_separated_FDM_termogas x_backward_euler_second_separated_FDM_termogas
+OBJ2	=	mesh_operations vtk_map_functions boundary_conditions initial_conditions array_functions t_test t_second_combined_FDM_termogas x_backward_euler_second_combined_FDM_termogas t_second_separated_FDM_termogas x_backward_euler_second_separated_FDM_termogas
 LIB2	=	$(LIB1) $(addprefix -l,$(OBJ1))
 
 OBJ3	=	matrix_functions
@@ -29,8 +29,8 @@ all: $(NAME)
 $(NAME): 
 	$(CC) $(CFLAGS) src/lib/init_data.c $(LIB0) -o build/lib/libinit_data.so
 	$(CC) $(CFLAGS) src/lib/read_files.c $(LIB1) -o build/lib/libread_files.so
-	$(CC) $(CFLAGS) src/lib/mesh_operations.c $(LIB1) -o build/lib/libmesh_operations.so
 	$(CC) $(CFLAGS) src/lib/utils.c $(LIB1) -o build/lib/libutils.so
+	$(CC) $(CFLAGS) src/lib/mesh_operations.c $(LIB2) -o build/lib/libmesh_operations.so
 	$(CC) $(CFLAGS) src/lib/vtk_map_functions.c $(LIB2) -o build/lib/libvtk_map_functions.so
 	$(CC) $(CFLAGS) src/lib/boundary_conditions.c $(LIB2) -o build/lib/libboundary_conditions.so
 	$(CC) $(CFLAGS) src/lib/initial_conditions.c $(LIB2) -o build/lib/libinitial_conditions.so

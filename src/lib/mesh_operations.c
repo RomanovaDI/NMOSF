@@ -1,9 +1,11 @@
 #include "init_data.h"
+#include "utils.h"
 #include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 int do_interpolation(in *I) // is running just on 0 process
 {
@@ -400,5 +402,103 @@ int do_decomposition(in *I)
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
+	return 0;
+}
+
+int reconstruct_src_1(in *I)
+{
+#if DEBUG
+	printf("Reconstructing domain in process %d.\n", I->my_rank);
+#endif
+	memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
+	MPI_Status status;
+	double B_tmp[I->num_parameters];
+	int i, j, k, p;
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+					if (I->ind_proc[i * I->gl_ny + j] == I->my_rank) {
+						if (I->my_rank == 0)
+							for (p = 0; p < I->num_parameters; p++)
+								I->gl_B[GL_A_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)];
+						else {
+							p = 0;
+							MPI_Send(&I->B_prev[B_IND(I, p, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)], I->num_parameters, MPI_DOUBLE, 0, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD);
+						}
+					} else if (I->my_rank == 0) {
+						p = 0;
+						MPI_Recv(B_tmp, I->num_parameters, MPI_DOUBLE, MPI_ANY_SOURCE, GL_A_IND(I, p, i, j, k), MPI_COMM_WORLD, &status);
+						for (p = 0; p < I->num_parameters; p ++)
+							I->gl_B[GL_A_IND(I, p, i, j, k)] = B_tmp[p];
+					}
+				}
+			}
+		}
+	}
+#if DEBUG
+	printf("Finish reconstructing domain in process %d.\n", I->my_rank);
+#endif
+	return 0;
+}
+
+int reconstruct_src_2(in *I)
+{
+#if DEBUG
+	printf("Reconstructing domain in process %d.\n", I->my_rank);
+#endif
+	memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
+	MPI_Status status;
+	int num_el = I->num_el_in_x_region * I->num_el_in_y_region * I->gl_nz * I->num_parameters;
+	double B_tmp1[num_el];
+	double B_tmp2[num_el * I->nproc];
+	int i, j, k, p, m = 0;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if ((I->ind_cell_multipl[i * I->ny + j] != -1) && (I->ind_proc[(i + I->ind_start_region_proc[0]) * I->gl_ny + j + I->ind_start_region_proc[1]] == I->my_rank)) {
+					for (p = 0; p < I->num_parameters; p++) {
+						B_tmp1[(k * I->num_el_in_x_region * I->num_el_in_y_region + (i + I->ind_start_region_proc[0] - (I->my_rank / I->y_regions) * I->num_el_in_x_region) * I->num_el_in_y_region + \
+							j + I->ind_start_region_proc[1] - (I->my_rank % I->y_regions) * I->num_el_in_y_region) * I->num_parameters + p] = I->B_prev[B_IND(I, p, i, j, k)];
+					}
+				}
+			}
+		}
+	}
+	MPI_Allgather(B_tmp1, num_el, MPI_DOUBLE, B_tmp2, num_el * I->nproc, MPI_DOUBLE, MPI_COMM_WORLD);
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+					for (p = 0; p < I->num_parameters; p++) {
+						I->gl_B[GL_A_IND(I, p, i, j, k)] =
+							B_tmp2[num_el * I->ind_proc[i * I->gl_ny + j] + (k * I->num_el_in_x_region * I->num_el_in_y_region + (i % I->num_el_in_x_region) * I->num_el_in_y_region + (j % I->num_el_in_y_region)) * I->num_parameters + p];
+					}
+				}
+			}
+		}
+	}
+#if DEBUG
+	printf("Finish reconstructing domain in process %d.\n", I->my_rank);
+#endif
+	return 0;
+}
+
+int reconstruct_src(in *I)
+{
+//	time_t time1, time2;
+	clock_t t;
+//	double seconds;
+//	time1 = time(NULL);
+//	int i;
+	t = clock();
+//	for (i = 0; i < 100; i++)
+//	if (reconstruct_src_1(I)) return 1;
+	if (reconstruct_src_2(I)) return 1;
+	t = clock() - t;
+//	time2 = time(NULL);
+//	seconds = difftime(time2, time1);
+	printf("Time of comunication between processes in process %d: %lf\n", I->my_rank, (double) t);
+	MPI_Barrier(MPI_COMM_WORLD);
 	return 0;
 }
