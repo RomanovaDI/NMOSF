@@ -171,6 +171,7 @@ long time_stop(void)
 void display_usage(void)
 {
 	printf("Options -m, -r, -H, -D, -x, -y, -z, -a, -s, -p, -v, -k, -i, -l, -S, -t must be declared\n\n");
+	return;
 }
 
 int main(int argc, char **argv)
@@ -197,6 +198,15 @@ int main(int argc, char **argv)
 //		return 0;
 //	}
 	if (set_parameters_termogas(I)) goto error;
+	// GDB
+/*	char hostname[256];
+	i = 0;
+	gethostname(hostname, sizeof(hostname));
+	printf("Process %d: PID %d on %s ready for attach\n", I->my_rank, getpid(), hostname);
+	fflush(stdout);
+	while (0 == i)
+		sleep(5);*/
+	// GDB
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (I->my_rank == 0) {
 		if (do_interpolation(I)) goto error;
@@ -233,6 +243,7 @@ int main(int argc, char **argv)
 		} else {
 			printf("Result printed to vtk file\n");
 		}
+		if (print_parameter_in_subdomains(I, 4, i)) return 1;
 //		if (i % 10 == 0) {
 //			if (print_vtk(I, i / 10) == 1) {
 //				printf("Error printing vtk file\n");
@@ -277,7 +288,7 @@ int main(int argc, char **argv)
 	return 0;
 error:
 	printf("Error in process %d\n", I->my_rank);
-	display_usage();
+//	display_usage();
 	free_massives(I);
 	MPI_Finalize();
 	return 1;

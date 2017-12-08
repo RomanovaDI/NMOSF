@@ -203,6 +203,10 @@ int create_Ab_termogas(in *I)
 							if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 						}
 					}
+#if DEBUG
+					if ((I->my_rank == 0) && (i == 1) && (j == 1))
+						printf("blq\n");
+#endif
 					/* pressure equation */
 					p = 4;
 					if (I->flag_first_time_step) {

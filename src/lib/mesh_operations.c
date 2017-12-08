@@ -325,6 +325,14 @@ int do_decomposition(in *I)
 	//	I->y_regions = I->nproc / I->x_regions;
 		I->nx = I->num_el_in_x_region = (int) round((double) I->gl_nx / (double) I->x_regions);
 		I->ny = I->num_el_in_y_region = (int) round((double) I->gl_ny / (double) I->y_regions);
+		if (I->gl_nx - (I->x_regions - 1) * I->num_el_in_x_region > I->nx)
+			I->max_num_el_in_x_region = I->gl_nx - (I->x_regions - 1) * I->num_el_in_x_region;
+		else
+			I->max_num_el_in_x_region = I->num_el_in_x_region;
+		if (I->gl_ny - (I->y_regions - 1) * I->num_el_in_y_region > I->ny)
+			I->max_num_el_in_y_region = I->gl_ny - (I->y_regions - 1) * I->num_el_in_y_region;
+		else
+			I->max_num_el_in_y_region = I->num_el_in_y_region;
 		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
 				I->ind_proc[i * I->gl_ny + j] = (j / I->num_el_in_y_region) * I->y_regions + i / I->num_el_in_x_region;
@@ -349,6 +357,8 @@ int do_decomposition(in *I)
 	MPI_Bcast(&I->y_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->num_el_in_x_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->num_el_in_y_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->max_num_el_in_x_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&I->max_num_el_in_y_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -365,8 +375,9 @@ int do_decomposition(in *I)
 			I->ny += 2 * I->stencil_size;
 			j_start = (I->my_rank % I->y_regions) * I->num_el_in_y_region - I->stencil_size;
 		}
-	} else
+	} else {
 		j_start = 0;
+	}
 	if (I->x_regions > 1) {
 		if (I->my_rank >= I->y_regions * (I->x_regions - 1)) {
 			I->nx = I->gl_nx - (I->x_regions - 1) * I->num_el_in_x_region + I->stencil_size;
@@ -378,8 +389,9 @@ int do_decomposition(in *I)
 			I->nx += 2 * I->stencil_size;
 			i_start = (I->my_rank / I->y_regions) * I->num_el_in_x_region - I->stencil_size;
 		}
-	} else
+	} else {
 		i_start = 0;
+	}
 	if ((I->ind_start_region_proc = (int *) malloc(I->nproc * 2 * sizeof(int))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
@@ -449,35 +461,55 @@ int reconstruct_src_2(in *I)
 #endif
 	memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
 	MPI_Status status;
-	int num_el = I->num_el_in_x_region * I->num_el_in_y_region * I->gl_nz * I->num_parameters;
-	double B_tmp1[num_el];
-	double B_tmp2[num_el * I->nproc];
+	int num_el = I->max_num_el_in_x_region * I->max_num_el_in_y_region * I->gl_nz * I->num_parameters;
+#if DEBUG
+	printf("Process %d: I->nx = %d, I->max_num_el_in_x_region = %d, I->num_el_in_x_region = %d, I->ny = %d, I->max_num_el_in_y_region = %d, I->num_el_in_y_region = %d\n",\
+		I->my_rank, I->nx, I->max_num_el_in_x_region, I->num_el_in_x_region, I->ny, I->max_num_el_in_y_region, I->num_el_in_y_region);
+	printf("Process %d: num_el = %d\n", I->my_rank, num_el);
+#endif
+	double *B_tmp1;
+	if ((B_tmp1 = (double *) malloc(num_el * sizeof(double))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	double *B_tmp2;
+	if ((B_tmp2 = (double *) malloc(num_el * I->nproc * sizeof(double))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
 	int i, j, k, p, m = 0;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if ((I->ind_cell_multipl[i * I->ny + j] != -1) && (I->ind_proc[(i + I->ind_start_region_proc[0]) * I->gl_ny + j + I->ind_start_region_proc[1]] == I->my_rank)) {
 					for (p = 0; p < I->num_parameters; p++) {
-						B_tmp1[(k * I->num_el_in_x_region * I->num_el_in_y_region + (i + I->ind_start_region_proc[0] - (I->my_rank / I->y_regions) * I->num_el_in_x_region) * I->num_el_in_y_region + \
-							j + I->ind_start_region_proc[1] - (I->my_rank % I->y_regions) * I->num_el_in_y_region) * I->num_parameters + p] = I->B_prev[B_IND(I, p, i, j, k)];
+						B_tmp1[(k * I->max_num_el_in_x_region * I->max_num_el_in_y_region + \
+							(i + I->ind_start_region_proc[0] - (I->my_rank / I->y_regions) * I->max_num_el_in_x_region) * I->max_num_el_in_y_region + \
+							j + I->ind_start_region_proc[1] - (I->my_rank % I->y_regions) * I->max_num_el_in_y_region) * I->num_parameters + p] =
+								I->B_prev[B_IND(I, p, i, j, k)];
 					}
 				}
 			}
 		}
 	}
-	MPI_Allgather(B_tmp1, num_el, MPI_DOUBLE, B_tmp2, num_el * I->nproc, MPI_DOUBLE, MPI_COMM_WORLD);
+	MPI_Allgather(B_tmp1, num_el, MPI_DOUBLE, B_tmp2, num_el, MPI_DOUBLE, MPI_COMM_WORLD);
 	for (k = 0; k < I->gl_nz; k++) {
 		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
 				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
 					for (p = 0; p < I->num_parameters; p++) {
 						I->gl_B[GL_A_IND(I, p, i, j, k)] =
-							B_tmp2[num_el * I->ind_proc[i * I->gl_ny + j] + (k * I->num_el_in_x_region * I->num_el_in_y_region + (i % I->num_el_in_x_region) * I->num_el_in_y_region + (j % I->num_el_in_y_region)) * I->num_parameters + p];
+							B_tmp2[num_el * I->ind_proc[i * I->gl_ny + j] + \
+								(k * I->max_num_el_in_x_region * I->max_num_el_in_y_region + \
+								(i % I->max_num_el_in_x_region) * I->max_num_el_in_y_region + \
+								(j % I->max_num_el_in_y_region)) * I->num_parameters + p];
 					}
 				}
 			}
 		}
 	}
+	free(B_tmp2);
+	free(B_tmp1);
 #if DEBUG
 	printf("Finish reconstructing domain in process %d.\n", I->my_rank);
 #endif

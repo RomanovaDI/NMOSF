@@ -51,7 +51,7 @@ int set_parameters_termogas(in *I)
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
-	I->end_time = 5;
+	I->end_time = 20;
 	I->stencil_size = 2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
@@ -141,8 +141,10 @@ int set_parameters_termogas(in *I)
 	I->volume_producted_oil = 0;
 	MPI_Comm_rank(MPI_COMM_WORLD, &I->my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &I->nproc);
-	I->x_regions = 2;
-	I->y_regions = 1;
+//	I->x_regions = 2;
+//	I->y_regions = 1;
+	I->x_regions = 1;
+	I->y_regions = 2;
 	if (I->x_regions * I->y_regions != I->nproc) {
 		printf("Number of processes is not equal to number of subdomains\n");
 		return 1;

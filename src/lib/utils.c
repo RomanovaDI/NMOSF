@@ -50,15 +50,7 @@ int check_for_corrupt_cell(in *I, int i, int j, int k)
 
 int well(in *I, int i, int j, int k)
 {
-	if ((i == 0) && (j == 0) && (k == 0))
-		return 1;
-	else if ((i == 0) && (j == 0) && (k == I->nz - 1))
-		return 1;
-	else if ((i == I->nx - 1) && (j == 0) && (k == 0))
-		return 1;
-	else if ((i == I->nx - 1) && (j == 0) && (k == I->nz - 1))
-		return 1;
-	else if ((i == I->nx / 2) && (j == 0) && (k == I->nz / 2))
+	if ((injection_well(I, i, j, k)) || (production_well(I, i, j, k)))
 		return 1;
 	else
 		return 0;
@@ -66,7 +58,7 @@ int well(in *I, int i, int j, int k)
 
 int production_well(in *I, int i, int j, int k)
 {
-	if ((i == I->nx / 2) && (j == 0) && (k == I->nz / 2))
+	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
 		return 1;
 	else
 		return 0;
@@ -74,13 +66,13 @@ int production_well(in *I, int i, int j, int k)
 
 int injection_well(in *I, int i, int j, int k)
 {
-	if ((i == 0) && (j == 0) && (k == 0))
+	if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == 0))
 		return 1;
-	else if ((i == 0) && (j == 0) && (k == I->nz - 1))
+	else if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == I->gl_ny - 1))
 		return 1;
-	else if ((i == I->nx - 1) && (j == 0) && (k == 0))
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx - 1) && (j + I->ind_start_region_proc[1] == 0))
 		return 1;
-	else if ((i == I->nx - 1) && (j == 0) && (k == I->nz - 1))
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny - 1))
 		return 1;
 	else
 		return 0;

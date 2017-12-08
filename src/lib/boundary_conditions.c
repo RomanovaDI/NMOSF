@@ -639,6 +639,25 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_consistent(in *I)
 	return 0;
 }
 
+int set_injection_well(in *I, int i, int j, int k)
+{
+	I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
+	I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
+	I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
+	I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
+	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
+	I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
+	I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
+	I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
+	return 0;
+}
+
+int set_production_well(in *I, int i, int j, int k)
+{
+	I->B_prev[B_IND(I, 4, i, j, k)] = I->production_well_pressure;
+	return 0;
+}
+
 int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 {
 #if DEBUG
@@ -682,66 +701,17 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 			}
 		}
 	}
-	if (I->my_rank == 0) {
-		i = j = 0;
-		for (k = 0; k < I->nz; k++) {
-			I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-			I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-			I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-			I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
-			I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-			I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-			I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-			I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (injection_well(I, i, j, k))
+					set_injection_well(I, i, j, k);
+				if (production_well(I, i, j, k)) {
+					printf("Processor %d: i = %d, j = %d, k = %d\n", I->my_rank, i, j, k);
+					set_production_well(I, i, j, k);
+				}
+			}
 		}
-	}
-	if (I->my_rank == I->y_regions - 1) {
-		i = 0;
-		j = I->ny - 1;
-		for (k = 0; k < I->nz; k++) {
-			I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-			I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-			I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-			I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
-			I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-			I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-			I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-			I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-		}
-	}
-	if (I->my_rank == I->y_regions * (I->x_regions - 1)) {
-		j = 0;
-		i = I->nx - 1;
-		for (k = 0; k < I->nz; k++) {
-			I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-			I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-			I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-			I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
-			I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-			I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-			I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-			I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-		}
-	}
-	if (I->my_rank == I->x_regions * I->y_regions - 1) {
-		i = I->nx - 1;
-		j = I->ny - 1;
-		for (k = 0; k < I->nz; k++) {
-			I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-			I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-			I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-			I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
-			I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-			I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-			I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-			I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-		}
-	}
-	j = I->gl_ny / 2;
-	i = I->gl_nx / 2;
-	if (I->ind_proc[i * I->gl_ny + j] == I->my_rank) {
-		for (k = 0; k < I->nz; k++)
-			I->B_prev[B_IND(I, 4, i - I->ind_start_region_proc[0], j - I->ind_start_region_proc[1], k)] = I->production_well_pressure;
 	}
 	return 0;
 }
