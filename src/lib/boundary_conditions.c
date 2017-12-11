@@ -683,19 +683,19 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 						else if ((i < 0) && (I->my_rank < I->y_regions))
 							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, 0, j, k)];
 						else if ((i < 0) && (I->my_rank >= I->y_regions))
-							I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[0], k)];
+							I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[1], k)];
 						else if ((i >= I->nx) && (I->my_rank >= I->y_regions * (I->x_regions - 1)))
 							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, I->nx - 1, j, k)];
 						else if ((i >= I->nx) && (I->my_rank < I->y_regions * (I->x_regions - 1)))
-							I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[0], k)];
+							I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[1], k)];
 						else if ((j < 0) && (I->my_rank % I->y_regions == 0))
 							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, 0, k)];
 						else if ((j < 0) && (I->my_rank % I->y_regions != 0))
-							I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[0], k)];
+							I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[1], k)];
 						else if ((j >= I->ny) && (I->my_rank % I->y_regions == I->y_regions - 1))
 							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, I->ny - 1, k)];
 						else if ((j >= I->ny) && (I->my_rank % I->y_regions != I->y_regions - 1))
-							I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[0], k)];
+							I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[1], k)];
 					}
 				}
 			}

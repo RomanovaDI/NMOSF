@@ -16,7 +16,6 @@ int free_massives(in *I)
 	free(I->volume);
 #endif
 	free(I->ind_cell_multipl);
-	free(I->ind_multipl);
 #if AVALANCHE
 	free(I->snow_region);
 #endif
@@ -26,6 +25,7 @@ int free_massives(in *I)
 	free(I->B_prev);
 	free(I->ind_boundary_cells);
 	if (I->my_rank == 0) {
+		free(I->ind_multipl);
 		if (free_initial_arrays(I)) return 1;
 	}
 	if (I->nproc > 1) {
