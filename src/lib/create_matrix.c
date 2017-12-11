@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define DDT(p, i, j, k, object, approximation_order, solution_mode, method, task) DDT_##object##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 #define DIV(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) DIV_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
@@ -213,6 +215,9 @@ int create_Ab_termogas(in *I)
 						if (I->Ajptr_csr[I->A_ind_current] != -1)
 							I->A_ind_current++;
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
+					}
+					if ((I->my_rank == 1) && (i == 0) && (j == 0)) {
+						printf("Processor %d PID %d: well(I, %d, %d, %d) = %d\n", I->my_rank, getpid(), i, j, k, well(I, i, j, k));
 					}
 					//if ((I->equation_num == 4) && (!(well(I, i, j, k)))) {
 					if ((1) && (!(well(I, i, j, k)))) {

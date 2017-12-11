@@ -496,13 +496,13 @@ int print_parameter_in_subdomains(in *I, int p, int n)
 	}
 	//char file_name[8 + i];
 	char file_name[50 + i];
-	sprintf(file_name, "result/processor%d_parameter%d_time_step%d.vtk", I->my_rank, p, n);
+	sprintf(file_name, "result/processor%d_parameter%d_time_step%d.log", I->my_rank, p, n);
 	FILE *f = fopen(file_name, "w");
 	for (k = 0; k < I->nz; k++) {
 		fprintf(f, "k = %d\n", k);
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
-				fprintf(f, "%5.10lf\t", I->B_prev[B_IND(I, p, i, j, k)]);
+				fprintf(f, "%10lf\t", I->B_prev[B_IND(I, p, i, j, k)]);
 			}
 			fprintf(f, "\n");
 		}
