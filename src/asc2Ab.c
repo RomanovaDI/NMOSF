@@ -139,6 +139,7 @@ numbering faces of cells is so
 #include <math.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
 
 struct timeval tv1,tv2,dtv;
 struct timezone tz;
@@ -208,8 +209,15 @@ int main(int argc, char **argv)
 		sleep(5);*/
 	// GDB
 	if (read_asc_and_declare_variables(I)) goto error;
-	if (I->my_rank == 0) {
+	if ((I->nproc > 1) && (I->my_rank == 0)) {
 		if (do_interpolation(I)) goto error;
+	} else if (I->nproc == 1) {
+		if (do_interpolation(I)) goto error;
+		if ((I->ind_start_region_proc = (int *) malloc(I->nproc * 2 * sizeof(int))) == NULL) {
+			printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+			return 1;
+		}
+		I->ind_start_region_proc[0] = I->ind_start_region_proc[1] = 0;
 	}
 	if (I->nproc > 1) if (do_decomposition(I)) goto error;
 #if AVALANCHE

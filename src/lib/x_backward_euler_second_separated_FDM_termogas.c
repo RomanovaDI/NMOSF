@@ -59,8 +59,6 @@ int LAPL_coef_pressure_backward_euler_second_separated_FDM_termogas(in *I, int p
 	for (pr = 0; pr < 3; pr++) {
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
-		if ((I->my_rank == 1) && (i == 0) && (j == 0))
-			printf("Process %d PID %d: LAPL\n", I->my_rank, getpid());
 //		A_value = - Darsi_M_coef(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (I->dx[pr] * I->dx[pr]);
 //		WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 //		A_value = - Darsi_M_coef(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (I->dx[pr] * I->dx[pr]);
@@ -69,22 +67,14 @@ int LAPL_coef_pressure_backward_euler_second_separated_FDM_termogas(in *I, int p
 //		WRITE_TO_A(p, i, j, k, -1);
 		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))) {
 			A_value = (Darsi_M_coef(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) + Darsi_M_coef(I, i, j, k)) / (2 * I->dx[pr] * I->dx[pr]);
-			if ((I->my_rank == 1) && (i == 0) && (j == 0))
-				printf("Process %d PID %d: A_value = %lf,\t", I->my_rank, getpid(), A_value);
 			WRITE_TO_A(p, i, j, k, -1);
 			A_value = - A_value;
-			if ((I->my_rank == 1) && (i == 0) && (j == 0))
-				printf("A_value = %lf\n", A_value);
 			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 		}
 		if (!(boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
 			A_value = (Darsi_M_coef(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) + Darsi_M_coef(I, i, j, k)) / (2 * I->dx[pr] * I->dx[pr]);
-			if ((I->my_rank == 1) && (i == 0) && (j == 0))
-				printf("Process %d PID %d: A_value = %lf\t", I->my_rank, getpid(), A_value);
 			WRITE_TO_A(p, i, j, k, -1);
 			A_value = - A_value;
-			if ((I->my_rank == 1) && (i == 0) && (j == 0))
-				printf("A_value = %lf\n", A_value);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 		}
 	}

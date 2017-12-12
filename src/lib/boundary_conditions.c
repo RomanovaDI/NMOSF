@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include "boundary_conditions.h"
 
 #if AVALANCHE
 int SET_boundary_CONDITION_velocity_zero_gradient_on_up_and_sides_no_slip_on_low(in *I)
@@ -592,50 +595,16 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_consistent(in *I)
 			}
 		}
 	}
-	i = j = k = 0;
-	I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-	I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-	I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-	I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-	i = j = 0;
-	k = I->nz - 1;
-	I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-	I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-	I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-	I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-	j = k = 0;
-	i = I->nx - 1;
-	I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-	I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-	I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-	I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-	j = 0;
-	i = I->nx - 1;
-	k = I->nz - 1;
-	I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-	I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-	I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-	I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
-	j = 0;
-	i = I->nx / 2;
-	k = I->nz / 2;
-	I->B_prev[B_IND(I, 4, i, j, k)] = I->production_well_pressure;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (injection_well(I, i, j, k))
+					set_injection_well(I, i, j, k);
+				if (production_well(I, i, j, k))
+					set_production_well(I, i, j, k);
+			}
+		}
+	}
 	return 0;
 }
 
@@ -672,7 +641,7 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 			for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
 				if ((internal_cell(I, i, j, k)) && (I->ind_proc[(i + I->ind_start_region_proc[0]) * I->gl_ny + j + I->ind_start_region_proc[1]] != I->my_rank)) {
 					for (p = 0; p < I->num_parameters; p++) {
-						I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[0], k)];
+						I->B_prev[B_IND(I, p, i, j, k)] = I->gl_B[GL_A_IND(I, p, i + I->ind_start_region_proc[0], j + I->ind_start_region_proc[1], k)];
 					}
 				} else if (boundary_cell(I, i, j, k)) {
 					for (p = 0; p < I->num_parameters; p++) {
@@ -707,7 +676,6 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 				if (injection_well(I, i, j, k))
 					set_injection_well(I, i, j, k);
 				if (production_well(I, i, j, k)) {
-					printf("Processor %d: i = %d, j = %d, k = %d\n", I->my_rank, i, j, k);
 					set_production_well(I, i, j, k);
 				}
 			}

@@ -43,7 +43,9 @@ int write_B_prev_to_B(in *I)
 
 void print_A_csr(in *I)
 {
+#if DEBUG
 	printf("Print matrix A in CSR format function\n");
+#endif
 	FILE *f;
 	int i, j, k, fl_tmp;
 	if ((f = fopen("tmp/A_csr.txt","w")) == NULL) {
@@ -139,7 +141,9 @@ void print_A_csr(in *I)
 
 int SuperLU_solver(in *I)
 {
+#if DEBUG
 	printf("Solving matrix\n");
+#endif
 	SuperMatrix A_csr;
 	NCformat *Astore;
 //	double   *a;
@@ -182,7 +186,9 @@ int SuperLU_solver(in *I)
 //	dreadhb(&m, &n, &nnz, &a, &asub, &xa);
 	dCreate_CompCol_Matrix(&A_csr, I->system_dimension, I->system_dimension, I->non_zero_elem, I->Aelem_csr, I->Ajptr_csr, I->Aiptr_csr, SLU_NR, SLU_D, SLU_GE);
 	Astore = A_csr.Store;
+#if DEBUG
 	printf("Dimension %dx%d; # nonzeros %d\n", A_csr.nrow, A_csr.ncol, Astore->nnz);
+#endif
 	nrhs   = 1;
 //	if ( !(rhs = doubleMalloc(m * nrhs)) ) ABORT("Malloc fails for rhs[].");
 	dCreate_Dense_Matrix(&B_csr, I->system_dimension, nrhs, I->B, I->system_dimension, SLU_DN, SLU_D, SLU_GE);
@@ -207,19 +213,25 @@ int SuperLU_solver(in *I)
 		dinf_norm_error(nrhs, &B_csr, sol);
 		Lstore = (SCformat *) L.Store;
 		Ustore = (NCformat *) U.Store;
+#if DEBUG
 		printf("No of nonzeros in factor L = %d\n", Lstore->nnz);
 		printf("No of nonzeros in factor U = %d\n", Ustore->nnz);
 		printf("No of nonzeros in L+U = %d\n", Lstore->nnz + Ustore->nnz - I->system_dimension);
 		printf("FILL ratio = %.1f\n", (float)(Lstore->nnz + Ustore->nnz - I->system_dimension)/I->non_zero_elem);
+#endif
 		dQuerySpace(&L, &U, &mem_usage);
-		printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
-		mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
+#if DEBUG
+		printf("L\\U MB %.3f\ttotal MB needed %.3f\n", mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
+#endif
 	} else {
+#if DEBUG
 		printf("dgssv() error returns INFO= %d\n", info);
+#endif
 		if ( info <= I->system_dimension ) { /* factorization completes */
 			dQuerySpace(&L, &U, &mem_usage);
-			printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
-					mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
+#if DEBUG
+			printf("L\\U MB %.3f\ttotal MB needed %.3f\n", mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
+#endif
 		}
 		printf("Matrix has no solution\n");
 		return 1;
@@ -232,7 +244,9 @@ int SuperLU_solver(in *I)
 //		phase_fraction[i] = sol[i * num_parameters + 3];
 //		pressure[i] = sol[i * num_parameters + 4];
 //	}
+#if DEBUG
 	printf("Matrix solved\n");
+#endif
 	
 	StatFree(&stat);
 //	SUPERLU_FREE (rhs);
@@ -247,7 +261,9 @@ int SuperLU_solver(in *I)
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC("Exit main()");
 #endif
+#if DEBUG
 	printf("End of function solve matrix\n");
+#endif
 	return 0;
 }
 

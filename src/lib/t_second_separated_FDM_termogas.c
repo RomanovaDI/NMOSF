@@ -61,13 +61,6 @@ int DDT_coef_pressure_second_separated_FDM_termogas(in *I, int p, int i, int j, 
 		pressure(I, i + 1, j, k) + pressure(I, i - 1, j, k) +
 		pressure(I, i, j + 1, k) + pressure(I, i, j - 1, k) +
 		pressure(I, i, j, k + 1) + pressure(I, i, j, k - 1)) / 6;
-	if ((I->my_rank == 1) && (i == 0) && (j == 0)) {
-		double B_value = A_value * (
-			pressure(I, i + 1, j, k) + pressure(I, i - 1, j, k) +
-			pressure(I, i, j + 1, k) + pressure(I, i, j - 1, k) +
-			pressure(I, i, j, k + 1) + pressure(I, i, j, k - 1)) / 6;
-		printf("Process %d PID %d: i = %d, j = %d, k = %d, A_value = %lf, B_value = %lf\n", I->my_rank, getpid(), i, j, k, A_value, B_value);
-	}
 //	I->B[A_IND(I, p, i, j, k)] += A_value * (
 //		pressure(I, i + 1, j, k) + pressure(I, i - 1, j, k) +
 //		pressure(I, i, j, k + 1) + pressure(I, i, j, k - 1)) / 4;

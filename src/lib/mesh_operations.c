@@ -309,7 +309,6 @@ int make_boundary(in *I)
 int do_decomposition(in *I)
 {
 #if DEBUG
-	MPI_Barrier(MPI_COMM_WORLD);
 	printf("Making decomposition in process %d\n", I->my_rank);
 #endif
 	int i, j, k, l;
@@ -348,15 +347,15 @@ int do_decomposition(in *I)
 	MPI_Bcast(I->ind_proc, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	if (I->my_rank == 0) {
 		I->gl_ind_cell_multipl = I->ind_cell_multipl;
+		I->gl_n_cells_multipl = I->n_cells_multipl;
 	} else {
 		if ((I->gl_ind_cell_multipl = (int *) malloc(I->gl_nx * I->gl_ny * sizeof(int))) == NULL) {
 			printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 			return 1;
 		}
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Bcast(I->gl_ind_cell_multipl, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
-	if (I->my_rank == 0)
-		I->gl_n_cells_multipl = I->n_cells_multipl;
 	MPI_Bcast(&I->gl_n_cells_multipl, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->x_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->y_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -431,6 +430,7 @@ int reconstruct_src_1(in *I)
 	MPI_Status status;
 	double B_tmp[I->num_parameters];
 	int i, j, k, p;
+	MPI_Barrier(MPI_COMM_WORLD);
 	for (k = 0; k < I->gl_nz; k++) {
 		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
@@ -497,6 +497,7 @@ int reconstruct_src_2(in *I)
 			}
 		}
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Allgather(B_tmp1, num_el, MPI_DOUBLE, B_tmp2, num_el, MPI_DOUBLE, MPI_COMM_WORLD);
 	int ind_B_tmp2;
 	for (k = 0; k < I->gl_nz; k++) {
