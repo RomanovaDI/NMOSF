@@ -210,7 +210,7 @@ int SuperLU_solver(in *I)
 		}
 		/* Compute the infinity norm of the error. */
 //		dinf_norm_error(nrhs, &B, xact);
-		dinf_norm_error(nrhs, &B_csr, sol);
+//		dinf_norm_error(nrhs, &B_csr, sol);
 		Lstore = (SCformat *) L.Store;
 		Ustore = (NCformat *) U.Store;
 #if DEBUG
@@ -236,7 +236,9 @@ int SuperLU_solver(in *I)
 		printf("Matrix has no solution\n");
 		return 1;
 	}
+#if DEBUG
 	if ( options.PrintStat ) StatPrint(&stat);
+#endif
 //	for (i = 0; i < n_cells_multipl * nz; i++) {
 //		velocity[i * 3 + 0] = sol[i * num_parameters + 0];
 //		velocity[i * 3 + 1] = sol[i * num_parameters + 1];

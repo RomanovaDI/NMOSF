@@ -142,8 +142,8 @@ int set_parameters_termogas(in *I)
 	I->volume_producted_oil = 0;
 	MPI_Comm_rank(MPI_COMM_WORLD, &I->my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &I->nproc);
-	I->x_regions = 2;
-	I->y_regions = 2;
+	I->x_regions = 1;
+	I->y_regions = 1;
 //	I->x_regions = 1;
 //	I->y_regions = 2;
 	if (I->x_regions * I->y_regions != I->nproc) {

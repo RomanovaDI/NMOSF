@@ -178,6 +178,7 @@ void display_usage(void)
 int main(int argc, char **argv)
 {
 	int i, time_steps, j;
+	double t;
 	in II;
 	in *I = &II;
 	MPI_Init(&argc, &argv);
@@ -199,6 +200,8 @@ int main(int argc, char **argv)
 //		return 0;
 //	}
 	if (set_parameters_termogas(I)) goto error;
+	MPI_Barrier(MPI_COMM_WORLD);
+	t = MPI_Wtime();
 	// GDB
 /*	char hostname[256];
 	i = 0;
@@ -248,8 +251,6 @@ int main(int argc, char **argv)
 		if (print_vtk(I, i)) {
 			printf("Error printing vtk file\n");
 			goto error;
-		} else {
-			printf("Result printed to vtk file\n");
 		}
 		if (print_parameter_in_subdomains(I, 4, i)) return 1;
 //		if (i % 10 == 0) {
@@ -292,6 +293,9 @@ int main(int argc, char **argv)
 	if (free_massives(I)) goto error;
 
 	if (I->my_rank == 0) printf("Calculations finished successfully\n");
+	MPI_Barrier(MPI_COMM_WORLD);
+	t = MPI_Wtime() - t;
+	printf("Processor %d PID %d: work_time = %lf sec\n", I->my_rank, getpid(), t);
 	MPI_Finalize();
 	return 0;
 error:
