@@ -1,7 +1,8 @@
 #!/usr/bin/gnuplot
 reset
 set term png size 1920, 1920
-set title "Pattern of the matrix" font "Helvetica,40"
+#set title "Pattern of the matrix" font "Helvetica,40"
+set title "Шаблон матрицы" font "Helvetica,40"
 set nokey
 set palette defined (0 "white", 1 "black")
 set cbrange [0:1]

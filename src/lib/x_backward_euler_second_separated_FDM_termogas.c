@@ -162,6 +162,67 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 	return 0;
 }
 
+int DIV_density_internal_energy_avarage_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double A_value, B_value;
+	int pp, pr, ind_pr[3];
+	for (pr = 0; pr < 3; pr++) {
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		A_value = B_value = 0;
+		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
+			for (pp = 0; pp < 2; pp++) {
+				A_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
+					avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+				B_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					(- I->specific_heat[pp] * I->adiabatic_exponent[pp] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp]) *
+					avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+			}
+			for (pp = 0; pp < 4; pp++) {
+				A_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
+					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+				B_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					(- I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp + 2]) *
+					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+			}
+			A_value /= (2 * I->dx[pr]);
+			//printf("%d:\t%d\t%d\t", pr, i, k);
+			//printf("%f\t", A_value);
+			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+			I->B[A_IND(I, p, i, j, k)] -= B_value;
+			A_value = B_value = 0;
+			for (pp = 0; pp < 2; pp++) {
+				A_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
+					avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+				B_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					(- I->specific_heat[pp] * I->adiabatic_exponent[pp] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp]) *
+					avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+			}
+			for (pp = 0; pp < 4; pp++) {
+				A_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
+					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+				B_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					(- I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp + 2]) *
+					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+			}
+			A_value /= (2 * I->dx[pr]);
+			//printf("%f\n", A_value);
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+			I->B[A_IND(I, p, i, j, k)] -= B_value;
+		}
+	}
+	return 0;
+}
+
 int DIV_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
