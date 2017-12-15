@@ -188,7 +188,7 @@ int print_vtk_termogas(in *I, int n)
 			for (i = 0; i < I->nx; i++) {
 				for (j = 0; j < I->ny; j++) {
 					if (I->ind_cell_multipl[i * I->ny + j] != -1)
-						fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, p, i, j, k)]);
+						fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, p, i, j, k)]);
 				}
 			}
 		}
@@ -199,7 +199,7 @@ int print_vtk_termogas(in *I, int n)
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1)
-					fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, 4, i, j, k)]);
+					fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, 4, i, j, k)]);
 			}
 		}
 	}
@@ -222,7 +222,7 @@ int print_vtk_termogas(in *I, int n)
 			for (i = 0; i < I->nx; i++) {
 				for (j = 0; j < I->ny; j++) {
 					if (I->ind_cell_multipl[i * I->ny + j] != -1)
-						fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, p, i, j, k)]);
+						fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, p, i, j, k)]);
 				}
 			}
 		}
@@ -233,17 +233,19 @@ int print_vtk_termogas(in *I, int n)
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1)
-					fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, 8, i, j, k)]);
+					fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, 8, i, j, k)]);
 			}
 		}
 	}
 	fprintf(f, "SCALARS temperature_environment double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
+//	fprintf(f, "SCALARS temperature_flow double 1\n");
+//	fprintf(f, "LOOKUP_TABLE default\n");
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1)
-					fprintf(f, "%20.10f\n", I->B_prev[B_IND(I, 9, i, j, k)]);
+					fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, 9, i, j, k)]);
 			}
 		}
 	}
@@ -253,7 +255,7 @@ int print_vtk_termogas(in *I, int n)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (p = 0; p < 3; p++)
-						fprintf(f, "%20.10f\t", avarage_velocity(I, 0, p, i, j, k));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 0, p, i, j, k));
 					fprintf(f, "\n");
 				}
 			}
@@ -265,7 +267,7 @@ int print_vtk_termogas(in *I, int n)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (p = 0; p < 3; p++)
-						fprintf(f, "%20.10f\t", avarage_velocity(I, 1, p, i, j, k));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 1, p, i, j, k));
 					fprintf(f, "\n");
 				}
 			}
@@ -277,7 +279,7 @@ int print_vtk_termogas(in *I, int n)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (p = 0; p < 3; p++)
-						fprintf(f, "%20.10f\t", avarage_velocity(I, 2, p, i, j, k));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 2, p, i, j, k));
 					fprintf(f, "\n");
 				}
 			}
@@ -365,7 +367,7 @@ int print_vtk_termogas_parallel(in *I, int n)
 			for (i = 0; i < I->gl_nx; i++) {
 				for (j = 0; j < I->gl_ny; j++) {
 					if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
-						fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, p, i, j, k)]);
+						fprintf(f, "%20.20f\n", I->gl_B[GL_A_IND(I, p, i, j, k)]);
 				}
 			}
 		}
@@ -376,7 +378,7 @@ int print_vtk_termogas_parallel(in *I, int n)
 		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
 				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
-					fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, 4, i, j, k)]);
+					fprintf(f, "%20.20f\n", I->gl_B[GL_A_IND(I, 4, i, j, k)]);
 			}
 		}
 	}
@@ -399,7 +401,7 @@ int print_vtk_termogas_parallel(in *I, int n)
 			for (i = 0; i < I->gl_nx; i++) {
 				for (j = 0; j < I->gl_ny; j++) {
 					if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
-						fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, p, i, j, k)]);
+						fprintf(f, "%20.20f\n", I->gl_B[GL_A_IND(I, p, i, j, k)]);
 				}
 			}
 		}
@@ -410,7 +412,7 @@ int print_vtk_termogas_parallel(in *I, int n)
 		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
 				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
-					fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, 8, i, j, k)]);
+					fprintf(f, "%20.20f\n", I->gl_B[GL_A_IND(I, 8, i, j, k)]);
 			}
 		}
 	}
@@ -420,7 +422,17 @@ int print_vtk_termogas_parallel(in *I, int n)
 		for (i = 0; i < I->gl_nx; i++) {
 			for (j = 0; j < I->gl_ny; j++) {
 				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
-					fprintf(f, "%20.10f\n", I->gl_B[GL_A_IND(I, 9, i, j, k)]);
+					fprintf(f, "%20.20f\n", I->gl_B[GL_A_IND(I, 9, i, j, k)]);
+			}
+		}
+	}
+	fprintf(f, "SCALARS processor int 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->gl_nz; k++) {
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1)
+					fprintf(f, "%d\n", I->ind_proc[i * I->gl_ny + j]);
 			}
 		}
 	}

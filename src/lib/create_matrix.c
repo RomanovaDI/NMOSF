@@ -302,7 +302,7 @@ int create_Ab_termogas(in *I)
 			printf("Memory error\n");
 			return 1;
 		}
-		print_A_csr(I);
+		//print_A_csr(I);
 	}
 	// (I->equation_num == 1)
 	//if (I->flag_first_time_step)

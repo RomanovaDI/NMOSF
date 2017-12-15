@@ -7,8 +7,8 @@ set title "Скорость добычи нефти"
 set xlabel "Время, сек"
 set ylabel "Масса в секунду, кг/сек"
 set output 'images/velocity_of_oil_production.png'
-plot 'plotdat/velocity_of_oil_production.dat' with lines ls 1
+plot 'plotdat/velocity_of_oil_production.dat' with lines ls 1 notitle
 set title "Масса вытесненной нефти"
 set ylabel "Масса, кг"
 set output 'images/oil_production.png'
-plot 'plotdat/oil_production.dat' with lines ls 1
+plot 'plotdat/oil_production.dat' with lines ls 1 notitle
