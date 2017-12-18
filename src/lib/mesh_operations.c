@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
+#include <unistd.h>
+#include <sys/time.h>
 
 int do_interpolation(in *I) // is running just on 0 process
 {
@@ -292,16 +293,16 @@ int make_boundary(in *I)
 	}
 	I->n_boundary_cells = k;
 #if DEBUG
-	char file_name[50];
-	sprintf(file_name, "tmp/boundary_%d.txt", I->my_rank);
-	FILE *f = fopen(file_name, "w");
-	for (i = 0; i < I->nx + 2 * I->stencil_size; i++) {
-		for (j = 0; j < I->ny + 2 * I->stencil_size; j++) {
-			fprintf(f, "%d ", I->ind_boundary_cells[i * (I->ny + 2 * I->stencil_size) + j]);
-		}
-		fprintf(f, "\n");
-	}
-	fclose(f);
+//	char file_name[50];
+//	sprintf(file_name, "tmp/boundary_%d.txt", I->my_rank);
+//	FILE *f = fopen(file_name, "w");
+//	for (i = 0; i < I->nx + 2 * I->stencil_size; i++) {
+//		for (j = 0; j < I->ny + 2 * I->stencil_size; j++) {
+//			fprintf(f, "%d ", I->ind_boundary_cells[i * (I->ny + 2 * I->stencil_size) + j]);
+//		}
+//		fprintf(f, "\n");
+//	}
+//	fclose(f);
 #endif
 	return 0;
 }
@@ -531,18 +532,18 @@ int reconstruct_src_2(in *I)
 int reconstruct_src(in *I)
 {
 //	time_t time1, time2;
-	clock_t t;
+	double t;
 //	double seconds;
 //	time1 = time(NULL);
 //	int i;
-	t = clock();
+	t = MPI_Wtime();
 //	for (i = 0; i < 100; i++)
 //	if (reconstruct_src_1(I)) return 1;
 	if (reconstruct_src_2(I)) return 1;
-	t = clock() - t;
+	t = MPI_Wtime() - t;
 //	time2 = time(NULL);
 //	seconds = difftime(time2, time1);
-	printf("Time of comunication between processes in process %d: %lf\n", I->my_rank, (double) t);
+	printf("Time of comunication between processes in process %d PID %d: %lf\n", I->my_rank, getpid(), t);
 	MPI_Barrier(MPI_COMM_WORLD);
 	return 0;
 }

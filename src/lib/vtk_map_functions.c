@@ -22,8 +22,8 @@ int print_vtk_avalanche(in *I, int n)
 	fprintf(f, "slope\n");
 	fprintf(f, "ASCII\n");
 	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
-	printf("n_points_multipl = %d\n", I->n_points_multipl);
-	printf("points in z direction %d\n", ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
+//	printf("n_points_multipl = %d\n", I->n_points_multipl);
+//	printf("points in z direction %d\n", ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
 	fprintf(f, "POINTS %d double\n", I->n_points_multipl * ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
 	for (k = 0; k <= (int) (I->hight / I->cellsize) * I->kz; k++) {
 		for (i = 0; i < (I->nrows - 1) * I->kx + 1; i ++) {
@@ -128,8 +128,8 @@ int print_vtk_termogas(in *I, int n)
 	fprintf(f, "slope\n");
 	fprintf(f, "ASCII\n");
 	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
-	printf("n_points_multipl = %d\n", I->n_points_multipl);
-	printf("points in z direction %d\n", ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
+//	printf("n_points_multipl = %d\n", I->n_points_multipl);
+//	printf("points in z direction %d\n", ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
 	fprintf(f, "POINTS %d double\n", I->n_points_multipl * ((int) (I->hight / (I->cellsize / (double) I->kz)) + 1));
 	for (k = 0; k <= (int) (I->hight / I->cellsize) * I->kz; k++) {
 		for (i = 0; i < (I->nrows - 1) * I->kx + 1; i ++) {
