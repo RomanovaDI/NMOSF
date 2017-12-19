@@ -387,7 +387,7 @@ int do_decomposition(in *I)
 		if (I->my_rank >= I->y_regions * (I->x_regions - 1)) {
 			I->nx = I->gl_nx - (I->x_regions - 1) * I->num_el_in_x_region + I->stencil_size;
 			i_start = (I->x_regions - 1) * I->num_el_in_x_region - I->stencil_size;
-		} else if (I->my_rank < I->x_regions) {
+		} else if (I->my_rank < I->y_regions) {
 			I->nx += I->stencil_size;
 			i_start = 0;
 		} else {
@@ -395,14 +395,18 @@ int do_decomposition(in *I)
 			i_start = (I->my_rank / I->y_regions) * I->num_el_in_x_region - I->stencil_size;
 		}
 	} else {
+			printf("Process %d: 4\n", I->my_rank);
 		i_start = 0;
 	}
-	if ((I->ind_start_region_proc = (int *) malloc(I->nproc * 2 * sizeof(int))) == NULL) {
+	if ((I->ind_start_region_proc = (int *) malloc(2 * sizeof(int))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
 	I->ind_start_region_proc[0] = i_start;
 	I->ind_start_region_proc[1] = j_start;
+#if DEBUG
+	printf("Process %d, PID %d: I->ind_start_region_proc[0] = %d, I->ind_start_region_proc[1] = %d\n", I->my_rank, getpid(), I->ind_start_region_proc[0], I->ind_start_region_proc[1]);
+#endif
 	if ((I->ind_cell_multipl = (int *) malloc(I->nx * I->ny * sizeof(int))) == NULL) {
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
@@ -484,14 +488,23 @@ int reconstruct_src_2(in *I)
 		return 1;
 	}
 	int i, j, k, p, m = 0;
+#if DEBUG
+	int tmpval;
+#endif
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if ((I->ind_cell_multipl[i * I->ny + j] != -1) && (I->ind_proc[(i + I->ind_start_region_proc[0]) * I->gl_ny + j + I->ind_start_region_proc[1]] == I->my_rank)) {
 					for (p = 0; p < I->num_parameters; p++) {
+#if DEBUG
+						tmpval = (k * I->max_num_el_in_x_region * I->max_num_el_in_y_region +
+							(i + I->ind_start_region_proc[0] - (I->my_rank / I->y_regions) * I->num_el_in_x_region) * I->max_num_el_in_y_region +
+							j + I->ind_start_region_proc[1] - (I->my_rank % I->y_regions) * I->num_el_in_y_region) * I->num_parameters + p;
+						printf("Processor %d, PID %d: i = %d, j = %d, k = %d, p = %d, tmpval = %d\n", I->my_rank, getpid(), i, j, k, p, tmpval);
+#endif
 						B_tmp1[(k * I->max_num_el_in_x_region * I->max_num_el_in_y_region + \
-							(i + I->ind_start_region_proc[0] - (I->my_rank / I->y_regions) * I->max_num_el_in_x_region) * I->max_num_el_in_y_region + \
-							j + I->ind_start_region_proc[1] - (I->my_rank % I->y_regions) * I->max_num_el_in_y_region) * I->num_parameters + p] =
+							(i + I->ind_start_region_proc[0] - (I->my_rank / I->y_regions) * I->num_el_in_x_region) * I->max_num_el_in_y_region + \
+							j + I->ind_start_region_proc[1] - (I->my_rank % I->y_regions) * I->num_el_in_y_region) * I->num_parameters + p] =
 								I->B_prev[B_IND(I, p, i, j, k)];
 					}
 				}
@@ -532,18 +545,18 @@ int reconstruct_src_2(in *I)
 int reconstruct_src(in *I)
 {
 //	time_t time1, time2;
-	double t;
+//	double t;
 //	double seconds;
 //	time1 = time(NULL);
 //	int i;
-	t = MPI_Wtime();
+//	t = MPI_Wtime();
 //	for (i = 0; i < 100; i++)
 //	if (reconstruct_src_1(I)) return 1;
 	if (reconstruct_src_2(I)) return 1;
-	t = MPI_Wtime() - t;
+//	t = MPI_Wtime() - t;
 //	time2 = time(NULL);
 //	seconds = difftime(time2, time1);
-	printf("Time of comunication between processes in process %d PID %d: %lf\n", I->my_rank, getpid(), t);
+//	printf("Time of comunication between processes in process %d PID %d: %lf\n", I->my_rank, getpid(), t);
 	MPI_Barrier(MPI_COMM_WORLD);
 	return 0;
 }

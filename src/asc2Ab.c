@@ -248,6 +248,7 @@ int main(int argc, char **argv)
 		I->time_step = i;
 		if ((I->nproc > 1) && (reconstruct_src(I))) return 1;
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
+		if ((i == 0) && (I->nproc > 1) && (reconstruct_src(I))) return 1;
 		if (print_vtk(I, i)) {
 			printf("Error printing vtk file\n");
 			goto error;

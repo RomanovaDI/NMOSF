@@ -66,8 +66,8 @@ set -x
 make clean
 make all
 export LD_LIBRARY_PATH=./build/lib
-mpirun -np 1 ./build/NMOSF 2>&1 | tee log.log
-#mpirun -np 1 valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF 2>&1 | tee log.log
+mpirun -np 3 ./build/NMOSF 2>&1 | tee log.log
+#mpirun -np 3 valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF 2>&1 | tee log.log
 #./build/NMOSF
 #valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF
 #gdb ./build/NMOSF

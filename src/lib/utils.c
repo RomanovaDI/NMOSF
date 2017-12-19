@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <unistd.h>
 
 int A_IND(in *I, int p, int i, int j, int k)
 {
@@ -13,6 +14,9 @@ int A_IND(in *I, int p, int i, int j, int k)
 
 int GL_A_IND(in *I, int p, int i, int j, int k)
 {
+#if DEBUG
+//	printf("Processor %d PID %d: i = %d, j = %d, k = %d, p = %d, I->gl_n_cells_multipl = %d, I->gl_ind_cell_multipl[i * I->gl_ny + j] = %d\n", I->my_rank, getpid(), i, j, k, p, I->gl_n_cells_multipl, I->gl_ind_cell_multipl[i * I->gl_ny + j]);
+#endif
 	return (I->num_parameters * (k * I->gl_n_cells_multipl + I->gl_ind_cell_multipl[i * I->gl_ny + j]) + p);
 }
 
