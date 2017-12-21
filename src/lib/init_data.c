@@ -44,13 +44,14 @@ int set_parameters_avalanche(in *I)
 int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
-	strcpy(I->map_name, "maps/map_termogas.asc");
+	strcpy(I->map_name, "maps/map_termogas_big.asc");
+	//strcpy(I->map_name, "maps/map_termogas.asc");
 	//strcpy(I->map_name, "maps/map_termogas_pattern.asc");
 	strcpy(I->region_map_name, "maps/map_termogas_region.asc");
 	//strcpy(I->map_name, "maps/map_cavity.asc");
 	I->hight = 1;//30;
-	I->kx = 2;
-	I->ky = 2;
+	I->kx = 1;
+	I->ky = 1;
 	I->kz = 1;
 	I->end_time = 1000;
 	I->stencil_size = 2;
@@ -143,7 +144,7 @@ int set_parameters_termogas(in *I)
 	I->volume_producted_oil = 0;
 	MPI_Comm_rank(MPI_COMM_WORLD, &I->my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &I->nproc);
-	I->x_regions = 3;
+	I->x_regions = 2;
 	I->y_regions = 1;
 //	I->x_regions = 1;
 //	I->y_regions = 2;
