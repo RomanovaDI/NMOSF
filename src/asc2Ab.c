@@ -212,8 +212,10 @@ int main(int argc, char **argv)
 		sleep(5);*/
 	// GDB
 	if (read_asc_and_declare_variables(I)) goto error;
-	if ((I->nproc > 1) && (I->my_rank == 0)) {
-		if (do_interpolation(I)) goto error;
+	if (I->nproc > 1) {
+		if (I->my_rank == 0)
+			if (do_interpolation(I)) goto error;
+		if (share_dx(I)) goto error;
 	} else if (I->nproc == 1) {
 		if (do_interpolation(I)) goto error;
 		if ((I->ind_start_region_proc = (int *) malloc(I->nproc * 2 * sizeof(int))) == NULL) {
@@ -249,11 +251,16 @@ int main(int argc, char **argv)
 		if ((I->nproc > 1) && (reconstruct_src(I))) return 1;
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if ((i == 0) && (I->nproc > 1) && (reconstruct_src(I))) return 1;
+#if DEBUG
+		if ((I->my_rank == 0) && (print_gl_B(I, 4, i))) return 1;
+#endif
 		if (print_vtk(I, i)) {
 			printf("Error printing vtk file\n");
 			goto error;
 		}
+#if DEBUG
 		if (print_parameter_in_subdomains(I, 4, i)) return 1;
+#endif
 //		if (i % 10 == 0) {
 //			if (print_vtk(I, i / 10) == 1) {
 //				printf("Error printing vtk file\n");

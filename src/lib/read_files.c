@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 int read_asc(in *I)
 {
@@ -296,9 +297,6 @@ int declare_variables(in *I)
 #if DEBUG
 	MPI_Barrier(MPI_COMM_WORLD);
 	printf("Setting up global parameters in process %d\n", I->my_rank);
-#endif
-	MPI_Barrier(MPI_COMM_WORLD);
-#if DEBUG
 	printf("Process %d, function %s\n", I->my_rank, __func__);
 #endif
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -311,6 +309,15 @@ int declare_variables(in *I)
 	MPI_Bcast(&I->nrows, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->n_cells, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->n_points, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
+#if DEBUG
+	MPI_Barrier(MPI_COMM_WORLD);
+	printf("Process %d PID %d: I->gl_nx = %d, I->gl_ny = %d, I->gl_nz = %d\n", I->my_rank, getpid(), I->gl_nx, I->gl_ny, I->gl_nz);
+	printf("Process %d PID %d: I->dx[0] = %lf, I->dx[1] = %lf, I->dx[2] = %lf\n", I->my_rank, getpid(), I->dx[0], I->dx[1], I->dx[2]);
+	printf("Process %d PID %d: I->cellsize = %lf, I->ncols = %d, I->nrows = %d\n", I->my_rank, getpid(), I->cellsize, I->ncols, I->nrows);
+	printf("Process %d PID %d: I->n_cells = %d, I->n_points = %d\n", I->my_rank, getpid(), I->n_cells, I->n_points);
+	MPI_Barrier(MPI_COMM_WORLD);
+#endif
 	return 0;
 }
 

@@ -260,6 +260,14 @@ int do_interpolation(in *I) // is running just on 0 process
 	return 0;
 }
 
+int share_dx(in *I)
+{
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Bcast(I->dx, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
+	return 0;
+}
+
 int make_boundary(in *I)
 {
 #if DEBUG
@@ -344,8 +352,6 @@ int do_decomposition(in *I)
 			}
 		}
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Bcast(I->ind_proc, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	if (I->my_rank == 0) {
 		I->gl_ind_cell_multipl = I->ind_cell_multipl;
 		I->gl_n_cells_multipl = I->n_cells_multipl;
@@ -356,10 +362,11 @@ int do_decomposition(in *I)
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Bcast(I->ind_proc, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(I->gl_ind_cell_multipl, I->gl_nx * I->gl_ny, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->gl_n_cells_multipl, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&I->x_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&I->y_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
+//	MPI_Bcast(&I->x_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
+//	MPI_Bcast(&I->y_regions, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->num_el_in_x_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->num_el_in_y_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->max_num_el_in_x_region, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -368,6 +375,7 @@ int do_decomposition(in *I)
 	MPI_Bcast(&I->ny, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->nz, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	MPI_Bcast(&I->n_points_multipl, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
 	int i_start, j_start;
 	if (I->y_regions > 1) {
 		if ((I->my_rank + 1) % I->y_regions == 0) {
@@ -423,6 +431,18 @@ int do_decomposition(in *I)
 		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
 		return 1;
 	}
+#if DEBUG
+	MPI_Barrier(MPI_COMM_WORLD);
+	printf("Process %d PID %d: I->nx = %d, I->ny = %d, I->nz = %d\n", I->my_rank, getpid(), I->nx, I->ny, I->nz);
+	printf("Process %d PID %d: I->gl_n_cells_multipl = %d, I->n_cells_multipl = %d\n", I->my_rank, getpid(), I->gl_n_cells_multipl, I->n_cells_multipl);
+	printf("Process %d PID %d: I->num_el_in_x_region = %d, I->num_el_in_y_region = %d\n", I->my_rank, getpid(), I->num_el_in_x_region, I->num_el_in_y_region);
+	printf("Process %d PID %d: I->max_num_el_in_x_region = %d, I->max_num_el_in_y_region = %d\n", I->my_rank, getpid(), I->max_num_el_in_x_region, I->max_num_el_in_y_region);
+	printf("Process %d PID %d: I->nx = %d, I->ny = %d, I->nz = %d\n", I->my_rank, getpid(), I->nx, I->ny, I->nz);
+	printf("Process %d PID %d: I->gl_nx = %d, I->gl_ny = %d, I->gl_nz = %d\n", I->my_rank, getpid(), I->gl_nx, I->gl_ny, I->gl_nz);
+	printf("Process %d PID %d: I->n_points_multipl = %d\n", I->my_rank, getpid(), I->n_points_multipl);
+	printf("Process %d PID %d: I->dx[0] = %lf, I->dx[1] = %lf, I->dx[2] = %lf\n", I->my_rank, getpid(), I->dx[0], I->dx[1], I->dx[2]);
+	MPI_Barrier(MPI_COMM_WORLD);
+#endif
 	return 0;
 }
 
@@ -496,7 +516,7 @@ int reconstruct_src_2(in *I)
 			for (j = 0; j < I->ny; j++) {
 				if ((I->ind_cell_multipl[i * I->ny + j] != -1) && (I->ind_proc[(i + I->ind_start_region_proc[0]) * I->gl_ny + j + I->ind_start_region_proc[1]] == I->my_rank)) {
 					for (p = 0; p < I->num_parameters; p++) {
-#if DEBUG
+#if DEBUG==4
 						tmpval = (k * I->max_num_el_in_x_region * I->max_num_el_in_y_region +
 							(i + I->ind_start_region_proc[0] - (I->my_rank / I->y_regions) * I->num_el_in_x_region) * I->max_num_el_in_y_region +
 							j + I->ind_start_region_proc[1] - (I->my_rank % I->y_regions) * I->num_el_in_y_region) * I->num_parameters + p;

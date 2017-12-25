@@ -41,6 +41,31 @@ int write_B_prev_to_B(in *I)
 	return 0;
 }
 
+int print_gl_B(in *I, int p, int n)
+{
+	int nn = n;
+	int i = 0, j, k, a;
+	while (nn > 0) {
+		nn /= 10;
+		i++;
+	}
+	//char file_name[8 + i];
+	char file_name[50 + i];
+	sprintf(file_name, "result/gl_B_parameter%d_time_step%d.log", p, n);
+	FILE *f = fopen(file_name, "w");
+	for (k = 0; k < I->gl_nz; k++) {
+		fprintf(f, "k = %d\n", k);
+		for (i = 0; i < I->gl_nx; i++) {
+			for (j = 0; j < I->gl_ny; j++) {
+				fprintf(f, "%10lf\t", I->gl_B[GL_A_IND(I, p, i, j, k)]);
+			}
+			fprintf(f, "\n");
+		}
+		fprintf(f, "\n");
+	}
+	fclose(f);
+}
+
 void print_A_csr(in *I)
 {
 #if DEBUG
