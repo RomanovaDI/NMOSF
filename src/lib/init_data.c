@@ -45,19 +45,19 @@ int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
 	strcpy(I->map_name, "maps/map_termogas_test_big.asc");
-	//strcpy(I->map_name, "maps/map_termogas.asc");
+	strcpy(I->map_name, "maps/map_termogas.asc");
 	//strcpy(I->map_name, "maps/map_termogas_pattern.asc");
-	strcpy(I->region_map_name, "maps/map_termogas_region.asc");
+	//strcpy(I->region_map_name, "maps/map_termogas_region.asc");
 	//strcpy(I->map_name, "maps/map_cavity.asc");
-	I->hight = 1;//30;
+	I->hight = 10;//30;
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
-	I->end_time = 10;
+	I->end_time = 70000;//1000000;
 	I->stencil_size = 2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
-	I->dt = 1;//we need to set dt!!!
+	I->dt = 100;//we need to set dt!!!
 	I->porousness = 0.3;
 	I->density_0[0] = 998; // water
 	I->density_0[1] = 850; // oil
@@ -144,7 +144,7 @@ int set_parameters_termogas(in *I)
 	I->volume_producted_oil = 0;
 	MPI_Comm_rank(MPI_COMM_WORLD, &I->my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &I->nproc);
-	I->x_regions = 2;
+	I->x_regions = 1;
 	I->y_regions = 1;
 //	I->x_regions = 1;
 //	I->y_regions = 2;

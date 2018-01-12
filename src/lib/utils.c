@@ -62,14 +62,6 @@ int well(in *I, int i, int j, int k)
 
 int production_well(in *I, int i, int j, int k)
 {
-	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
-		return 1;
-	else
-		return 0;
-}
-
-int injection_well(in *I, int i, int j, int k)
-{
 	if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == 0))
 		return 1;
 	else if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == I->gl_ny - 1))
@@ -77,6 +69,14 @@ int injection_well(in *I, int i, int j, int k)
 	else if ((i + I->ind_start_region_proc[0] == I->gl_nx - 1) && (j + I->ind_start_region_proc[1] == 0))
 		return 1;
 	else if ((i + I->ind_start_region_proc[0] == I->gl_nx - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny - 1))
+		return 1;
+	else
+		return 0;
+}
+
+int injection_well(in *I, int i, int j, int k)
+{
+	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
 		return 1;
 	else
 		return 0;
@@ -728,14 +728,14 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
 	if (p == 0)
-		return - I->permeability * relative_permeability(I, p, i, j, k) * (
+		return - I->permeability * relative_permeability(I, p, i, j, k) *(
 			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
 			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
 	else if (p == 1)
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
 			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
@@ -744,7 +744,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
 	else if (p == 2)
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
 			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
@@ -753,7 +753,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]));
+			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
 	else {
 		printf("Error avarage velocity index\n");
 		return 0;
@@ -906,11 +906,16 @@ int print_oil_production(in *I)
 			return 1;
 		}
 	}
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->B[A_IND(I, 6, I->nx / 2, 0, I->nz / 2)] *
-		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, I->nx / 2, 0, I->nz / 2) * I->porousness);
+	int well_coordinates[3];
+	well_coordinates[0] = well_coordinates[1] = well_coordinates[2] = 0;
+	/*well_coordinates[0] = I->nx / 2;
+	well_coordinates[1] = I->ny / 2;
+	well_coordinates[2] = 0;*/
+	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] *
+		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) * I->porousness);
 	fclose(f);
-	I->volume_producted_oil += I->B[A_IND(I, 6, I->nx / 2, 0, I->nz / 2)] *
-		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, I->nx / 2, 0, I->nz / 2) * I->porousness;
+	I->volume_producted_oil += I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] *
+		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) * I->porousness;
 	if (I->time_step == 0) {
 		if ((f = fopen("plotdat/oil_production.dat","w")) == NULL) {
 			printf("error openning file");
