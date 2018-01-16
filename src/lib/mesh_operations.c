@@ -1,6 +1,7 @@
 #include "init_data.h"
 #include "utils.h"
 #include "mpi.h"
+#include "mesh_operations.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -315,7 +316,7 @@ int make_boundary(in *I)
 	return 0;
 }
 
-int do_decomposition(in *I)
+int do_decomposition_parallel(in *I)
 {
 #if DEBUG
 	printf("Making decomposition in process %d\n", I->my_rank);
@@ -445,6 +446,64 @@ int do_decomposition(in *I)
 #endif
 	return 0;
 }
+
+int do_decomposition_consistent(in *I)
+{
+#if DEBUG
+	printf("Making decomposition in process %d\n", I->my_rank);
+#endif
+	int i, j, k, l;
+	if ((I->ind_proc = (int *) malloc(I->gl_nx * I->gl_ny * sizeof(int))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	for (i = 0; i < I->gl_nx * I->gl_ny; i++)
+		I->ind_proc[i] = -1;
+	I->nx = I->num_el_in_x_region = I->max_num_el_in_x_region = I->gl_nx;
+	I->ny = I->num_el_in_y_region = I->max_num_el_in_y_region = I->gl_ny;
+	memset(I->ind_proc, 0, I->gl_nx * I->gl_ny * sizeof(int));
+	I->gl_ind_cell_multipl = I->ind_cell_multipl;
+	I->gl_n_cells_multipl = I->n_cells_multipl;
+	int i_start = 0, j_start = 0;
+	if ((I->ind_start_region_proc = (int *) malloc(2 * sizeof(int))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	I->ind_start_region_proc[0] = i_start;
+	I->ind_start_region_proc[1] = j_start;
+#if DEBUG
+	printf("Process %d, PID %d: I->ind_start_region_proc[0] = %d, I->ind_start_region_proc[1] = %d\n", I->my_rank, getpid(), I->ind_start_region_proc[0], I->ind_start_region_proc[1]);
+#endif
+	if ((I->ind_cell_multipl = (int *) malloc(I->nx * I->ny * sizeof(int))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	I->n_cells_multipl = 0;
+	for (i = i_start; i < i_start + I->nx; i++) {
+		for (j = j_start; j < j_start + I->ny; j++) {
+			if (I->gl_ind_cell_multipl[i * I->gl_ny + j] != -1) {
+				I->ind_cell_multipl[(i - i_start) * (I->ny) + j - j_start] = I->n_cells_multipl++;
+			}
+		}
+	}
+	if ((I->gl_B = (double *) malloc(I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double))) == NULL) {
+		printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	//memset(I->gl_B, 0, I->num_parameters * I->gl_nz * I->gl_n_cells_multipl * sizeof(double));
+	return 0;
+}
+
+int do_decomposition(in *I)
+{
+	if (I->nproc > 1) {
+		if (do_decomposition_parallel(I)) return 1;
+	} else {
+		if (do_decomposition_consistent(I)) return 1;
+	}
+	return 0;
+}
+
 
 int reconstruct_src_1(in *I)
 {

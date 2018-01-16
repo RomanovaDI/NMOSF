@@ -53,11 +53,11 @@ int set_parameters_termogas(in *I)
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
-	I->end_time = 70000;//1000000;
+	I->end_time = 100000;//1000000;
 	I->stencil_size = 2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
-	I->dt = 100;//we need to set dt!!!
+	I->dt = 10;//we need to set dt!!!
 	I->porousness = 0.3;
 	I->density_0[0] = 998; // water
 	I->density_0[1] = 850; // oil

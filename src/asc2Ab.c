@@ -212,19 +212,11 @@ int main(int argc, char **argv)
 		sleep(5);*/
 	// GDB
 	if (read_asc_and_declare_variables(I)) goto error;
-	if (I->nproc > 1) {
-		if (I->my_rank == 0)
-			if (do_interpolation(I)) goto error;
-		if (share_dx(I)) goto error;
-	} else if (I->nproc == 1) {
+	if (I->my_rank == 0)
 		if (do_interpolation(I)) goto error;
-		if ((I->ind_start_region_proc = (int *) malloc(I->nproc * 2 * sizeof(int))) == NULL) {
-			printf("Memory error in func %s in process %d\n", __func__, I->my_rank);
-			return 1;
-		}
-		I->ind_start_region_proc[0] = I->ind_start_region_proc[1] = 0;
-	}
-	if (I->nproc > 1) if (do_decomposition(I)) goto error;
+	if (I->nproc > 1)
+		if (share_dx(I)) goto error;
+	if (do_decomposition(I)) goto error;
 #if AVALANCHE
 	if (set_arrays(I)) goto error;
 #endif
@@ -242,7 +234,7 @@ int main(int argc, char **argv)
 	SET_CONDITION(initial, termogas, fixed_value);
 	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
-//	time_steps = 20;
+	//time_steps = 0;
 	for (i = 0; i <= time_steps; i++) {
 		if (I->my_rank == 0) {
 			printf("Time step %d of %d\n", i + 1, time_steps);
@@ -252,7 +244,7 @@ int main(int argc, char **argv)
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
 		if ((i == 0) && (I->nproc > 1) && (reconstruct_src(I))) return 1;
 #if DEBUG
-		if ((I->my_rank == 0) && (print_gl_B(I, 4, i))) return 1;
+		if ((I->my_rank == 0) && (I->nproc > 1) && (print_gl_B(I, 4, i))) return 1;
 #endif
 		if (print_vtk(I, i)) {
 			printf("Error printing vtk file\n");

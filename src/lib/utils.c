@@ -14,8 +14,11 @@ int A_IND(in *I, int p, int i, int j, int k)
 
 int GL_A_IND(in *I, int p, int i, int j, int k)
 {
-#if DEBUG
-//	printf("Processor %d PID %d: i = %d, j = %d, k = %d, p = %d, I->gl_n_cells_multipl = %d, I->gl_ind_cell_multipl[i * I->gl_ny + j] = %d\n", I->my_rank, getpid(), i, j, k, p, I->gl_n_cells_multipl, I->gl_ind_cell_multipl[i * I->gl_ny + j]);
+#if DEBUG==4
+	printf("I->gl_n_cells_multipl = %d\n", I->gl_n_cells_multipl);
+	printf("Processor %d PID %d: i = %d, j = %d, k = %d, p = %d, I->gl_n_cells_multipl = %d\n", I->my_rank, getpid(), i, j, k, p, I->gl_n_cells_multipl);
+	printf("Processor %d PID %d: i = %d, j = %d, k = %d, p = %d, I->gl_ind_cell_multipl[i * I->gl_ny + j] = %d\n", I->my_rank, getpid(), i, j, k, p, I->gl_ind_cell_multipl[i * I->gl_ny + j]);
+	printf("Processor %d PID %d: i = %d, j = %d, k = %d, p = %d, I->gl_n_cells_multipl = %d, I->gl_ind_cell_multipl[i * I->gl_ny + j] = %d\n", I->my_rank, getpid(), i, j, k, p, I->gl_n_cells_multipl, I->gl_ind_cell_multipl[i * I->gl_ny + j]);
 #endif
 	return (I->num_parameters * (k * I->gl_n_cells_multipl + I->gl_ind_cell_multipl[i * I->gl_ny + j]) + p);
 }
@@ -76,6 +79,12 @@ int production_well(in *I, int i, int j, int k)
 
 int injection_well(in *I, int i, int j, int k)
 {
+#if DEBUG==4
+	printf("Process %d, PID %d: I->ind_start_region_proc[0] = %d\n", I->my_rank, getpid(), I->ind_start_region_proc[0]);
+	printf("Process %d, PID %d: I->ind_start_region_proc[1] = %d\n", I->my_rank, getpid(), I->ind_start_region_proc[1]);
+	printf("Process %d, PID %d: I->gl_nx = %d, I->nx = %d\n", I->my_rank, getpid(), I->gl_nx, I->nx);
+	printf("Process %d, PID %d: I->gl_ny = %d, I->ny = %d\n", I->my_rank, getpid(), I->gl_ny, I->ny);
+#endif
 	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
 		return 1;
 	else
@@ -727,7 +736,19 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
-	if (p == 0)
+	if (p == 0) {
+#if DEBUG
+		if (viscosity(I, p, i, j, k) < 0.0000001) {
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: viscosity = %lf\n", I->my_rank, getpid(), p, i, j, k, viscosity(I, p, i, j, k));
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: density_t(I, p, i, j, k) = %lf\n", I->my_rank, getpid(), p, i, j, k, density_t(I, p, i, j, k));
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: numerator of density = %lf\n",\
+				I->my_rank, getpid(), p, i, j, k, (I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)));
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: denominator of density = %lf\n",\
+				I->my_rank, getpid(), p, i, j, k, (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: temperature_flow = %lf\n",\
+				I->my_rank, getpid(), p, i, j, k, temperature_flow(I, i, j, k));
+		}
+#endif
 		return - I->permeability * relative_permeability(I, p, i, j, k) *(
 			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
@@ -736,7 +757,19 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
 			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
-	else if (p == 1)
+	} else if (p == 1) {
+#if DEBUG
+		if (viscosity(I, p, i, j, k) < 0.0000001) {
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: viscosity = %lf\n", I->my_rank, getpid(), p, i, j, k, viscosity(I, p, i, j, k));
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: density_t(I, p, i, j, k) = %lf\n", I->my_rank, getpid(), p, i, j, k, density_t(I, p, i, j, k));
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: numerator of density = %lf\n",\
+				I->my_rank, getpid(), p, i, j, k, (I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)));
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: denominator of density = %lf\n",\
+				I->my_rank, getpid(), p, i, j, k, (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: temperature_flow = %lf\n",\
+				I->my_rank, getpid(), p, i, j, k, temperature_flow(I, i, j, k));
+		}
+#endif
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
 			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
@@ -745,7 +778,11 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
 			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
-	else if (p == 2)
+	} else if (p == 2) {
+#if DEBUG
+		if (viscosity(I, p, i, j, k) < 0.0000001)
+			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: viscosity = %lf\n", I->my_rank, getpid(), p, i, j, k, viscosity(I, p, i, j, k));
+#endif
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
 			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
@@ -754,7 +791,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
 			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
-	else {
+	} else {
 		printf("Error avarage velocity index\n");
 		return 0;
 	}
@@ -895,13 +932,13 @@ int print_oil_production(in *I)
 {
 	FILE *f;
 	if (I->time_step == 0) {
-		if ((f = fopen("plotdat/velocity_of_oil_production.dat","w")) == NULL) {
+		if ((f = fopen("result/velocity_of_oil_production.dat","w")) == NULL) {
 			printf("error openning file");
 			return 1;
 		}
 		fprintf(f, "#total oil volume %lf", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1));
 	} else {
-		if ((f = fopen("plotdat/velocity_of_oil_production.dat","a")) == NULL) {
+		if ((f = fopen("result/velocity_of_oil_production.dat","a")) == NULL) {
 			printf("error openning file");
 			return 1;
 		}
@@ -917,13 +954,13 @@ int print_oil_production(in *I)
 	I->volume_producted_oil += I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] *
 		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) * I->porousness;
 	if (I->time_step == 0) {
-		if ((f = fopen("plotdat/oil_production.dat","w")) == NULL) {
+		if ((f = fopen("result/oil_production.dat","w")) == NULL) {
 			printf("error openning file");
 			return 1;
 		}
 		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
 	} else {
-		if ((f = fopen("plotdat/oil_production.dat","a")) == NULL) {
+		if ((f = fopen("result/oil_production.dat","a")) == NULL) {
 			printf("error openning file");
 			return 1;
 		}
