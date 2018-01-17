@@ -63,9 +63,9 @@ set -x
 #	-lcreate_matrix \
 #	-lmatrix_functions \
 #	-o build/NMOSF
-make clean
-make all
-export LD_LIBRARY_PATH=./build/lib
+#make clean
+#make all
+export LD_LIBRARY_PATH=./build/lib:./include/superlu:./lib/superlu:./lib/openblas:./lib/atlas
 mpirun -np 1 ./build/NMOSF 2>&1 | tee result/log.log
 #mpirun -np 1 valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF 2>&1 | tee result/log.log
 #./build/NMOSF
