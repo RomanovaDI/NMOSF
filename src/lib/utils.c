@@ -653,10 +653,13 @@ double viscosity_gas(in *I, int p, int i, int j, int k)
 	printf("Process %d: temperature_flow(I, %d, %d, %d) = %lf\n", I->my_rank, i, j, k, temperature_flow(I, i, j, k));
 #endif
 	//printf("Process %d: \n", I->my_rank);
-	return I->viscosity_coef_A_gas[p] *
+	double tmp =  I->viscosity_coef_A_gas[p] *
 		(I->temperature_0_gas[p] + I->viscosity_coef_C_gas[p]) *
 		pow(temperature_flow(I, i, j, k) / I->temperature_0_gas[p], 3 / 2) /
 		(temperature_flow(I, i, j, k) + I->viscosity_coef_C_gas[p]);
+	if (tmp < 0)
+		printf("Process %d, PID %d: p= %d, i = %d, j = %d, k = %d, viscosity_gas = %lf\n", I->my_rank, getpid(), p, i, j, k, tmp);
+	return tmp;
 }
 
 double molar_fraction(in *I, int p, int i, int j, int k)
@@ -672,13 +675,31 @@ double molar_fraction(in *I, int p, int i, int j, int k)
 	return concentration(I, p, i, j, k) / (I->molar_weight[p] * x);
 }
 
+double viscosity_water(in *I, int i, int j, int k)
+{
+	double tmp = 0.001 / (0.14 + (temperature_flow(I, i, j, k) - 273.15) / 30 + 0.000009 * pow(temperature_flow(I, i, j, k) - 273.15, 2));
+	if (tmp < 0)
+		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_water = %lf\n", I->my_rank, getpid(), i, j, k, tmp);
+	return tmp;
+}
+
+double viscosity_oil(in *I, int i, int j, int k)
+{
+	double tmp = density_t(I, 1, i, j, k) * 0.000001 * pow(0.6015, pow(I->initial_temperature / temperature_flow(I, i, j, k), 4));
+	if (tmp < 0)
+		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_oil = %lf\n", I->my_rank, getpid(), i, j, k, tmp);
+	return tmp;
+}
+
 double viscosity(in *I, int p, int i, int j, int k)
 {
-	if (p == 0)
-		return (I->viscosity_coef_A[p] / (1 / density_t(I, p, i, j, k) - I->viscosity_coef_B[p]));
-	else if (p == 1)
-		return (I->viscosity_coef_A[p] / (1 / density_t(I, p, i, j, k) - I->viscosity_coef_B[p]));
-	else if (p == 2) {
+	if (p == 0) {
+		//return (I->viscosity_coef_A[p] / (1 / density_t(I, p, i, j, k) - I->viscosity_coef_B[p]));
+		return viscosity_water(I, i, j, k);
+	} else if (p == 1) {
+		//return (I->viscosity_coef_A[p] / (1 / density_t(I, p, i, j, k) - I->viscosity_coef_B[p]));
+		return viscosity_oil(I, i, j, k);
+	} else if (p == 2) {
 		double x = 1;
 		int l;
 		for (l = 0; l < 4; l++) {
@@ -807,8 +828,8 @@ double rate_of_reaction_coef(in *I, int i, int j, int k)
 
 double rate_of_reaction(in *I, int i, int j, int k)
 {
-	//return rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * pow(relative_permeability(I, 1, i, j, k) * relative_permeability(I, 2, i, j, k), 0.25);
-	return 0;
+	return rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * pow(relative_permeability(I, 1, i, j, k) * relative_permeability(I, 2, i, j, k), 0.25);
+	//return 0;
 }
 
 double mass_inflow_rate_func(in *I, int p, int i, int j, int k)

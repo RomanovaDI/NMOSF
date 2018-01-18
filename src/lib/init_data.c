@@ -119,7 +119,7 @@ int set_parameters_termogas(in *I)
 	I->thermal_conductivity_coef[2] = 0.05; // gas
 	I->thermal_conductivity_coef[3] = 2; // environment
 	I->heat_transfer_coef = 0.3;
-	I->tempetarure_for_calculation_internal_energy = 600;//298;
+	I->tempetarure_for_calculation_internal_energy = 298;
 	I->initial_enthalpy[0] = -285000; // water
 	I->initial_enthalpy[1] = 45000; // oil
 	I->initial_enthalpy[2] = 0; // N2
@@ -129,7 +129,7 @@ int set_parameters_termogas(in *I)
 	I->initial_enthalpy[6] = 0; // environment
 	I->density_environment = 2000;
 	I->initial_pressure = 20000000;
-	I->initial_temperature = 600;
+	I->initial_temperature = 298;
 	//I->injection_well_pressure = 30000000;
 	I->injection_well_pressure = 35000000;
 	I->production_well_pressure = 100000;
