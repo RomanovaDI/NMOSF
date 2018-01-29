@@ -677,7 +677,10 @@ double molar_fraction(in *I, int p, int i, int j, int k)
 
 double viscosity_water(in *I, int i, int j, int k)
 {
-	double tmp = 0.001 / (0.14 + (temperature_flow(I, i, j, k) - 273.15) / 30 + 0.000009 * pow(temperature_flow(I, i, j, k) - 273.15, 2));
+	double tmp;
+	//tmp = 0.001 / (0.14 + (temperature_flow(I, i, j, k) - 273.15) / 30 + 0.000009 * pow(temperature_flow(I, i, j, k) - 273.15, 2));
+	//tmp = (I->viscosity_coef_A[0] / (1 / density_t(I, 0, i, j, k) - I->viscosity_coef_B[0]));
+	tmp = 0.001 / (0.14 + (temperature_flow(I, i, j, k) - 273.15) / 30.0 + 0.000009 * (temperature_flow(I, i, j, k) - 273.15) * (temperature_flow(I, i, j, k) - 273.15));
 	if (tmp < 0)
 		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_water = %lf\n", I->my_rank, getpid(), i, j, k, tmp);
 	return tmp;
@@ -685,7 +688,10 @@ double viscosity_water(in *I, int i, int j, int k)
 
 double viscosity_oil(in *I, int i, int j, int k)
 {
-	double tmp = density_t(I, 1, i, j, k) * 0.000001 * pow(0.6015, pow(I->initial_temperature / temperature_flow(I, i, j, k), 4));
+	double tmp;
+	//tmp = density_t(I, 1, i, j, k) * (pow(0.00000236, pow(I->initial_temperature / temperature_flow(I, i, j, k), 4)) - 0.0000006);
+	//tmp = (I->viscosity_coef_A[1] / (1 / density_t(I, 1, i, j, k) - I->viscosity_coef_B[1]));
+	tmp = density_t(I, 1, i, j, k) * 0.000001 * (pow((1000.0 + 0.6), pow((30.0 / (temperature_flow(I, i, j, k) - 273.15)), 4.0)) - 0.6);
 	if (tmp < 0)
 		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_oil = %lf\n", I->my_rank, getpid(), i, j, k, tmp);
 	return tmp;
@@ -820,15 +826,17 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 
 double rate_of_reaction_coef(in *I, int i, int j, int k)
 {
-	if (temperature_flow(I, i, j, k) < I->threshold_temperature)
-		return 0;
-	else
+//	if (temperature_flow(I, i, j, k) < I->threshold_temperature)
+//		return 0;
+//	else
 		return I->frequency_factor * exp(- I->activation_temperature / temperature_flow(I, i, j, k));
 }
 
 double rate_of_reaction(in *I, int i, int j, int k)
 {
-	return rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * pow(relative_permeability(I, 1, i, j, k) * relative_permeability(I, 2, i, j, k), 0.25);
+//	return rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * pow(relative_permeability(I, 1, i, j, k) * relative_permeability(I, 2, i, j, k), 0.25);
+//	return rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k);
+	return rate_of_reaction_coef(I, i, j, k) * (saturation(I, 1, i, j, k) * density_t(I, 1, i, j, k) / I->molar_weight[4]) * (concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k) / I->molar_weight[1]);
 	//return 0;
 }
 
@@ -853,6 +861,11 @@ double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
 		printf("Error mass inflow rate index\n");
 		return 0;
 	}
+}
+
+double chemical_reaction_heat_flow(in *I, int i, int j, int k)
+{
+	return (- (0.5 * (10127 + 5822) * 4,1868 * 1000 * mass_inflow_rate_func(I, 1, i, j, k)));
 }
 
 double density_derivative_by_pressure(in *I, int p, int i, int j, int k)
@@ -955,24 +968,10 @@ int print_oil_production(in *I)
 	FILE *f;
 	int well_coordinates[3];
 	well_coordinates[0] = well_coordinates[1] = well_coordinates[2] = 0;
+	double velocity_of_oil_production;
 	/*well_coordinates[0] = I->nx / 2;
 	well_coordinates[1] = I->ny / 2;
 	well_coordinates[2] = 0;*/
-	if (I->time_step == 0) {
-		if ((f = fopen("result/velocity_of_oil_production_kg.dat","w")) == NULL) {
-			printf("error openning file");
-			return 1;
-		}
-		fprintf(f, "#total oil volume %lf", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1));
-	} else {
-		if ((f = fopen("result/velocity_of_oil_production_kg.dat","a")) == NULL) {
-			printf("error openning file");
-			return 1;
-		}
-	}
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] *
-		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) * I->porousness);
-	fclose(f);
 	if (I->time_step == 0) {
 		if ((f = fopen("result/velocity_of_oil_production_m.dat","w")) == NULL) {
 			printf("error openning file");
@@ -985,27 +984,16 @@ int print_oil_production(in *I)
 			return 1;
 		}
 	}
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] *
-		I->dx[0] * I->dx[1] * I->dx[2] * I->porousness);
+	velocity_of_oil_production = (saturation(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) -
+		I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] +
+		avarage_velocity(I, 1, 0, well_coordinates[0] + 1, well_coordinates[1], well_coordinates[2]) *
+		saturation(I, 1, well_coordinates[0] + 1, well_coordinates[1], well_coordinates[2]) / I->dx[0] +
+		avarage_velocity(I, 1, 1, well_coordinates[0], well_coordinates[1] + 1, well_coordinates[2]) *
+		saturation(I, 1, well_coordinates[0], well_coordinates[1] + 1, well_coordinates[2])) * I->dx[0] * I->dx[1] * I->dx[2] * I->porousness;
+	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, velocity_of_oil_production);
 	fclose(f);
-	I->volume_producted_oil_kg += I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] *
-		I->dx[0] * I->dx[1] * I->dx[2] * density_t(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) * I->porousness;
-	if (I->time_step == 0) {
-		if ((f = fopen("result/oil_production_kg.dat","w")) == NULL) {
-			printf("error openning file");
-			return 1;
-		}
-		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
-	} else {
-		if ((f = fopen("result/oil_production_kg.dat","a")) == NULL) {
-			printf("error openning file");
-			return 1;
-		}
-	}
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->volume_producted_oil_kg);
-	fclose(f);
-	I->volume_producted_oil_m += I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] *
-		I->dx[0] * I->dx[1] * I->dx[2] * I->porousness;
+
+	I->volume_producted_oil_m += velocity_of_oil_production;
 	if (I->time_step == 0) {
 		if ((f = fopen("result/oil_production_m.dat","w")) == NULL) {
 			printf("error openning file");
@@ -1019,6 +1007,38 @@ int print_oil_production(in *I)
 		}
 	}
 	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->volume_producted_oil_m);
+	fclose(f);
+
+	if (I->time_step == 0) {
+		if ((f = fopen("result/velocity_of_oil_production_kg.dat","w")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+		fprintf(f, "#total oil volume %lf", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1));
+	} else {
+		if ((f = fopen("result/velocity_of_oil_production_kg.dat","a")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	}
+	velocity_of_oil_production *= density_t(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]);
+	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, velocity_of_oil_production);
+	fclose(f);
+
+	I->volume_producted_oil_kg += velocity_of_oil_production;
+	if (I->time_step == 0) {
+		if ((f = fopen("result/oil_production_kg.dat","w")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
+	} else {
+		if ((f = fopen("result/oil_production_kg.dat","a")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	}
+	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->volume_producted_oil_kg);
 	fclose(f);
 	return 0;
 }

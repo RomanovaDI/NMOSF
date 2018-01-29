@@ -291,18 +291,26 @@ int SCAL_chemical_reaction_heat_flow_backward_euler_second_separated_FDM_termoga
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	//I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, 1, i, j, k) * enthalpy_flow(I, i, j, k);
 	double A_value;
-	A_value = - mass_inflow_rate_func(I, 1, i, j, k) *
-		(I->specific_heat[0] - I->specific_heat[1] -
-		 I->specific_heat[2] * concentration(I, 0, i, j, k) - I->specific_heat[3] * concentration(I, 1, i, j, k) +
-		 I->specific_heat[4] * concentration(I, 2, i, j, k) + I->specific_heat[5] * concentration(I, 3, i, j, k));
-	WRITE_TO_A(p, i, j, k, -1);
-	I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, 1, i, j, k) * (I->tempetarure_for_calculation_internal_energy *
-		(- I->specific_heat[0] + I->specific_heat[1] +
-		 I->specific_heat[2] * concentration(I, 0, i, j, k) + I->specific_heat[3] * concentration(I, 1, i, j, k) -
-		 I->specific_heat[4] * concentration(I, 2, i, j, k) - I->specific_heat[5] * concentration(I, 3, i, j, k)) +
-		I->initial_enthalpy[0] - I->initial_enthalpy[1] -
-		I->initial_enthalpy[2] * concentration(I, 0, i, j, k) - I->initial_enthalpy[3] * concentration(I, 1, i, j, k) +
-		I->initial_enthalpy[4] * concentration(I, 2, i, j, k) + I->initial_enthalpy[5] * concentration(I, 3, i, j, k));
+//	A_value = - mass_inflow_rate_func(I, 1, i, j, k) *
+//		(I->specific_heat[0] - I->specific_heat[1] -
+//		 I->specific_heat[2] * concentration(I, 0, i, j, k) - I->specific_heat[3] * concentration(I, 1, i, j, k) +
+//		 I->specific_heat[4] * concentration(I, 2, i, j, k) + I->specific_heat[5] * concentration(I, 3, i, j, k));
+//	A_value = - mass_inflow_rate_func(I, 1, i, j, k) *
+//		(4,5 * I->specific_heat[0] * saturation(I, 0, i, j, k) -
+//		 I->specific_heat[1] * saturation(I, 1, i, j, k) -
+//		 12.5 * I->specific_heat[3] * I->adiabatic_exponent[3] * saturation(I, 2, i, j, k) * concentration(I, 1, i, j, k) +
+//		 8 * I->specific_heat[4] * I->adiabatic_exponent[4] * saturation(I, 2, i, j, k) * concentration(I, 2, i, j, k) +
+//		 4.5 * I->specific_heat[5] * I->adiabatic_exponent[5] * saturation(I, 2, i, j, k) * concentration(I, 3, i, j, k));
+//	WRITE_TO_A(p, i, j, k, -1);
+//	I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, 1, i, j, k) * (I->tempetarure_for_calculation_internal_energy *
+//		(- I->specific_heat[0] + I->specific_heat[1] +
+//		 I->specific_heat[2] * concentration(I, 0, i, j, k) + I->specific_heat[3] * concentration(I, 1, i, j, k) -
+//		 I->specific_heat[4] * concentration(I, 2, i, j, k) - I->specific_heat[5] * concentration(I, 3, i, j, k)) +
+//		I->initial_enthalpy[0] - I->initial_enthalpy[1] -
+//		I->initial_enthalpy[2] * concentration(I, 0, i, j, k) - I->initial_enthalpy[3] * concentration(I, 1, i, j, k) +
+//		I->initial_enthalpy[4] * concentration(I, 2, i, j, k) + I->initial_enthalpy[5] * concentration(I, 3, i, j, k));
+//	I->B[A_IND(I, p, i, j, k)] += A_value * temperature_flow(I, i, j, k);
+	I->B[A_IND(I, p, i, j, k)] += chemical_reaction_heat_flow(I, i, j, k);
 	return 0;
 }
 

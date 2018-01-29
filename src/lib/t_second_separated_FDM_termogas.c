@@ -95,14 +95,14 @@ int DDT_porousness_density_energy_flow_second_separated_FDM_termogas(in *I, int 
 	for (pp = 0; pp < 4; pp++)
 		A_value += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k);
 	WRITE_TO_A(p, i, j, k, -1);
-	I->B[A_IND(I, p, i, j, k)] += A_value * (
-		temperature_flow(I, i + 1, j, k) + temperature_flow(I, i - 1, j, k) +
-		temperature_flow(I, i, j + 1, k) + temperature_flow(I, i, j - 1, k) +
-		temperature_flow(I, i, j, k + 1) + temperature_flow(I, i, j, k - 1)) / 6;
+//	I->B[A_IND(I, p, i, j, k)] += A_value * (
+//		temperature_flow(I, i + 1, j, k) + temperature_flow(I, i - 1, j, k) +
+//		temperature_flow(I, i, j + 1, k) + temperature_flow(I, i, j - 1, k) +
+//		temperature_flow(I, i, j, k + 1) + temperature_flow(I, i, j, k - 1)) / 6;
 //	I->B[A_IND(I, p, i, j, k)] += A_value * (
 //		temperature_flow(I, i + 1, j, k) + temperature_flow(I, i - 1, j, k) +
 //		temperature_flow(I, i, j, k + 1) + temperature_flow(I, i, j, k - 1)) / 4;
-//	I->B[A_IND(I, p, i, j, k)] += A_value * temperature_flow(I, i, j, k);
+	I->B[A_IND(I, p, i, j, k)] += A_value * temperature_flow(I, i, j, k);
 	return 0;
 }
 

@@ -1,7 +1,7 @@
 #define AVALANCHE 0
 #define TERMOGAS 1
 
-#define DEBUG 1
+#define DEBUG 0
 
 typedef struct init_parameters_avalanche {
 	char map_name[100];
@@ -96,7 +96,7 @@ typedef struct init_parameters_termogas {
 	double temperature_0;
 	double density_coef_a[2];
 	double R;
-	double molar_weight[4];
+	double molar_weight[5];
 	double permeability;
 	double residual_saturation[3];
 	double viscosity_coef_A[2];
@@ -122,6 +122,7 @@ typedef struct init_parameters_termogas {
 	double initial_pressure;
 	double initial_temperature;
 	double injection_well_pressure;
+	double injection_well_temperature;
 	double production_well_pressure;
 	int equation_num;
 	double epsilon;

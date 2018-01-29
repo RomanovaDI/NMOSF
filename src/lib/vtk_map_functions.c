@@ -315,6 +315,28 @@ int print_vtk_termogas(in *I, int n)
 			}
 		}
 	}
+	fprintf(f, "SCALARS rate_of_reaction double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", rate_of_reaction(I, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS chemical_reaction_heat_flow double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", chemical_reaction_heat_flow(I, i, j, k));
+				}
+			}
+		}
+	}
 	fprintf(f, "VECTORS avarage_velocity_water double\n");
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {

@@ -250,6 +250,12 @@ int main(int argc, char **argv)
 			printf("Error printing vtk file\n");
 			goto error;
 		}
+//		if (i % 10 == 0) {
+//			if (print_vtk(I, i / 10) == 1) {
+//				printf("Error printing vtk file\n");
+//				goto error;
+//			}
+//		}
 #if DEBUG
 		if (print_parameter_in_subdomains(I, 4, i)) return 1;
 #endif
