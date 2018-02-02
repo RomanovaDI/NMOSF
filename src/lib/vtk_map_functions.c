@@ -326,6 +326,32 @@ int print_vtk_termogas(in *I, int n)
 			}
 		}
 	}
+	fprintf(f, "SCALARS concentration_oil double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	double tmp;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					tmp = (concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k) *
+						(pressure(I, i, j, k) * I->molar_weight[1] / (I->R * temperature_flow(I, i, j, k))) / I->molar_weight[1]);
+					fprintf(f, "%20.20f\n", tmp);
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS concentration_oxigen double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					tmp = (saturation(I, 1, i, j, k) * density_t(I, 1, i, j, k) / I->molar_weight[4]);
+					fprintf(f, "%20.20f\n", tmp);
+				}
+			}
+		}
+	}
 	fprintf(f, "SCALARS chemical_reaction_heat_flow double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
 	for (k = 0; k < I->nz; k++) {

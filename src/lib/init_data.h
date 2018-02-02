@@ -113,6 +113,8 @@ typedef struct init_parameters_termogas {
 	double threshold_temperature;
 	double frequency_factor;
 	double activation_temperature;
+	double stoichiometric_coef_activ;
+	double pressure_activ;
 	double specific_heat[7];
 	double thermal_conductivity_coef[4];
 	double heat_transfer_coef;
@@ -127,6 +129,7 @@ typedef struct init_parameters_termogas {
 	int equation_num;
 	double epsilon;
 	double adiabatic_exponent[6];
+	double heat_liberation;
 	double time_step;
 	double volume_producted_oil_kg;
 	double volume_producted_oil_m;

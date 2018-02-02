@@ -310,7 +310,9 @@ int SCAL_chemical_reaction_heat_flow_backward_euler_second_separated_FDM_termoga
 //		I->initial_enthalpy[2] * concentration(I, 0, i, j, k) - I->initial_enthalpy[3] * concentration(I, 1, i, j, k) +
 //		I->initial_enthalpy[4] * concentration(I, 2, i, j, k) + I->initial_enthalpy[5] * concentration(I, 3, i, j, k));
 //	I->B[A_IND(I, p, i, j, k)] += A_value * temperature_flow(I, i, j, k);
-	I->B[A_IND(I, p, i, j, k)] += chemical_reaction_heat_flow(I, i, j, k);
+	A_value = chemical_reaction_heat_flow_derivative_by_temperature(I, i, j, k);
+	WRITE_TO_A(p, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] += chemical_reaction_heat_flow_derivative_by_temperature(I, i, j, k) * temperature_flow(I, i, j, k) - chemical_reaction_heat_flow(I, i, j, k);
 	return 0;
 }
 

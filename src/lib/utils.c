@@ -682,7 +682,7 @@ double viscosity_water(in *I, int i, int j, int k)
 	//tmp = (I->viscosity_coef_A[0] / (1 / density_t(I, 0, i, j, k) - I->viscosity_coef_B[0]));
 	tmp = 0.001 / (0.14 + (temperature_flow(I, i, j, k) - 273.15) / 30.0 + 0.000009 * (temperature_flow(I, i, j, k) - 273.15) * (temperature_flow(I, i, j, k) - 273.15));
 	if (tmp < 0)
-		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_water = %lf\n", I->my_rank, getpid(), i, j, k, tmp);
+		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_water = %lf, temperature_flow = %lf\n", I->my_rank, getpid(), i, j, k, tmp, temperature_flow(I, i, j, k));
 	return tmp;
 }
 
@@ -693,7 +693,7 @@ double viscosity_oil(in *I, int i, int j, int k)
 	//tmp = (I->viscosity_coef_A[1] / (1 / density_t(I, 1, i, j, k) - I->viscosity_coef_B[1]));
 	tmp = density_t(I, 1, i, j, k) * 0.000001 * (pow((1000.0 + 0.6), pow((30.0 / (temperature_flow(I, i, j, k) - 273.15)), 4.0)) - 0.6);
 	if (tmp < 0)
-		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_oil = %lf\n", I->my_rank, getpid(), i, j, k, tmp);
+		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_oil = %lf, temperature_flow = %lf\n", I->my_rank, getpid(), i, j, k, tmp, temperature_flow(I, i, j, k));
 	return tmp;
 }
 
@@ -826,17 +826,35 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 
 double rate_of_reaction_coef(in *I, int i, int j, int k)
 {
-//	if (temperature_flow(I, i, j, k) < I->threshold_temperature)
+	if (temperature_flow(I, i, j, k) < I->threshold_temperature)
+		return 0;
+	else
+		return I->frequency_factor * exp(- I->activation_temperature / temperature_flow(I, i, j, k));
+//	if (injection_well(I, i, j, k))
 //		return 0;
 //	else
-		return I->frequency_factor * exp(- I->activation_temperature / temperature_flow(I, i, j, k));
 }
 
 double rate_of_reaction(in *I, int i, int j, int k)
 {
-//	return rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * pow(relative_permeability(I, 1, i, j, k) * relative_permeability(I, 2, i, j, k), 0.25);
-//	return rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k);
-	return rate_of_reaction_coef(I, i, j, k) * (saturation(I, 1, i, j, k) * density_t(I, 1, i, j, k) / I->molar_weight[4]) * (concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k) / I->molar_weight[1]);
+//	double tmp = rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * pow(relative_permeability(I, 1, i, j, k) * relative_permeability(I, 2, i, j, k), 0.25);
+//	double tmp = rate_of_reaction_coef(I, i, j, k) * concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k);
+//	double tmp = rate_of_reaction_coef(I, i, j, k) * (saturation(I, 1, i, j, k) * density_t(I, 1, i, j, k) / I->molar_weight[4]) *
+//		pow((concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k) *
+//			(pressure(I, i, j, k) * I->molar_weight[1] / (I->R * temperature_flow(I, i, j, k))) / I->molar_weight[1]), 12.5);
+//	double tmp = rate_of_reaction_coef(I, i, j, k) * (saturation(I, 1, i, j, k) * density_t(I, 1, i, j, k) / I->molar_weight[4]) *
+//		(concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k) *
+//		(pressure(I, i, j, k) * I->molar_weight[1] / (I->R * temperature_flow(I, i, j, k))) / I->molar_weight[1]);
+	double tmp = rate_of_reaction_coef(I, i, j, k) * saturation(I, 1, i, j, k) * saturation(I, 2, i, j, k) * concentration(I, 1, i, j, k) *
+		pow(pressure(I, i, j, k) / I->pressure_activ, I->stoichiometric_coef_activ);
+	return tmp;
+	//return 0;
+}
+
+double rate_of_reaction_derivative_by_temperature(in *I, int i, int j, int k)
+{
+	double tmp = rate_of_reaction(I, i, j, k) * I->activation_temperature / (temperature_flow(I, i, j, k) * temperature_flow(I, i, j, k));
+	return tmp;
 	//return 0;
 }
 
@@ -863,9 +881,37 @@ double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
 	}
 }
 
+double mass_inflow_rate_func_derivative_by_temperature(in *I, int p, int i, int j, int k)
+{
+	if (p == 0) // N2
+		return 0;
+	else if (p == 1) // O2
+		return - rate_of_reaction_derivative_by_temperature(I, i, j, k) * I->stoichiometric_coef[0] * I->molar_weight[p];
+	else if (p == 2) // CO2
+		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * I->stoichiometric_coef[1] * I->molar_weight[p];
+	else if (p == 3) // H2O
+		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
+	else if (p == 5) // water
+		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[3];
+	else if (p == 6) // oil
+		return - mass_inflow_rate_func_derivative_by_temperature(I, 5, i, j, k) - mass_inflow_rate_func_derivative_by_temperature(I, 7, i, j, k);
+	else if (p == 7) // gas
+		return mass_inflow_rate_func_derivative_by_temperature(I, 0, i, j, k) + mass_inflow_rate_func_derivative_by_temperature(I, 1, i, j, k) +
+			mass_inflow_rate_func_derivative_by_temperature(I, 2, i, j, k) + mass_inflow_rate_func_derivative_by_temperature(I, 3, i, j, k);
+	else {
+		printf("Error mass inflow rate index\n");
+		return 0;
+	}
+}
+
 double chemical_reaction_heat_flow(in *I, int i, int j, int k)
 {
-	return (- (0.5 * (10127 + 5822) * 4,1868 * 1000 * mass_inflow_rate_func(I, 1, i, j, k)));
+	return I->heat_liberation * mass_inflow_rate_func(I, 6, i, j, k);
+}
+
+double chemical_reaction_heat_flow_derivative_by_temperature(in *I, int i, int j, int k)
+{
+	return I->heat_liberation * mass_inflow_rate_func_derivative_by_temperature(I, 6, i, j, k);
 }
 
 double density_derivative_by_pressure(in *I, int p, int i, int j, int k)
@@ -1041,6 +1087,30 @@ int print_oil_production(in *I)
 	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->volume_producted_oil_kg);
 	fclose(f);
 	return 0;
+}
+
+double avarage_velocity_global(in *I)
+{
+	int i, j, k, p, pr;
+	double x = 0, y = 0;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++) {
+					//	for (pr = 0; pr < 3; pr++) {
+					//		x += abs(avarage_velocity(I, p, pr, i, j, k));
+					//	}
+						x = sqrt(pow(avarage_velocity(I, p, 0, i, j, k), 2) + pow(avarage_velocity(I, p, 1, i, j, k), 2) + pow(avarage_velocity(I, p, 2, i, j, k), 2));
+						if (y < x)
+							y = x;
+					}
+				}
+			}
+		}
+	}
+//	x /= I->n_cells_multipl * 9;
+	return y;
 }
 
 #endif

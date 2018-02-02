@@ -271,6 +271,7 @@ int main(int argc, char **argv)
 		if (create_Ab_avalanche(I) == 1) goto error;
 #endif
 #if TERMOGAS
+		printf("avarage_velocity_global = %lf\tdt = %lf\n", avarage_velocity_global(I), 0.7 * I->dx[0] / avarage_velocity_global(I));
 		if (create_Ab_termogas(I) == 1) goto error;
 #endif
 		if (i == 0)

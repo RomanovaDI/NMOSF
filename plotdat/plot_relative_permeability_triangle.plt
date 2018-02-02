@@ -52,14 +52,14 @@ set arrow 48 from 0.8*0.5,0.8*sqrt(3)/2 to 0.5+0.2*0.5,0.8*sqrt(3)/2 as 2
 set arrow 49 from 0.9*0.5,0.9*sqrt(3)/2 to 0.5+0.1*0.5,0.9*sqrt(3)/2 as 2
 
 # Основные подписи (что по углам)
-set label 11 center "Нефть" at 0.5,sqrt(3)/2+.06
-set label 12 center "Газ" at 1,-.04
-set label 13 center "Вода" at 0,-.04
+set label 11 center "Газ" at 0.5,sqrt(3)/2+.06
+set label 12 center "Нефть" at 1.1,-.04
+set label 13 center "Вода" at -0.1,-.04
 
 # Подписи шкалы
-set label 21 center ">>>> увеличение концентрации газа >>>>" font "Helvetica,15" at 0.5,-.05
+set label 21 center ">>>> увеличение концентрации нефти >>>>" font "Helvetica,15" at 0.5,-.05
 set label 32 center "<<<< увеличение концентрации воды <<<<" font "Helvetica,15" rotate by 60 at .5*.5-0.04,0.5*sqrt(3)/2
-set label 43 center "<<<< увеличение концентрации нефти <<<<" font "Helvetica,15" rotate by -60 at 1-.5*.5+0.04,.50*sqrt(3)/2
+set label 43 center "<<<< увеличение концентрации газа <<<<" font "Helvetica,15" rotate by -60 at 1-.5*.5+0.04,.50*sqrt(3)/2
 
 #set palette grey
 #set palette defined (0 "white",100 "blue",101 "grey")

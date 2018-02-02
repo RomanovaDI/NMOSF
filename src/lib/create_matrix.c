@@ -258,9 +258,9 @@ int create_Ab_termogas(in *I)
 						} else {
 							//if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 							if (DDT(p, i, j, k, porousness_density_energy_flow, second, separated, FDM, termogas)) return 1;
-							//if (DIV(p, i, j, k, density_internal_energy_avarage_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
-							//if (DIV(p, i, j, k, heat_influx_vector_flow, backward_euler, second, separated, FDM, termogas)) return 1;
-							//if (SCAL(p, i, j, k, heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
+							if (DIV(p, i, j, k, density_internal_energy_avarage_velocity, backward_euler, second, separated, FDM, termogas)) return 1;
+							if (DIV(p, i, j, k, heat_influx_vector_flow, backward_euler, second, separated, FDM, termogas)) return 1;
+							if (SCAL(p, i, j, k, heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
 							if (SCAL(p, i, j, k, chemical_reaction_heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
 						}
 					} else {

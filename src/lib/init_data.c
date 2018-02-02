@@ -53,11 +53,11 @@ int set_parameters_termogas(in *I)
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
-	I->end_time = 100000;//1000000;
+	I->end_time = 86400;//1000000;
 	I->stencil_size = 2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
-	I->dt = 10;//we need to set dt!!!
+	I->dt = 10.0;//10;//we need to set dt!!!
 	I->porousness = 0.2; //0.3;
 	I->initial_pressure = 20000000;
 	I->initial_temperature = 400;//298;
@@ -107,9 +107,11 @@ int set_parameters_termogas(in *I)
 	I->stoichiometric_coef[0] = I->num_carbon_atoms + 0.25 * I->num_hydrogen_atoms;
 	I->stoichiometric_coef[1] = I->num_carbon_atoms;
 	I->stoichiometric_coef[2] = 0.25 * I->num_hydrogen_atoms;
-	I->threshold_temperature = I->initial_temperature;// 400;
+	I->threshold_temperature = I->initial_temperature + 50;// 400;
 	I->frequency_factor = 1;
-	I->activation_temperature = I->initial_temperature;//400;
+	I->activation_temperature = 500;//I->initial_temperature;//400;
+	I->stoichiometric_coef_activ = 1;
+	I->pressure_activ = I->initial_pressure;
 	I->specific_heat[0] = 4180.6; // water
 	I->specific_heat[1] = 2500;//1800; // oil
 	I->specific_heat[2] = 1040; // N2
@@ -132,9 +134,9 @@ int set_parameters_termogas(in *I)
 	I->initial_enthalpy[6] = 0; // environment
 	I->density_environment = 2000;
 	//I->injection_well_pressure = 30000000;
-	I->injection_well_pressure = 35000000;
+	I->injection_well_pressure = 30000000;
 	I->injection_well_temperature = 500;
-	I->production_well_pressure = 100000;
+	I->production_well_pressure = 1000000;
 	I->epsilon = 1e-10;
 	I->adiabatic_exponent[0] = 1; // water
 	I->adiabatic_exponent[1] = 1; // oil
@@ -142,6 +144,7 @@ int set_parameters_termogas(in *I)
 	I->adiabatic_exponent[3] = 1.4; // O2
 	I->adiabatic_exponent[4] = 1.35; // CO2
 	I->adiabatic_exponent[5] = 1.3; // H2O(g)
+	I->heat_liberation = 43739500;
 	I->time_step = 0;
 	I->volume_producted_oil_kg = 0;
 	I->volume_producted_oil_m = 0;
