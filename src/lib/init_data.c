@@ -108,7 +108,7 @@ int set_parameters_termogas(in *I)
 	I->stoichiometric_coef[1] = I->num_carbon_atoms;
 	I->stoichiometric_coef[2] = 0.25 * I->num_hydrogen_atoms;
 	I->threshold_temperature = I->initial_temperature + 50;// 400;
-	I->frequency_factor = 1;
+	I->frequency_factor = 1000;
 	I->activation_temperature = 500;//I->initial_temperature;//400;
 	I->stoichiometric_coef_activ = 1;
 	I->pressure_activ = I->initial_pressure;
@@ -135,7 +135,7 @@ int set_parameters_termogas(in *I)
 	I->density_environment = 2000;
 	//I->injection_well_pressure = 30000000;
 	I->injection_well_pressure = 30000000;
-	I->injection_well_temperature = 500;
+	I->injection_well_temperature = 600;
 	I->production_well_pressure = 1000000;
 	I->epsilon = 1e-10;
 	I->adiabatic_exponent[0] = 1; // water

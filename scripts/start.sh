@@ -68,12 +68,15 @@ set -x
 rm -rf result
 mkdir result
 mkdir tmp
-if [[$HOSTNAME = 'daria']] then
-	export LD_LIBRARY_PATH=./build/lib
-fi
-if [[$HOSTNAME = 'head.niisi.local' || $HOSATNAME = 'n01' || $HOSTNAME = 'n02' || $HOSTNAME = 'n03' || $HOSTNAME = 'n04' || $HOSTNAME = 'n05' || $HOSTNAME = 'n06' || $HOSTNAME = 'n07'|| $HOSATNAME = 'n08' || $HOSTNAME = 'n09' || $HOSTNAME = 'n10' || $HOSTNAME = 'n11' || $HOSTNAME = 'n12']]
-	export LD_LIBRARY_PATH=./build/lib:./include/superlu:./lib/superlu:./lib/openblas:./lib/atlas
-fi
+export LD_LIBRARY_PATH=./build/lib
+#if [$HOSTNAME == 'daria-sony']
+#then
+#	export LD_LIBRARY_PATH=./build/lib
+#fi
+#if [$HOSTNAME == 'head.niisi.local'] || [$HOSATNAME == 'n01'] || [$HOSTNAME == 'n02'] || [$HOSTNAME == 'n03'] || [$HOSTNAME == 'n04'] || [$HOSTNAME == 'n05'] || [$HOSTNAME == 'n06'] || [$HOSTNAME == 'n07'] || [$HOSATNAME == 'n08'] || [$HOSTNAME == 'n09'] || [$HOSTNAME == 'n10'] || [$HOSTNAME == 'n11'] || [$HOSTNAME == 'n12']
+#then
+#	export LD_LIBRARY_PATH=./build/lib:./include/superlu:./lib/superlu:./lib/openblas:./lib/atlas
+#fi
 #mpirun -np 1 ./build/NMOSF 2>&1 > result/log.log &
 mpirun -np 1 ./build/NMOSF 2>&1 | tee result/log.log
 #mpirun -np 1 valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF 2>&1 | tee result/log.log

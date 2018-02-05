@@ -845,7 +845,8 @@ double rate_of_reaction(in *I, int i, int j, int k)
 //	double tmp = rate_of_reaction_coef(I, i, j, k) * (saturation(I, 1, i, j, k) * density_t(I, 1, i, j, k) / I->molar_weight[4]) *
 //		(concentration(I, 1, i, j, k) * saturation(I, 2, i, j, k) *
 //		(pressure(I, i, j, k) * I->molar_weight[1] / (I->R * temperature_flow(I, i, j, k))) / I->molar_weight[1]);
-	double tmp = rate_of_reaction_coef(I, i, j, k) * saturation(I, 1, i, j, k) * saturation(I, 2, i, j, k) * concentration(I, 1, i, j, k) *
+	double tmp = rate_of_reaction_coef(I, i, j, k) * (saturation(I, 1, i, j, k) - I->residual_saturation[1]) *
+		(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * concentration(I, 1, i, j, k) *
 		pow(pressure(I, i, j, k) / I->pressure_activ, I->stoichiometric_coef_activ);
 	return tmp;
 	//return 0;
@@ -1030,7 +1031,7 @@ int print_oil_production(in *I)
 			return 1;
 		}
 	}
-	velocity_of_oil_production = (saturation(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) -
+	velocity_of_oil_production = - (saturation(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) -
 		I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] +
 		avarage_velocity(I, 1, 0, well_coordinates[0] + 1, well_coordinates[1], well_coordinates[2]) *
 		saturation(I, 1, well_coordinates[0] + 1, well_coordinates[1], well_coordinates[2]) / I->dx[0] +
