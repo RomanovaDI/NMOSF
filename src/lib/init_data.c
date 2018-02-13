@@ -74,7 +74,7 @@ int set_parameters_termogas(in *I)
 	I->molar_weight[1] = 0.032; //O2
 	I->molar_weight[2] = 0.04401; //CO2
 	I->molar_weight[3] = 0.01802; //H2O(g)
-	I->molar_weight[4] = 0.114; //C8H18
+	I->molar_weight[4] = 0.11423; //C8H18
 	I->permeability = 0.000000000001;
 	I->residual_saturation[0] = 0.15; // water
 	I->residual_saturation[1] = 0.2; // oil
@@ -144,7 +144,7 @@ int set_parameters_termogas(in *I)
 	I->adiabatic_exponent[3] = 1.4; // O2
 	I->adiabatic_exponent[4] = 1.35; // CO2
 	I->adiabatic_exponent[5] = 1.3; // H2O(g)
-	I->heat_liberation = 43739500;
+	I->heat_liberation = 43739500*100;
 	I->time_step = 0;
 	I->volume_producted_oil_kg = 0;
 	I->volume_producted_oil_m = 0;

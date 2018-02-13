@@ -47,7 +47,9 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 int SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k);
+	double A_value;
+	A_value = - mass_inflow_rate_func(I, p, i, j, k);
+	WRITE_TO_A(p, i, j, k, -1);
 	return 0;
 }
 
@@ -232,7 +234,7 @@ int DIV_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in 
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
 		if (! boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2])) {
-			A_value = I->porousness;
+			A_value = - I->porousness;
 			x = 0;
 			for (pp = 0; pp < 3; pp++)
 				x += I->thermal_conductivity_coef[pp] * (saturation(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) + saturation(I, pp, i, j, k)) / 2;
@@ -242,7 +244,7 @@ int DIV_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in 
 			WRITE_TO_A(p, i, j, k, -1);
 		}
 		if (! boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) {
-			A_value = I->porousness;
+			A_value = - I->porousness;
 			x = 0;
 			for (pp = 0; pp < 3; pp++)
 				x += I->thermal_conductivity_coef[pp] * (saturation(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) + saturation(I, pp, i, j, k)) / 2;
@@ -291,6 +293,7 @@ int SCAL_chemical_reaction_heat_flow_backward_euler_second_separated_FDM_termoga
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	//I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, 1, i, j, k) * enthalpy_flow(I, i, j, k);
 	double A_value;
+	int a;
 //	A_value = - mass_inflow_rate_func(I, 1, i, j, k) *
 //		(I->specific_heat[0] - I->specific_heat[1] -
 //		 I->specific_heat[2] * concentration(I, 0, i, j, k) - I->specific_heat[3] * concentration(I, 1, i, j, k) +
@@ -310,9 +313,15 @@ int SCAL_chemical_reaction_heat_flow_backward_euler_second_separated_FDM_termoga
 //		I->initial_enthalpy[2] * concentration(I, 0, i, j, k) - I->initial_enthalpy[3] * concentration(I, 1, i, j, k) +
 //		I->initial_enthalpy[4] * concentration(I, 2, i, j, k) + I->initial_enthalpy[5] * concentration(I, 3, i, j, k));
 //	I->B[A_IND(I, p, i, j, k)] += A_value * temperature_flow(I, i, j, k);
-	A_value = chemical_reaction_heat_flow_derivative_by_temperature(I, i, j, k);
-	WRITE_TO_A(p, i, j, k, -1);
-	I->B[A_IND(I, p, i, j, k)] += chemical_reaction_heat_flow_derivative_by_temperature(I, i, j, k) * temperature_flow(I, i, j, k) - chemical_reaction_heat_flow(I, i, j, k);
+//	A_value = chemical_reaction_heat_flow_derivative_by_temperature(I, i, j, k);
+//	WRITE_TO_A(p, i, j, k, -1);
+//	I->B[A_IND(I, p, i, j, k)] += chemical_reaction_heat_flow_derivative_by_temperature(I, i, j, k) * temperature_flow(I, i, j, k) - chemical_reaction_heat_flow(I, i, j, k);
+	for (a = 0; a < 4; a++) {
+		I->B[A_IND(I, p, i, j, k)] += concentration(I, a, i, j, k) * mass_inflow_rate_func(I, a, i, j, k);
+	}
+	for (a = 0; a < 2; a++) {
+		I->B[A_IND(I, p, i, j, k)] += saturation(I, a, i, j, k) * mass_inflow_rate_func(I, a + 4, i, j, k);
+	}
 	return 0;
 }
 
