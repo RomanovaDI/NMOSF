@@ -363,6 +363,97 @@ int print_vtk_termogas(in *I, int n)
 			}
 		}
 	}
+	fprintf(f, "SCALARS mass_inflow_rate_water double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", saturation(I, 0, i, j, k) * mass_inflow_rate_func(I, 5, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS mass_inflow_rate_oil double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", saturation(I, 1, i, j, k) * mass_inflow_rate_func(I, 6, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS mass_inflow_rate_gas double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", saturation(I, 2, i, j, k) * mass_inflow_rate_func(I, 7, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS mass_inflow_rate_N2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", concentration(I, 0, i, j, k) * mass_inflow_rate_func(I, 0, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS mass_inflow_rate_O2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", concentration(I, 1, i, j, k) * mass_inflow_rate_func(I, 1, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS mass_inflow_rate_CO2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", concentration(I, 2, i, j, k) * mass_inflow_rate_func(I, 2, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS mass_inflow_rate_H2O double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", concentration(I, 3, i, j, k) * mass_inflow_rate_func(I, 3, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS mass_inflow_rate_summ double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					tmp =	saturation(I, 0, i, j, k) * mass_inflow_rate_func(I, 5, i, j, k) +
+							saturation(I, 1, i, j, k) * mass_inflow_rate_func(I, 6, i, j, k) +
+							saturation(I, 2, i, j, k) * mass_inflow_rate_func(I, 7, i, j, k);
+					fprintf(f, "%20.20f\n", tmp);
+				}
+			}
+		}
+	}
 	fprintf(f, "VECTORS avarage_velocity_water double\n");
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {

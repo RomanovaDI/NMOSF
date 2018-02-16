@@ -865,27 +865,18 @@ double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
 	if (p == 0) // N2
 		return 0;
 	else if (p == 1) // O2
-		return - I->porousness * saturation(I, 2, i, j, k) * rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[0] * I->molar_weight[p];
+		return I->porousness * rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
 	else if (p == 2) // CO2
-		return I->porousness * saturation(I, 2, i, j, k) * rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[1] * I->molar_weight[p];
-	else if (p == 3) // H2O
-		return I->porousness * saturation(I, 2, i, j, k) * rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
+		return I->porousness * rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
+	else if (p == 3) // H2O(g)
+		return I->porousness * rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
 	else if (p == 5) // water
-		return I->porousness * rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[3];
+		return I->porousness * rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p - 1] - I->stoichiometric_coef_before[p - 1]) * I->molar_weight[3];
 	else if (p == 6) // oil
-		//return - mass_inflow_rate_func(I, 5, i, j, k) - mass_inflow_rate_func(I, 7, i, j, k);
-		return - I->porousness * rate_of_reaction(I, i, j, k) * I->molar_weight[4];
+		return I->porousness * rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p - 1] - I->stoichiometric_coef_before[p - 1]) * I->molar_weight[4];
 	else if (p == 7) // gas
-		return concentration(I, 0, i, j, k) * mass_inflow_rate_func(I, 10, i, j, k) + concentration(I, 1, i, j, k) * mass_inflow_rate_func(I, 11, i, j, k) +
-			concentration(I, 2, i, j, k) * mass_inflow_rate_func(I, 12, i, j, k) + concentration(I, 3, i, j, k) * mass_inflow_rate_func(I, 13, i, j, k);
-	else if (p == 10) // N2
-		return 0;
-	else if (p == 11) // O2
-		return - I->porousness * rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[0] * I->molar_weight[p];
-	else if (p == 12) // CO2
-		return I->porousness * rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[1] * I->molar_weight[p];
-	else if (p == 13) // H2O
-		return I->porousness * rate_of_reaction(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
+		return mass_inflow_rate_func(I, 0, i, j, k) + mass_inflow_rate_func(I, 1, i, j, k) +
+			mass_inflow_rate_func(I, 2, i, j, k) + mass_inflow_rate_func(I, 3, i, j, k);
 	else {
 		printf("Error mass inflow rate index\n");
 		return 0;
@@ -917,7 +908,15 @@ double mass_inflow_rate_func_derivative_by_temperature(in *I, int p, int i, int 
 
 double chemical_reaction_heat_flow(in *I, int i, int j, int k)
 {
-	return I->heat_liberation * mass_inflow_rate_func(I, 6, i, j, k);
+	int p;
+	double x = 0;
+	for (p = 0; p < 4; p++) {
+		x -= mass_inflow_rate_func(I, p, i, j, k) * I->initial_enthalpy[p + 2];
+	}
+	for (p = 0; p < 2; p++) {
+		x -= mass_inflow_rate_func(I, p + 5, i, j, k) * I->initial_enthalpy[p];
+	}
+	return x;
 }
 
 double chemical_reaction_heat_flow_derivative_by_temperature(in *I, int i, int j, int k)

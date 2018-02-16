@@ -110,6 +110,8 @@ typedef struct init_parameters_termogas {
 	double num_carbon_atoms;
 	double num_hydrogen_atoms;
 	double stoichiometric_coef[3];
+	double stoichiometric_coef_before[6];
+	double stoichiometric_coef_after[6];
 	double threshold_temperature;
 	double frequency_factor;
 	double activation_temperature;
