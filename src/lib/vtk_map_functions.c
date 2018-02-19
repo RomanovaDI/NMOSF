@@ -115,7 +115,8 @@ int print_vtk_avalanche(in *I, int n)
 int print_vtk_termogas(in *I, int n)
 {
 	int nn = n;
-	int i = 0, j, k, a;
+	int i = 0, j, k, a, p;
+	double tmp;
 	while (nn > 0) {
 		nn /= 10;
 		i++;
@@ -180,7 +181,6 @@ int print_vtk_termogas(in *I, int n)
 //			}
 //		}
 //	}
-	int p;
 	for (p = 0; p < 4; p++) {
 		fprintf(f, "SCALARS concentration_%d double 1\n", p);
 		fprintf(f, "LOOKUP_TABLE default\n");
@@ -328,7 +328,6 @@ int print_vtk_termogas(in *I, int n)
 	}
 	fprintf(f, "SCALARS concentration_oil double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
-	double tmp;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
@@ -359,6 +358,22 @@ int print_vtk_termogas(in *I, int n)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					fprintf(f, "%20.20f\n", chemical_reaction_heat_flow(I, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS chemical_reaction_heat_flow_K_per_sec double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					tmp = 0;
+					for (p = 0; p < 2; p++)
+						tmp += I->porousness * density_t(I, p, i, j, k) * saturation(I, p, i, j, k) * I->specific_heat[p];
+					for (p = 0; p < 4; p++)
+						tmp += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[p + 2] * concentration(I, p, i, j, k);
+					fprintf(f, "%20.20f\n", chemical_reaction_heat_flow(I, i, j, k) / tmp);
 				}
 			}
 		}

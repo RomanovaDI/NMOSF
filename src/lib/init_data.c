@@ -53,7 +53,7 @@ int set_parameters_termogas(in *I)
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
-	I->end_time = 86400;//1000000;
+	I->end_time = 5 * 86400;//1000000;
 	I->stencil_size = 2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
@@ -120,7 +120,7 @@ int set_parameters_termogas(in *I)
 	I->stoichiometric_coef_after[4] = 4.5;//water
 	I->stoichiometric_coef_after[5] = 0;//oil
 	I->threshold_temperature = I->initial_temperature + 50;// 400;
-	I->frequency_factor = 1000;
+	I->frequency_factor = 10000000;
 	I->activation_temperature = 500;//I->initial_temperature;//400;
 	I->stoichiometric_coef_activ = 1;
 	I->pressure_activ = I->initial_pressure;
@@ -147,7 +147,7 @@ int set_parameters_termogas(in *I)
 	I->density_environment = 2000;
 	//I->injection_well_pressure = 30000000;
 	I->injection_well_pressure = 30000000;
-	I->injection_well_temperature = 600;
+	I->injection_well_temperature = 600;//I->initial_temperature;//600;
 	I->production_well_pressure = 1000000;
 	I->epsilon = 1e-10;
 	I->adiabatic_exponent[0] = 1; // water
@@ -156,7 +156,7 @@ int set_parameters_termogas(in *I)
 	I->adiabatic_exponent[3] = 1.4; // O2
 	I->adiabatic_exponent[4] = 1.35; // CO2
 	I->adiabatic_exponent[5] = 1.3; // H2O(g)
-	I->heat_liberation = 43739500*100;
+	I->heat_liberation = 43739500;
 	I->time_step = 0;
 	I->volume_producted_oil_kg = 0;
 	I->volume_producted_oil_m = 0;

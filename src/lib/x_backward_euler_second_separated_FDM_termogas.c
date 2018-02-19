@@ -47,10 +47,16 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 int SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-//	double A_value;
-//	A_value = - mass_inflow_rate_func(I, p, i, j, k);
-//	WRITE_TO_A(p, i, j, k, -1);
-	I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k);
+	double A_value;
+	if ((p == 6) && (p == 7)) {
+		A_value = - mass_inflow_rate_func(I, p, i, j, k) / saturation(I, p - 5, i, j, k);
+		WRITE_TO_A(p, i, j, k, -1);
+	} else if (p == 1) {
+		A_value = - mass_inflow_rate_func(I, p, i, j, k) / concentration(I, p, i, j, k);
+		WRITE_TO_A(p, i, j, k, -1);
+	} else {
+		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k);
+	}
 	return 0;
 }
 
