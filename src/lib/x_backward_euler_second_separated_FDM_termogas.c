@@ -304,12 +304,30 @@ int SCAL_chemical_reaction_heat_flow_backward_euler_second_separated_FDM_termoga
 //	A_value = chemical_reaction_heat_flow_derivative_by_temperature(I, i, j, k);
 //	WRITE_TO_A(p, i, j, k, -1);
 //	I->B[A_IND(I, p, i, j, k)] += chemical_reaction_heat_flow_derivative_by_temperature(I, i, j, k) * temperature_flow(I, i, j, k) - chemical_reaction_heat_flow(I, i, j, k);
+	/*	
+ 	A_value = 0;
+	for (a = 0; a < 4; a++) {
+		A_value += mass_inflow_rate_func_derivative_by_temperature(I, a, i, j, k) * I->initial_enthalpy[a + 2];
+	}
+	for (a = 0; a < 2; a++) {
+		A_value += mass_inflow_rate_func_derivative_by_temperature(I, a + 5, i, j, k) * I->initial_enthalpy[a];
+	}
+	WRITE_TO_A(p, i, j, k, -1);
+	*/
 	for (a = 0; a < 4; a++) {
 		I->B[A_IND(I, p, i, j, k)] -= mass_inflow_rate_func(I, a, i, j, k) * I->initial_enthalpy[a + 2];
 	}
 	for (a = 0; a < 2; a++) {
 		I->B[A_IND(I, p, i, j, k)] -= mass_inflow_rate_func(I, a + 5, i, j, k) * I->initial_enthalpy[a];
 	}
+	/*
+	for (a = 0; a < 4; a++) {
+		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func_derivative_by_temperature(I, a, i, j, k) * I->initial_enthalpy[a + 2] * temperature_flow(I, i, j, k);
+	}
+	for (a = 0; a < 2; a++) {
+		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func_derivative_by_temperature(I, a + 5, i, j, k) * I->initial_enthalpy[a] * temperature_flow(I, i, j, k);
+	}
+	*/
 	return 0;
 }
 

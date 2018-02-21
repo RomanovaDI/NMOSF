@@ -888,15 +888,15 @@ double mass_inflow_rate_func_derivative_by_temperature(in *I, int p, int i, int 
 	if (p == 0) // N2
 		return 0;
 	else if (p == 1) // O2
-		return - rate_of_reaction_derivative_by_temperature(I, i, j, k) * I->stoichiometric_coef[0] * I->molar_weight[p];
+		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
 	else if (p == 2) // CO2
-		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * I->stoichiometric_coef[1] * I->molar_weight[p];
+		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
 	else if (p == 3) // H2O
-		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[p];
+		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
 	else if (p == 5) // water
-		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * I->stoichiometric_coef[2] * I->molar_weight[3];
+		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * (I->stoichiometric_coef_after[p - 1] - I->stoichiometric_coef_before[p - 1]) * I->molar_weight[3];
 	else if (p == 6) // oil
-		return - mass_inflow_rate_func_derivative_by_temperature(I, 5, i, j, k) - mass_inflow_rate_func_derivative_by_temperature(I, 7, i, j, k);
+		return rate_of_reaction_derivative_by_temperature(I, i, j, k) * (I->stoichiometric_coef_after[p - 1] - I->stoichiometric_coef_before[p - 1]) * I->molar_weight[4];
 	else if (p == 7) // gas
 		return mass_inflow_rate_func_derivative_by_temperature(I, 0, i, j, k) + mass_inflow_rate_func_derivative_by_temperature(I, 1, i, j, k) +
 			mass_inflow_rate_func_derivative_by_temperature(I, 2, i, j, k) + mass_inflow_rate_func_derivative_by_temperature(I, 3, i, j, k);
