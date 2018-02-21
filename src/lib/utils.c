@@ -829,8 +829,8 @@ double rate_of_reaction_coef(in *I, int i, int j, int k)
 	if (temperature_flow(I, i, j, k) < I->threshold_temperature)
 		return 0;
 	else
-//		return 0;
-		return I->frequency_factor * exp(- I->activation_temperature / temperature_flow(I, i, j, k));
+		return 0;
+//		return I->frequency_factor * exp(- I->activation_temperature / temperature_flow(I, i, j, k));
 //	if (injection_well(I, i, j, k))
 //		return 0;
 //	else

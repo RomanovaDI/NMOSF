@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int print_vtk_avalanche(in *I, int n)
 {
@@ -282,6 +283,94 @@ int print_vtk_termogas(in *I, int n)
 			}
 		}
 	}
+	fprintf(f, "SCALARS viscosity_gas_N2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", viscosity_gas(I, 0, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS viscosity_gas_O2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", viscosity_gas(I, 1, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS viscosity_gas_CO2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", viscosity_gas(I, 2, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS viscosity_gas_H2O(g) double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", viscosity_gas(I, 3, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS molar_fraction_N2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", molar_fraction(I, 0, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS molar_fraction_O2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", molar_fraction(I, 1, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS molar_fraction_CO2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", molar_fraction(I, 2, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS molar_fraction_H2O(g) double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", molar_fraction(I, 3, i, j, k));
+				}
+			}
+		}
+	}
 	fprintf(f, "SCALARS density_water double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
 	for (k = 0; k < I->nz; k++) {
@@ -322,6 +411,64 @@ int print_vtk_termogas(in *I, int n)
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					fprintf(f, "%20.20f\n", rate_of_reaction(I, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS rate_of_reaction_coef double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", rate_of_reaction_coef(I, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS sat_res_oil double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", saturation(I, 1, i, j, k) - I->residual_saturation[1]);
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS sat_res_gas double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", saturation(I, 2, i, j, k) - I->residual_saturation[2]);
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS press_oxigen double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", pow(pressure(I, i, j, k) / I->pressure_activ, I->stoichiometric_coef_activ));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS rate_coef double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					tmp = I->porousness * (saturation(I, 1, i, j, k) - I->residual_saturation[1]) *
+						(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * concentration(I, 1, i, j, k) *
+						pow(pressure(I, i, j, k) / I->pressure_activ, I->stoichiometric_coef_activ);
+					fprintf(f, "%20.20f\n", tmp);
 				}
 			}
 		}

@@ -246,16 +246,16 @@ int main(int argc, char **argv)
 #if DEBUG
 		if ((I->my_rank == 0) && (I->nproc > 1) && (print_gl_B(I, 4, i))) return 1;
 #endif
-//		if (print_vtk(I, i)) {
-//			printf("Error printing vtk file\n");
-//			goto error;
-//		}
-		if (i % 100 == 0) {
-			if (print_vtk(I, i / 100) == 1) {
-				printf("Error printing vtk file\n");
-				goto error;
-			}
+		if (print_vtk(I, i)) {
+			printf("Error printing vtk file\n");
+			goto error;
 		}
+//		if (i % 100 == 0) {
+//			if (print_vtk(I, i / 100) == 1) {
+//				printf("Error printing vtk file\n");
+//				goto error;
+//			}
+//		}
 #if DEBUG
 		if (print_parameter_in_subdomains(I, 4, i)) return 1;
 #endif
