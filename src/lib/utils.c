@@ -754,12 +754,32 @@ double capillary_pressure_derivative_by_saturation(in *I, int p, int i, int j, i
 		pow(saturation(I, p, i, j, k), - I->capillary_pressure_coef - 1);
 }
 
-double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
+double grad_pressure(in *I, int pr, int i, int j, int k)
+{
+	int ind_pr[3];
+	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+	ind_pr[pr] = 1;
+	return (pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
+}
+
+double grad_saturation(in *I, int p, int pr, int i, int j, int k)
+{
+	int ind_pr[3];
+	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+	ind_pr[pr] = 1;
+	return (saturation(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
+}
+
+double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, water, gas; pr - x1, x2, x3
 {
 	if (!((pr == 0) || (pr == 1) || (pr == 2))) {
 		printf("Error avarage velocity index\n");
 		return 0;
 	}
+	if (pr != 2)
+		return 1;
+	else
+		return 0;
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
@@ -777,13 +797,14 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 		}
 #endif
 		return - I->permeability * relative_permeability(I, p, i, j, k) *(
-			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
+			grad_pressure(I, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
+			grad_saturation(I, 0, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
+			grad_saturation(I, 2, pr, i, j, k)
+			) / viscosity(I, p, i, j, k);
 	} else if (p == 1) {
 #if DEBUG
 		if (viscosity(I, p, i, j, k) < 0.0000001) {
@@ -798,26 +819,28 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k)
 		}
 #endif
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
-			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
+			grad_pressure(I, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
+			grad_saturation(I, 0, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
+			grad_saturation(I, 2, pr, i, j, k)
+			) / viscosity(I, p, i, j, k);
 	} else if (p == 2) {
 #if DEBUG
 		if (viscosity(I, p, i, j, k) < 0.0000001)
 			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: viscosity = %lf\n", I->my_rank, getpid(), p, i, j, k, viscosity(I, p, i, j, k));
 #endif
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
-			(pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
+			grad_pressure(I, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
 			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			(saturation(I, 0, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 0, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]) +
+			grad_saturation(I, 0, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
 			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			(saturation(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr])) / viscosity(I, p, i, j, k);
+			grad_saturation(I, 2, pr, i, j, k)
+			) / viscosity(I, p, i, j, k);
 	} else {
 		printf("Error avarage velocity index\n");
 		return 0;

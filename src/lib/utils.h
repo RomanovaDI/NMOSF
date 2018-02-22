@@ -50,6 +50,8 @@ double viscosity(in *I, int p, int i, int j, int k);
 double Darsi_M_coef_phases(in *I, int p, int i, int j, int k);
 double Darsi_M_coef(in *I, int i, int j, int k);
 double capillary_pressure_derivative_by_saturation(in *I, int p, int i, int j, int k);
+double grad_pressure(in *I, int pr, int i, int j, int k);
+double grad_saturation(in *I, int p, int pr, int i, int j, int k);
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k);
 double rate_of_reaction_coef(in *I, int i, int j, int k);
 double rate_of_reaction(in *I, int i, int j, int k);
