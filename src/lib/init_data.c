@@ -44,12 +44,13 @@ int set_parameters_avalanche(in *I)
 int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
-	strcpy(I->map_name, "maps/map_termogas_test_big.asc");
-	strcpy(I->map_name, "maps/map_termogas.asc");
+	//strcpy(I->map_name, "maps/map_termogas_test_big.asc");
+	//strcpy(I->map_name, "maps/map_termogas.asc");
+	strcpy(I->map_name, "maps/map_termogas_1d.asc");
 	//strcpy(I->map_name, "maps/map_termogas_pattern.asc");
 	//strcpy(I->region_map_name, "maps/map_termogas_region.asc");
 	//strcpy(I->map_name, "maps/map_cavity.asc");
-	I->hight = 10;//30;
+	I->hight = 1;//10;//30;
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;

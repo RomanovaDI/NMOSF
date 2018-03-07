@@ -65,7 +65,6 @@ int well(in *I, int i, int j, int k)
 
 int production_well(in *I, int i, int j, int k)
 {
-		return 0;
 	if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == 0))
 		return 1;
 	else if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == I->gl_ny - 1))
@@ -777,12 +776,6 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, wa
 		printf("Error avarage velocity index\n");
 		return 0;
 	}
-	if (pr != 2) {
-		return 1;
-	} else {
-		return 0;
-	}
-	printf("WTF?!\n");
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;

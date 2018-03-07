@@ -183,7 +183,7 @@ int create_Ab_termogas(in *I)
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					/* concentration equation */
+////////////////////concentration equation
 					for (p = 0; p < 4; p++) {
 						if (I->flag_first_time_step) {
 							if (I->Ajptr_csr[I->A_ind_current] != -1)
@@ -205,7 +205,7 @@ int create_Ab_termogas(in *I)
 							if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 						}
 					}
-					/* pressure equation */
+////////////////////pressure equation
 					p = 4;
 					if (I->flag_first_time_step) {
 						if (I->Ajptr_csr[I->A_ind_current] != -1)
@@ -219,7 +219,7 @@ int create_Ab_termogas(in *I)
 					} else {
 						if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 					}
-					/* saturation equation */
+////////////////////saturation equation
 					for (p = 5; p < 8; p++) {
 						if (I->flag_first_time_step) {
 							if (I->Ajptr_csr[I->A_ind_current] != -1)
@@ -242,7 +242,7 @@ int create_Ab_termogas(in *I)
 							if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 						}
 					}
-					/* temperature flow equation */
+////////////////////temperature flow equation
 					p = 8;
 					if (I->flag_first_time_step) {
 						if (I->Ajptr_csr[I->A_ind_current] != -1)
@@ -266,7 +266,7 @@ int create_Ab_termogas(in *I)
 					} else {
 						if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 					}
-					/* temperature environment equation */
+////////////////////temperature environment equation
 					p = 9;
 					if (I->flag_first_time_step) {
 						if (I->Ajptr_csr[I->A_ind_current] != -1)
@@ -287,6 +287,7 @@ int create_Ab_termogas(in *I)
 					} else {
 						if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 					}
+
 				}
 			}
 		}
