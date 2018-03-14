@@ -595,6 +595,7 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_consistent(in *I)
 			}
 		}
 	}
+	return 0;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {

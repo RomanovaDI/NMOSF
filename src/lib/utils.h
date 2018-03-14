@@ -17,6 +17,10 @@ int boundary_cell(in *I, int i, int j, int k);
 int count_neighbor_internal_cells(in *I, int i, int j, int k);
 int count_second_order_neighbor_internal_cells(in *I, int i, int j, int k);
 int count_other_corner_neighbor_internal_cells(in *I, int i, int j, int k);
+double max2(double a, double b);
+double min2(double a, double b);
+double max3(double a, double b, double c);
+double min3(double a, double b, double c);
 #if AVALANCHE
 int check_conservation_of_mass(in *I);
 double density(in *I, int i, int j, int k);

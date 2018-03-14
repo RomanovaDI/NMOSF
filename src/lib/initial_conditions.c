@@ -150,7 +150,7 @@ int SET_initial_CONDITION_termogas_fixed_value(in *I)
 #if DEBUG
 	printf("Set the initial condition for all parameters in termogas case with fixed value for all calculation domain in process %d\n", I->my_rank);
 #endif
-	int i, j, k;
+	int i, j, k, l;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
@@ -165,13 +165,10 @@ int SET_initial_CONDITION_termogas_fixed_value(in *I)
 					I->B_prev[B_IND(I, 7, i, j, k)] = I->residual_saturation[2] + I->epsilon;
 					I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
 					I->B_prev[B_IND(I, 9, i, j, k)] = I->initial_temperature;
-					if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2) && (0)) {
+					if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2) && (1)) {
 						I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-						//I->B_prev[B_IND(I, 0, i, j, k)] = 10;//3.55 * (1 - 2 * I->epsilon) / 4.55;
-						//I->B_prev[B_IND(I, 0, i-1, j, k)] = 10;//3.55 * (1 - 2 * I->epsilon) / 4.55;
-						//I->B_prev[B_IND(I, 0, i-2, j, k)] = 10;//3.55 * (1 - 2 * I->epsilon) / 4.55;
-						//I->B_prev[B_IND(I, 0, i-3, j, k)] = 10;//3.55 * (1 - 2 * I->epsilon) / 4.55;
-						//I->B_prev[B_IND(I, 0, i-4, j, k)] = 10;//3.55 * (1 - 2 * I->epsilon) / 4.55;
+						for (l = 0; l < 10; l++)
+							I->B_prev[B_IND(I, 0, i - l, j, k)] = 1;//3.55 * (1 - 2 * I->epsilon) / 4.55;
 						I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
 						I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
 						I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
