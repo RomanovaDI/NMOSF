@@ -65,7 +65,7 @@ int well(in *I, int i, int j, int k)
 
 int production_well(in *I, int i, int j, int k)
 {
-		return 0;
+	//	return 0;
 	if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == 0))
 		return 1;
 	else if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == I->gl_ny - 1))
@@ -80,7 +80,6 @@ int production_well(in *I, int i, int j, int k)
 
 int injection_well(in *I, int i, int j, int k)
 {
-		return 0;
 #if DEBUG==4
 	printf("Process %d, PID %d: I->ind_start_region_proc[0] = %d\n", I->my_rank, getpid(), I->ind_start_region_proc[0]);
 	printf("Process %d, PID %d: I->ind_start_region_proc[1] = %d\n", I->my_rank, getpid(), I->ind_start_region_proc[1]);
@@ -580,7 +579,7 @@ int barotropy_density(in *I)
 #if TERMOGAS
 double saturation(in *I, int p, int i, int j, int k)
 {
-	return 1;
+//	return 1;
 	if (!((p == 0) || (p == 1) || (p == 2))) {
 		printf("Error saturation index\n");
 		return 0;
@@ -614,7 +613,7 @@ double temperature_environment(in *I, int i, int j, int k)
 
 double density_t(in *I, int p, int i, int j, int k)
 {
-	return 1;
+	//return 1;
 	if ((p == 0) || (p == 1))
 		return ((I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
 	else if (p == 2)
@@ -812,10 +811,18 @@ double grad_saturation(in *I, int p, int pr, int i, int j, int k)
 
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, water, gas; pr - x1, x2, x3
 {
-	if (pr == 0)
-		return 1;
-	else
+/*
+	if (pr == 0) {
+		if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2) && (1))
+			return 0;
+		else if (i + I->ind_start_region_proc[0] > I->gl_nx / 2)
+			return I->porousness * saturation(I, 2, i, j, k);
+		else
+			return -I->porousness * saturation(I, 2, i, j, k);
+	} else
 		return 0;
+*/
+//	return - I->porousness * density_t(I, );
 	if (!((pr == 0) || (pr == 1) || (pr == 2))) {
 		printf("Error avarage velocity index\n");
 		return 0;

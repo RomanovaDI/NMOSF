@@ -9,7 +9,7 @@ int main(void)
 	double A[100][100], B[100], X[100];
 	double dt = 0.1;
 	double dx = 1;
-	int i, t;
+	int i, t, j;
 	double end_T = 10;
 	FILE *f;
 	char file_name[20 + i];
@@ -45,7 +45,7 @@ int main(void)
 		for (i = 0; i < 100; i++) {
 			A[i][i] += 1.0 / dt;
 			B[i] += X[i] / dt;
-			if (i != 99) {
+			if (i != 0) {
 				A[i][i] += 1.0 / dx;
 				A[i][i-1] += -1.0 / dx;
 			}
@@ -56,6 +56,12 @@ int main(void)
 			else
 				X[i] = (B[i] - A[i][i-1] * X[i-1]) / A[i][i];
 		}
+		sprintf(file_name, "tmp/trans_A_%d.dat", t);
+		f = fopen(file_name, "w");
+		for (i = 0; i < 100; i++)
+			for (j = 0; j < 100; j++)
+				fprintf(f, "%10.10lf\n", A[i][j]);
+		fclose(f);
 	}
 	return 0;
 }

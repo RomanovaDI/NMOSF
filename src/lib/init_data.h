@@ -132,7 +132,7 @@ typedef struct init_parameters_termogas {
 	double epsilon;
 	double adiabatic_exponent[6];
 	double heat_liberation;
-	double time_step;
+	int time_step;
 	double volume_producted_oil_kg;
 	double volume_producted_oil_m;
 	int my_rank;

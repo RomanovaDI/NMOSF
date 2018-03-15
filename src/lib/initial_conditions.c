@@ -165,7 +165,7 @@ int SET_initial_CONDITION_termogas_fixed_value(in *I)
 					I->B_prev[B_IND(I, 7, i, j, k)] = I->residual_saturation[2] + I->epsilon;
 					I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
 					I->B_prev[B_IND(I, 9, i, j, k)] = I->initial_temperature;
-					if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2) && (1)) {
+					if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2) && (0)) {
 						I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
 						for (l = 0; l < 10; l++)
 							I->B_prev[B_IND(I, 0, i - l, j, k)] = 1;//3.55 * (1 - 2 * I->epsilon) / 4.55;

@@ -52,37 +52,42 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 				pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]));
 #endif
 */
-/*
+
 			tmp = density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * I->dx[pr]);
 			tmp *= - density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (2 * I->dx[pr]);
 			if (tmp > 0)
 				a = 2.0;
 			else
 				a = 1.0;
-			A_value = density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (a * I->dx[pr]);
+			A_value = 0.5 * density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (a * I->dx[pr]);
 			if (A_value < 0) {
 				WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+				I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
 				A_value *= -1;
 				WRITE_TO_A(p, i, j, k, -1);
+				I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i, j, k);
 			}
-			A_value = - density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (a * I->dx[pr]);
+			A_value = - 0.5 * density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) / (a * I->dx[pr]);
 			if (A_value < 0) {
 				WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+				I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
 				A_value *= -1;
 				WRITE_TO_A(p, i, j, k, -1);
+				I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i, j, k);
 			}
-			A_value = (density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
+			A_value = 0.5 * (density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
 				density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
 			WRITE_TO_A(p, i, j, k, -1);
-*/
+			I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i, j, k);
 
+/*
 			A_value = 1.0 / (I->dx[pr]);
 			WRITE_TO_A(p, i, j, k, -1);
 			//WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 			A_value *= -1;
 			//WRITE_TO_A(p, i, j, k, -1);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-
+*/
 /*
 			lambda1 = density_average_velocity(I, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
 			//printf("lambda1 = %lf\n", lambda1);
@@ -151,14 +156,14 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 					alpha = min2(R2 * delta, -lambda1 + delta);
 			}
 			//printf("alpha = %lf\n", alpha);
-			A_value = lambda1 - delta + alpha;
+			A_value = lambda1 - delta;// + alpha;
 			//A_value *= tetta;
-			printf("A_value = %lf\n", A_value);
+			//printf("A_value = %lf\n", A_value);
 			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			//I->B[A_IND(I, p, i, j, k)] += A_value * concentration(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+			//I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
 			A_value *= -1;
 			WRITE_TO_A(p, i, j, k, -1);
-			//I->B[A_IND(I, p, i, j, k)] += A_value * concentration(I, p, i, j, k);
+			//I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i, j, k);
 			lambda1 = -density_average_velocity(I, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
 			//printf("lambda1 = %lf\n", lambda1);
 			delta = max3(0, lambda1, lambda2);
@@ -197,19 +202,19 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 					alpha = min2(R2 * delta, -lambda1 + delta);
 			}
 			//printf("alpha = %lf\n", alpha);
-			A_value = lambda1 - delta + alpha;
+			A_value = lambda1 - delta;// + alpha;
 			//A_value *= tetta;
-			printf("A_value = %lf\n", A_value);
+			//printf("A_value = %lf\n", A_value);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-			//I->B[A_IND(I, p, i, j, k)] += A_value * concentration(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+			//I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
 			A_value *= -1;
 			WRITE_TO_A(p, i, j, k, -1);
-			//I->B[A_IND(I, p, i, j, k)] += A_value * concentration(I, p, i, j, k);
+			//I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i, j, k);
 			A_value = (density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
 				density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) * avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
 			//A_value *= tetta;
 			WRITE_TO_A(p, i, j, k, -1);
-			//I->B[A_IND(I, p, i, j, k)] += A_value * concentration(I, p, i, j, k);
+			//I->B[A_IND(I, p, i, j, k)] -= A_value * concentration(I, p, i, j, k);
 */
 		}
 	}
@@ -278,40 +283,67 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 				avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
 */
 
+			//tmp = density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+			//	avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) /
+			//	(2 * I->dx[pr] * saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]));
+			//tmp *= - density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+			//	avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) /
+			//	(2 * I->dx[pr] * saturation(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]));
 			tmp = density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
 				avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) /
-				(2 * I->dx[pr] * saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]));
+				(2 * I->dx[pr]);
 			tmp *= - density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 				avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) /
-				(2 * I->dx[pr] * saturation(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]));
+				(2 * I->dx[pr]);
 			if (tmp > 0)
 				a = 2.0;
 			else
 				a = 1.0;
-			A_value = density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+			//A_value = density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+			//	avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) /
+			//	(a * I->dx[pr] * saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]));
+			A_value = 0.5 * density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
 				avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) /
-				(a * I->dx[pr] * saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]));
+				(a * I->dx[pr]);
 			if (A_value < 0) {
 				WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+				I->B[A_IND(I, p, i, j, k)] -= A_value * saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+				//I->B[A_IND(I, p, i, j, k)] -= A_value;
 				A_value *= -1;
 				WRITE_TO_A(p, i, j, k, -1);
+				I->B[A_IND(I, p, i, j, k)] -= A_value * saturation(I, p - 5, i, j, k);
+				//I->B[A_IND(I, p, i, j, k)] -= A_value;
 			}
-			A_value = - density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+			//A_value = - density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+			//	avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) /
+			//	(a * I->dx[pr] * saturation(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]));
+			A_value = - 0.5 * density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 				avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) /
-				(a * I->dx[pr] * saturation(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]));
+				(a * I->dx[pr]);
 			if (A_value < 0) {
 				WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+				I->B[A_IND(I, p, i, j, k)] -= A_value * saturation(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+				//I->B[A_IND(I, p, i, j, k)] -= A_value;
 				A_value *= -1;
 				WRITE_TO_A(p, i, j, k, -1);
+				I->B[A_IND(I, p, i, j, k)] -= A_value * saturation(I, p - 5, i, j, k);
+				//I->B[A_IND(I, p, i, j, k)] -= A_value;
 			}
-			A_value = (density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-				avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) /
-				saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
+			//A_value = (density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+			//	avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) /
+			//	saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
+			//	density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+			//	avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) /
+			//	saturation(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) /
+			//	(2 * I->dx[pr]);
+			A_value = 0.5 * (density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+				avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
 				density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-				avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) /
-				saturation(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) /
+				avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) /
 				(2 * I->dx[pr]);
 			WRITE_TO_A(p, i, j, k, -1);
+			I->B[A_IND(I, p, i, j, k)] -= A_value * saturation(I, p - 5, i, j, k);
+			//I->B[A_IND(I, p, i, j, k)] -= A_value;
 
 /*
 			A_value = density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *

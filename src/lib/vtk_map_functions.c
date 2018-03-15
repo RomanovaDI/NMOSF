@@ -182,6 +182,29 @@ int print_vtk_termogas(in *I, int n)
 //			}
 //		}
 //	}
+	/*
+	fprintf(f, "SCALARS concentration_%d double 1\n", 0);
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, 0, i, j, k)]);
+			}
+		}
+	}*/
+/*
+	tmp = 0;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					tmp += I->B_prev[B_IND(I, 0, i, j, k)];
+			}
+		}
+	}
+	printf("Summ = %lf\n", tmp);
+*/
 	for (p = 0; p < 4; p++) {
 		fprintf(f, "SCALARS concentration_%d double 1\n", p);
 		fprintf(f, "LOOKUP_TABLE default\n");
@@ -854,6 +877,7 @@ int print_vtk_termogas(in *I, int n)
 			}
 		}
 	}
+
 	fclose(f);
 	return 0;
 }

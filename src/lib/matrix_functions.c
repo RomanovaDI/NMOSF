@@ -73,7 +73,9 @@ void print_A_csr(in *I)
 #endif
 	FILE *f;
 	int i, j, k, fl_tmp;
-	if ((f = fopen("tmp/A_csr.txt","w")) == NULL) {
+	char file_name[20];
+	sprintf(file_name, "tmp/A_csr%d.txt", I->time_step);
+	if ((f = fopen(file_name,"w")) == NULL) {
 		printf("error openning file");
 		return;
 	}
@@ -83,7 +85,7 @@ void print_A_csr(in *I)
 		if (max < abs(I->Aelem_csr[i]))
 			max = abs(I->Aelem_csr[i]);
 		j = 0;
-		while (!((i >= I->Aiptr_csr[j]) && (i < I->Aiptr_csr[j + 1])))
+		while (i < I->Aiptr_csr[j])
 			j++;
 		fprintf(f, "%20.10lf\t%10d\t%10d\n", I->Aelem_csr[i], j, I->Ajptr_csr[i]);
 	}
