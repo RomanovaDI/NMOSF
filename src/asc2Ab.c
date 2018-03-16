@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 			if (print_oil_production(I)) goto error;
 		}
 		if (write_B_to_B_prev(I)) goto error;
-		//if (check_sum(I)) goto error;
+		if (check_sum(I)) goto error;
 //				if (print_vtk(I, j + (i + 1) * 1000) == 1) {
 //					printf("Error printing vtk file\n");
 //					goto error;

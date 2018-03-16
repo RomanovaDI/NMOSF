@@ -644,6 +644,8 @@ int set_injection_well(in *I, int i, int j, int k)
 int set_production_well(in *I, int i, int j, int k)
 {
 	I->B_prev[B_IND(I, 4, i, j, k)] = I->production_well_pressure;
+	I->B_prev[B_IND(I, 4, i+1, j, k)] = I->production_well_pressure;
+	I->B_prev[B_IND(I, 4, i-1, j, k)] = I->production_well_pressure;
 	return 0;
 }
 
