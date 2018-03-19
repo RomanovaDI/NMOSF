@@ -579,7 +579,6 @@ int barotropy_density(in *I)
 #if TERMOGAS
 double saturation(in *I, int p, int i, int j, int k)
 {
-//	return 1;
 	if (!((p == 0) || (p == 1) || (p == 2))) {
 		printf("Error saturation index\n");
 		return 0;
@@ -613,7 +612,6 @@ double temperature_environment(in *I, int i, int j, int k)
 
 double density_t(in *I, int p, int i, int j, int k)
 {
-	//return 1;
 	if ((p == 0) || (p == 1))
 		return ((I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
 	else if (p == 2)
@@ -801,6 +799,14 @@ double grad_pressure(in *I, int pr, int i, int j, int k)
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
+/*
+	if (i + I->ind_start_region_proc[0] == I->gl_nx / 2)
+		return 0;
+	else if (i + I->ind_start_region_proc[0] < I->gl_nx / 2)
+		return (pressure(I, i, j, k) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (I->dx[pr]);
+	else
+		return (pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i, j, k)) / (I->dx[pr]);
+*/
 	return (pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
 }
 
@@ -1185,16 +1191,17 @@ int print_oil_production(in *I)
 double avarage_velocity_global(in *I)
 {
 	int i, j, k, p, pr;
-	double x = 0, y = 0;
+	double x = 0, y = 0, tmp;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (p = 0; p < 3; p++) {
-					//	for (pr = 0; pr < 3; pr++) {
-					//		x += abs(avarage_velocity(I, p, pr, i, j, k));
-					//	}
-						x = sqrt(pow(avarage_velocity(I, p, 0, i, j, k), 2) + pow(avarage_velocity(I, p, 1, i, j, k), 2) + pow(avarage_velocity(I, p, 2, i, j, k), 2));
+						for (pr = 0, x = 0; pr < 3; pr++) {
+							tmp = avarage_velocity(I, p, pr, i, j, k) / (saturation(I, p, i, j, k) * I->porousness);
+							x += pow(tmp, 2);
+						}
+						x = sqrt(x);
 						if (y < x)
 							y = x;
 					}

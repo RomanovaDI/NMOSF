@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 		if (create_Ab_avalanche(I) == 1) goto error;
 #endif
 #if TERMOGAS
-		//printf("avarage_velocity_global = %lf\tdt = %lf\n", avarage_velocity_global(I), 0.7 * I->dx[0] / avarage_velocity_global(I));
+		printf("avarage_velocity_global = %lf\tdt = %lf\n", avarage_velocity_global(I), 0.7 * I->dx[0] / avarage_velocity_global(I));
 		if (create_Ab_termogas(I) == 1) goto error;
 #endif
 		//print_A_csr(I);
@@ -281,7 +281,11 @@ int main(int argc, char **argv)
 		if (I->my_rank == 0) {
 			if (print_oil_production(I)) goto error;
 		}
-		if (write_B_to_B_prev(I)) goto error;
+		if (i == 0) {
+			if (write_pressure(I)) goto error;
+		} else {
+			if (write_B_to_B_prev(I)) goto error;
+		}
 		if (check_sum(I)) goto error;
 //				if (print_vtk(I, j + (i + 1) * 1000) == 1) {
 //					printf("Error printing vtk file\n");

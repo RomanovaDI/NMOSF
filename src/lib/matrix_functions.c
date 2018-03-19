@@ -25,6 +25,21 @@ int write_B_to_B_prev(in *I)
 	return 0;
 }
 
+int write_pressure(in *I)
+{
+	int i, j, k, p;
+	p = 4;
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					I->B_prev[B_IND(I, p, i, j, k)] = I->B[A_IND(I, p, i, j, k)];
+			}
+		}
+	}
+	return 0;
+}
+
 int write_B_prev_to_B(in *I)
 {
 	int i, j, k, p;
