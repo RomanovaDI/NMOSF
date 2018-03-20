@@ -56,7 +56,7 @@ int set_parameters_termogas(in *I)
 	I->kz = 1;
 	I->epsilon = 1e-10;
 	I->end_time = 5 * 86400;//1000000;
-	I->stencil_size = 2;
+	I->stencil_size = 9;//2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
 	I->dt = 1;//100.0;//10;//we need to set dt!!!

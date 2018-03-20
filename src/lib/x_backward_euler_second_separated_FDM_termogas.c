@@ -20,21 +20,157 @@
 #define SCAL(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) SCAL_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 #define LAPL(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) LAPL_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 
-int DIV_concentration_density_average_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
+int ddx_calc(in *I, int p, int pr, int i, int j, int k, double omega, double tetta, int ind) // i_n, j_n, k_n - coordinates of neighbor cell
 {
-	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	int pr, ind_pr[3], pp, ind_pp[3];
-	double tmp, a;
-	double lambda1, lambda2, delta, alpha, Q1, Q2, P1, P2, R1, R2, tetta = 0.5;
 	double A_value;
+	int pp, ind_pp[3], ind_pr[3];
+	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+	ind_pr[pr] = 1;
+	double lambda1, lambda2, delta, alpha, Q1, Q2, P1, P2, R1, R2;
 	double multiplier(int ii, int jj, int kk)
 	{
-		return density_t(I, 2, ii, jj, kk) * avarage_velocity(I, 2, pr, ii, jj, kk) / (2 * I->dx[pr]);
+		switch (ind) {
+			case 0:
+				return density_t(I, 2, ii, jj, kk) * avarage_velocity(I, 2, pr, ii, jj, kk) / (2 * I->dx[pr]);
+			case 1:
+				return density_t(I, p - 5, ii, jj, kk) * avarage_velocity(I, p - 5, pr, ii, jj, kk) / (2 * I->dx[pr] * saturation(I, p - 5, ii, jj, kk));
+		}
 	}
 	double operand(int ii, int jj, int kk)
 	{
-		return concentration(I, p, ii, jj, kk);
+		switch (ind){
+			case 0:
+				return concentration(I, p, ii, jj, kk);
+			case 1:
+				return saturation(I, p - 5, ii, jj, kk);
+		}
 	}
+	lambda1 = - omega * multiplier(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+	lambda2 = omega * multiplier(i, j, k);
+	delta = max3(0, -lambda1, -lambda2);
+	Q1 = Q2 = P1 = P2 = 0;
+	for (pp = 0; pp < 3; pp++) {
+		ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+		ind_pp[pp] = 1;
+		Q1 += max2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * max2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
+		Q1 += max2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * max2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
+		Q2 += max2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * min2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
+		Q2 += max2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * min2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
+		P1 += min2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * min2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
+		P1 += min2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * min2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
+		P2 += min2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * max2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
+		P2 += min2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * max2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
+	}
+	if (P1 == 0)
+		Q1 = 0;
+	else
+		Q1 /= P1;
+	if (P2 == 0)
+		Q2 = 0;
+	else
+		Q2 /= P2;
+	R1 = max2(0, min2(1, Q1));
+	R2 = max2(0, min2(1, Q2));
+	if (lambda1 <= lambda2) {
+		if (operand(i, j, k) >= operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
+			alpha = min2(R1 * delta, lambda2 + delta);
+		else
+			alpha = min2(R2 * delta, lambda2 + delta);
+	} else {
+		Q1 = Q2 = P1 = P2 = 0;
+		for (pp = 0; pp < 3; pp++) {
+			ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+			ind_pp[pp] = 1;
+			Q1 += max2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * max2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
+			Q1 += max2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * max2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
+			Q2 += max2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * min2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
+			Q2 += max2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * min2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
+			P1 += min2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * min2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
+			P1 += min2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * min2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
+			P2 += min2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * max2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
+			P2 += min2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * max2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
+		}
+		if (P1 == 0)
+			Q1 = 0;
+		else
+			Q1 /= P1;
+		if (P2 == 0)
+			Q2 = 0;
+		else
+			Q2 /= P2;
+		R1 = max2(0, min2(1, Q1));
+		R2 = max2(0, min2(1, Q2));
+		if (operand(i, j, k) <= operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
+			alpha = min2(R1 * delta, lambda1 + delta);
+		else
+			alpha = min2(R2 * delta, lambda1 + delta);
+	}
+	A_value = -lambda1 - delta + alpha;
+	A_value *= tetta;
+	WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+	I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
+	A_value *= -1;
+	WRITE_TO_A(p, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
+
+	lambda1 = multiplier(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+	lambda2 = -multiplier(i, j, k);
+	delta = max3(0, -lambda1, -lambda2);
+	if (lambda1 <= lambda2) {
+		if (operand(i, j, k) >= operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
+			alpha = min2(R1 * delta, lambda2 + delta);
+		else
+			alpha = min2(R2 * delta, lambda2 + delta);
+	} else {
+		Q1 = Q2 = P1 = P2 = 0;
+		for (pp = 0; pp < 3; pp++) {
+			ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+			ind_pp[pp] = 1;
+			Q1 += max2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * max2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
+			Q1 += max2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * max2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
+			Q2 += max2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * min2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
+			Q2 += max2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * min2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
+			P1 += min2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * min2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
+			P1 += min2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * min2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
+			P2 += min2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * max2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
+			P2 += min2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * max2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
+		}
+		if (P1 == 0)
+			Q1 = 0;
+		else
+			Q1 /= P1;
+		if (P2 == 0)
+			Q2 = 0;
+		else
+			Q2 /= P2;
+		R1 = max2(0, min2(1, Q1));
+		R2 = max2(0, min2(1, Q2));
+		if (operand(i, j, k) <= operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
+			alpha = min2(R1 * delta, lambda1 + delta);
+		else
+			alpha = min2(R2 * delta, lambda1 + delta);
+	}
+	A_value = -lambda1 - delta + alpha;
+	A_value *= tetta;
+	WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+	I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+	A_value *= -1;
+	WRITE_TO_A(p, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
+
+	A_value = multiplier(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - multiplier(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
+	A_value *= tetta;
+	WRITE_TO_A(p, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
+	return 0;
+}
+
+int DIV_concentration_density_average_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	double tmp, a;
+	double A_value;
+	int pr, ind_pr[3], pp, ind_pp[3];
 	for (pr = 0; pr < 3; pr++) {
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
@@ -92,121 +228,21 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 */
 /*
-			lambda1 = - multiplier(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			lambda2 = multiplier(i, j, k);
-			delta = max3(0, -lambda1, -lambda2);
-			Q1 = Q2 = P1 = P2 = 0;
-			for (pp = 0; pp < 3; pp++) {
-				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-				ind_pp[pp] = 1;
-				Q1 += max2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * max2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				Q1 += max2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * max2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				Q2 += max2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * min2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				Q2 += max2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * min2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				P1 += min2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * min2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				P1 += min2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * min2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				P2 += min2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * max2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				P2 += min2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * max2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
+			if (ddx_calc(I, p, pr, i, j, k, 0.75, 0.5, 0)) return 1;
+			if (pr == 0)
+				pp = 1;
+			else if (pr == 1)
+				pp = 0;
+			ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+			ind_pp[pp] = 1;
+			if (pr != 2) {
+				if	(!( boundary_cell(I, i + ind_pr[0] + ind_pp[0], j + ind_pr[1] + ind_pp[1], k + ind_pr[2] + ind_pp[2]) ||
+						boundary_cell(I, i - ind_pr[0] + ind_pp[0], j - ind_pr[1] + ind_pp[1], k - ind_pr[2] + ind_pp[2])))
+							if (ddx_calc(I, p, pr, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2], 0.125, 0.5, 0)) return 1;
+				if	(!( boundary_cell(I, i + ind_pr[0] - ind_pp[0], j + ind_pr[1] - ind_pp[1], k + ind_pr[2] - ind_pp[2]) ||
+						boundary_cell(I, i - ind_pr[0] - ind_pp[0], j - ind_pr[1] - ind_pp[1], k - ind_pr[2] - ind_pp[2])))
+							if (ddx_calc(I, p, pr, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2], 0.125, 0.5, 0)) return 1;
 			}
-			if (P1 == 0)
-				Q1 = 0;
-			else
-				Q1 /= P1;
-			if (P2 == 0)
-				Q2 = 0;
-			else
-				Q2 /= P2;
-			R1 = max2(0, min2(1, Q1));
-			R2 = max2(0, min2(1, Q2));
-			if (lambda1 <= lambda2) {
-				if (operand(i, j, k) >= operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
-					alpha = min2(R1 * delta, lambda2 + delta);
-				else
-					alpha = min2(R2 * delta, lambda2 + delta);
-			} else {
-				Q1 = Q2 = P1 = P2 = 0;
-				for (pp = 0; pp < 3; pp++) {
-					ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-					ind_pp[pp] = 1;
-					Q1 += max2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * max2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q1 += max2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * max2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q2 += max2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * min2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q2 += max2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * min2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P1 += min2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * min2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P1 += min2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * min2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P2 += min2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * max2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P2 += min2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * max2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-				}
-				if (P1 == 0)
-					Q1 = 0;
-				else
-					Q1 /= P1;
-				if (P2 == 0)
-					Q2 = 0;
-				else
-					Q2 /= P2;
-				R1 = max2(0, min2(1, Q1));
-				R2 = max2(0, min2(1, Q2));
-				if (operand(i, j, k) <= operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
-					alpha = min2(R1 * delta, lambda1 + delta);
-				else
-					alpha = min2(R2 * delta, lambda1 + delta);
-			}
-			A_value = -lambda1 - delta + alpha;
-			A_value *= tetta;
-			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			A_value *= -1;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
-			lambda1 = multiplier(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			lambda2 = -multiplier(i, j, k);
-			delta = max3(0, -lambda1, -lambda2);
-			if (lambda1 <= lambda2) {
-				if (operand(i, j, k) >= operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
-					alpha = min2(R1 * delta, lambda2 + delta);
-				else
-					alpha = min2(R2 * delta, lambda2 + delta);
-			} else {
-				Q1 = Q2 = P1 = P2 = 0;
-				for (pp = 0; pp < 3; pp++) {
-					ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-					ind_pp[pp] = 1;
-					Q1 += max2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * max2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q1 += max2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * max2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q2 += max2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * min2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q2 += max2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * min2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P1 += min2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * min2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P1 += min2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * min2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P2 += min2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * max2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P2 += min2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * max2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-				}
-				if (P1 == 0)
-					Q1 = 0;
-				else
-					Q1 /= P1;
-				if (P2 == 0)
-					Q2 = 0;
-				else
-					Q2 /= P2;
-				R1 = max2(0, min2(1, Q1));
-				R2 = max2(0, min2(1, Q2));
-				if (operand(i, j, k) <= operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
-					alpha = min2(R1 * delta, lambda1 + delta);
-				else
-					alpha = min2(R2 * delta, lambda1 + delta);
-			}
-			A_value = -lambda1 - delta + alpha;
-			A_value *= tetta;
-			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			A_value *= -1;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
-			A_value = multiplier(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - multiplier(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			A_value *= tetta;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
 */
 		}
 	}
@@ -264,15 +300,6 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value, tmp, a;
 	int pr, ind_pr[3], pp, ind_pp[3];
-	double lambda1, lambda2, delta, alpha, Q1, Q2, P1, P2, R1, R2, tetta = 0.5;
-	double multiplier(int ii, int jj, int kk)
-	{
-		return density_t(I, p - 5, ii, jj, kk) * avarage_velocity(I, p - 5, pr, ii, jj, kk) / (2 * I->dx[pr] * saturation(I, p - 5, ii, jj, kk));
-	}
-	double operand(int ii, int jj, int kk)
-	{
-		return saturation(I, p - 5, ii, jj, kk);
-	}
 	for (pr = 0; pr < 3; pr++) {
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
@@ -300,7 +327,7 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 				a = 2.0;
 			else
 				a = 1.0;
-			A_value = density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+			A_value = 0.5 * density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
 				avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) /
 				(a * I->dx[pr] * saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]));
 			//A_value = 0.5 * density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
@@ -315,7 +342,7 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 				I->B[A_IND(I, p, i, j, k)] -= A_value * saturation(I, p - 5, i, j, k);
 				//I->B[A_IND(I, p, i, j, k)] -= A_value;
 			}
-			A_value = - density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
+			A_value = - 0.5 * density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
 				avarage_velocity(I, p - 5, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) /
 				(a * I->dx[pr] * saturation(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]));
 			//A_value = - 0.5 * density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
@@ -330,7 +357,7 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 				I->B[A_IND(I, p, i, j, k)] -= A_value * saturation(I, p - 5, i, j, k);
 				//I->B[A_IND(I, p, i, j, k)] -= A_value;
 			}
-			A_value = (density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
+			A_value = 0.5 * (density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
 				avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) /
 				saturation(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
 				density_t(I, p - 5, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
@@ -363,121 +390,21 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 */
 /*
-			lambda1 = - multiplier(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			lambda2 = multiplier(i, j, k);
-			delta = max3(0, -lambda1, -lambda2);
-			Q1 = Q2 = P1 = P2 = 0;
-			for (pp = 0; pp < 3; pp++) {
-				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-				ind_pp[pp] = 1;
-				Q1 += max2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * max2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				Q1 += max2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * max2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				Q2 += max2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * min2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				Q2 += max2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * min2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				P1 += min2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * min2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				P1 += min2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * min2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				P2 += min2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * max2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				P2 += min2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * max2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
+			if (ddx_calc(I, p, pr, i, j, k, 0.75, 0.5, 1)) return 1;
+			if (pr == 0)
+				pp = 1;
+			else if (pr == 1)
+				pp = 0;
+			ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
+			ind_pp[pp] = 1;
+			if (pr != 2) {
+				if	(!( boundary_cell(I, i + ind_pr[0] + ind_pp[0], j + ind_pr[1] + ind_pp[1], k + ind_pr[2] + ind_pp[2]) ||
+						boundary_cell(I, i - ind_pr[0] + ind_pp[0], j - ind_pr[1] + ind_pp[1], k - ind_pr[2] + ind_pp[2])))
+							if (ddx_calc(I, p, pr, i + ind_pp[0], j + ind_pp[1], k + ind_pp[2], 0.125, 0.5, 1)) return 1;
+				if	(!( boundary_cell(I, i + ind_pr[0] - ind_pp[0], j + ind_pr[1] - ind_pp[1], k + ind_pr[2] - ind_pp[2]) ||
+						boundary_cell(I, i - ind_pr[0] - ind_pp[0], j - ind_pr[1] - ind_pp[1], k - ind_pr[2] - ind_pp[2])))
+							if (ddx_calc(I, p, pr, i - ind_pp[0], j - ind_pp[1], k - ind_pp[2], 0.125, 0.5, 1)) return 1;
 			}
-			if (P1 == 0)
-				Q1 = 0;
-			else
-				Q1 /= P1;
-			if (P2 == 0)
-				Q2 = 0;
-			else
-				Q2 /= P2;
-			R1 = max2(0, min2(1, Q1));
-			R2 = max2(0, min2(1, Q2));
-			if (lambda1 <= lambda2) {
-				if (operand(i, j, k) >= operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
-					alpha = min2(R1 * delta, lambda2 + delta);
-				else
-					alpha = min2(R2 * delta, lambda2 + delta);
-			} else {
-				Q1 = Q2 = P1 = P2 = 0;
-				for (pp = 0; pp < 3; pp++) {
-					ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-					ind_pp[pp] = 1;
-					Q1 += max2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * max2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q1 += max2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * max2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q2 += max2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * min2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q2 += max2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * min2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P1 += min2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * min2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P1 += min2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * min2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P2 += min2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * max2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P2 += min2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * max2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-				}
-				if (P1 == 0)
-					Q1 = 0;
-				else
-					Q1 /= P1;
-				if (P2 == 0)
-					Q2 = 0;
-				else
-					Q2 /= P2;
-				R1 = max2(0, min2(1, Q1));
-				R2 = max2(0, min2(1, Q2));
-				if (operand(i, j, k) <= operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
-					alpha = min2(R1 * delta, lambda1 + delta);
-				else
-					alpha = min2(R2 * delta, lambda1 + delta);
-			}
-			A_value = -lambda1 - delta + alpha;
-			A_value *= tetta;
-			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			A_value *= -1;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
-			lambda1 = multiplier(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			lambda2 = -multiplier(i, j, k);
-			delta = max3(0, -lambda1, -lambda2);
-			if (lambda1 <= lambda2) {
-				if (operand(i, j, k) >= operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
-					alpha = min2(R1 * delta, lambda2 + delta);
-				else
-					alpha = min2(R2 * delta, lambda2 + delta);
-			} else {
-				Q1 = Q2 = P1 = P2 = 0;
-				for (pp = 0; pp < 3; pp++) {
-					ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-					ind_pp[pp] = 1;
-					Q1 += max2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * max2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q1 += max2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * max2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q2 += max2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * min2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q2 += max2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * min2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P1 += min2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * min2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P1 += min2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * min2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P2 += min2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * max2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P2 += min2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * max2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-				}
-				if (P1 == 0)
-					Q1 = 0;
-				else
-					Q1 /= P1;
-				if (P2 == 0)
-					Q2 = 0;
-				else
-					Q2 /= P2;
-				R1 = max2(0, min2(1, Q1));
-				R2 = max2(0, min2(1, Q2));
-				if (operand(i, j, k) <= operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
-					alpha = min2(R1 * delta, lambda1 + delta);
-				else
-					alpha = min2(R2 * delta, lambda1 + delta);
-			}
-			A_value = -lambda1 - delta + alpha;
-			A_value *= tetta;
-			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			A_value *= -1;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
-			A_value = multiplier(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - multiplier(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			A_value *= tetta;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
 */
 		}
 	}

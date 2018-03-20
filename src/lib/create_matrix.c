@@ -154,7 +154,7 @@ int create_Ab_termogas(in *I)
 			return 1;
 		}
 		memset((void *) I->B, 0, I->system_dimension * sizeof(double));
-		int num_el_in_row = (2 * I->stencil_size * 3 + 1) * I->num_parameters;
+		int num_el_in_row = I->stencil_size * I->num_parameters;//(2 * I->stencil_size * 3 + 1) * I->num_parameters;
 		I->non_zero_elem = num_el_in_row * I->system_dimension;
 		if ((I->Aelem_csr = (double *) malloc(I->non_zero_elem * sizeof(double))) == NULL) {
 			printf("Memory error\n");
