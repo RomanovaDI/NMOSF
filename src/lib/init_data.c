@@ -77,7 +77,7 @@ int set_parameters_termogas(in *I)
 	I->molar_weight[2] = 0.04401; //CO2
 	I->molar_weight[3] = 0.01802; //H2O(g)
 	I->molar_weight[4] = 0.11423; //C8H18
-	I->permeability = 0.00000000000001;//0.00000000000001;
+	I->permeability = 0.000000001;//0.00000000000001;
 	I->residual_saturation[0] = 0.15; // water
 	I->residual_saturation[1] = 0.2; // oil
 	I->residual_saturation[2] = 0.001;//I->epsilon; // gas
@@ -149,7 +149,7 @@ int set_parameters_termogas(in *I)
 	I->density_environment = 2000;
 	//I->injection_well_pressure = 30000000;
 	I->injection_well_pressure = 30000000;
-	I->injection_well_temperature = 500;//I->initial_temperature;//600;
+	I->injection_well_temperature = I->initial_temperature;//500;//I->initial_temperature;//600;
 	I->production_well_pressure = 10000000;
 	I->adiabatic_exponent[0] = 1; // water
 	I->adiabatic_exponent[1] = 1; // oil

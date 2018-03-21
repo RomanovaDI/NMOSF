@@ -179,6 +179,7 @@ int main(int argc, char **argv)
 {
 	int i, time_steps, j;
 	double t;
+	time_t time1, time2;
 	in II;
 	in *I = &II;
 	MPI_Init(&argc, &argv);
@@ -272,12 +273,18 @@ int main(int argc, char **argv)
 #endif
 #if TERMOGAS
 		printf("avarage_velocity_global = %lf\tdt = %lf\n", avarage_velocity_global(I), 0.7 * I->dx[0] / avarage_velocity_global(I));
+		time(&time1);
 		if (create_Ab_termogas(I) == 1) goto error;
+		time(&time2);
+		printf("Time of matrix creating is %lfsec.\n", difftime(time2, time1));
 #endif
 		//print_A_csr(I);
 		if (i == 0)
 			I->flag_first_time_step = 0;
+		time(&time1);
 		if (solve_matrix(I)) goto error;
+		time(&time2);
+		printf("Time of matrix solving is %lfsec.\n", difftime(time2, time1));
 		if (I->my_rank == 0) {
 			if (print_oil_production(I)) goto error;
 		}
