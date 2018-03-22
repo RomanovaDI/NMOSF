@@ -841,6 +841,96 @@ int print_vtk_termogas(in *I, int n)
 			}
 		}
 	}
+	fprintf(f, "VECTORS vel_water_of_sat_water double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t",\
+							(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *\
+							capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *\
+							grad_saturation(I, 0, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS vel_water_of_sat_gas double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t",\
+							(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *\
+							capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *\
+							grad_saturation(I, 2, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS vel_oil_of_sat_water double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t",\
+							(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *\
+							capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *\
+							grad_saturation(I, 0, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS vel_oil_of_sat_gas double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t",\
+							(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *\
+							capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *\
+							grad_saturation(I, 2, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS vel_gas_of_sat_water double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t",\
+							(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *\
+							capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *\
+							grad_saturation(I, 0, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS vel_gas_of_sat_gas double\n");
+	for (k = 0; k < I->nz; k++) {
+		for (i = 0; i < I->nx; i++) {
+			for (j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t",\
+							(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *\
+							capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *\
+							grad_saturation(I, 2, p, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
 	fprintf(f, "VECTORS grad_saturation_water double\n");
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {

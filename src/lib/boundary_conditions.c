@@ -610,6 +610,7 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_consistent(in *I)
 
 int set_injection_well(in *I, int i, int j, int k)
 {
+	/*
 	for (int ii = -1; ii < 2; ii++) {
 		for (int jj = -1; jj < 2; jj++) {
 			for (int kk = -1; kk < 2; kk++) {
@@ -624,6 +625,7 @@ int set_injection_well(in *I, int i, int j, int k)
 			}
 		}
 	}
+	*/
 	I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
 	I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
 	I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;

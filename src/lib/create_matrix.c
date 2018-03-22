@@ -215,7 +215,7 @@ int create_Ab_termogas(in *I)
 					}
 					//if ((I->equation_num == 4) && (!(well(I, i, j, k)))) {
 					if ((1) && (!(well(I, i, j, k)))) {
-						//if (DDT(p, i, j, k, coef_pressure, second, separated, FDM, termogas)) return 1;
+						if (DDT(p, i, j, k, coef_pressure, second, separated, FDM, termogas)) return 1;
 						if (LAPL(p, i, j, k, coef_pressure, backward_euler, second, separated, FDM, termogas)) return 1;
 					} else {
 						if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;

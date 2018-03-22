@@ -65,7 +65,7 @@ int well(in *I, int i, int j, int k)
 
 int production_well(in *I, int i, int j, int k)
 {
-	//	return 0;
+//	return 0;
 	if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == 0))
 		return 1;
 	else if ((i + I->ind_start_region_proc[0] == 0) && (j + I->ind_start_region_proc[1] == I->gl_ny - 1))
@@ -87,6 +87,12 @@ int injection_well(in *I, int i, int j, int k)
 	printf("Process %d, PID %d: I->gl_ny = %d, I->ny = %d\n", I->my_rank, getpid(), I->gl_ny, I->ny);
 #endif
 	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
+		return 1;
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 + 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
+		return 1;
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 + 1))
+		return 1;
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 + 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 + 1))
 		return 1;
 	else
 		return 0;
@@ -855,6 +861,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, wa
 		//printf("p = 0, grad_pressure = %lf, ", grad_pressure(I, pr, i, j, k));
 		//printf("capil_0 = %lf, ", (Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *	capillary_pressure_derivative_by_saturation(I, 0, i, j, k) * grad_saturation(I, 0, pr, i, j, k));
 		//printf("capil_2 = %lf.\n", (Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) * capillary_pressure_derivative_by_saturation(I, 2, i, j, k) * grad_saturation(I, 2, pr, i, j, k));
+		//return - I->permeability * relative_permeability(I, p, i, j, k) * grad_pressure(I, pr, i, j, k);
 		return - I->permeability * relative_permeability(I, p, i, j, k) *(
 			grad_pressure(I, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
@@ -880,6 +887,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, wa
 		//printf("p = 1, grad_pressure = %lf, ", grad_pressure(I, pr, i, j, k));
 		//printf("capil_0 = %lf, ", (Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) * capillary_pressure_derivative_by_saturation(I, 0, i, j, k) * grad_saturation(I, 0, pr, i, j, k));
 		//printf("capil_2 = %lf.\n", (Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) * capillary_pressure_derivative_by_saturation(I, 2, i, j, k) * grad_saturation(I, 2, pr, i, j, k));
+		//return - I->permeability * relative_permeability(I, p, i, j, k) * grad_pressure(I, pr, i, j, k);
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
 			grad_pressure(I, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
@@ -900,6 +908,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, wa
 		//printf("capil_2_0 = %lf.\n", (Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1));
 		//printf("capil_2_1 = %lf.\n", capillary_pressure_derivative_by_saturation(I, 2, i, j, k));
 		//printf("capil_2_2 = %lf.\n", grad_saturation(I, 2, pr, i, j, k));
+		//return - I->permeability * relative_permeability(I, p, i, j, k) * grad_pressure(I, pr, i, j, k);
 		return - I->permeability * relative_permeability(I, p, i, j, k) * (
 			grad_pressure(I, pr, i, j, k) +
 			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *

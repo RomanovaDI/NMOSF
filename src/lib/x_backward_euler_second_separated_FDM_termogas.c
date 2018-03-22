@@ -20,6 +20,15 @@
 #define SCAL(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) SCAL_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 #define LAPL(p, i, j, k, object, numerical_scheme, approximation_order, solution_mode, method, task) LAPL_##object##_##numerical_scheme##_##approximation_order##_##solution_mode##_##method##_##task(I, p, i, j, k)
 
+double lambda(in *I, int p, int pr, int i, int j, int k, int ii, int jj, int kk, int iii, int jjj, int kkk)
+{
+	if ((i == ii) && (j == jj) && (k == kk))
+		int omega = 0.75;
+	else
+		int omega = 0.125;
+	if ()
+}
+
 int ddx_calc(in *I, int p, int pr, int i, int j, int k, double omega, double tetta, int antidiff, int ind) // i_n, j_n, k_n - coordinates of neighbor cell
 {
 	double A_value;
@@ -180,7 +189,8 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 	for (pr = 0; pr < 2; pr++) {
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
-		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
+		if (1) {
+		//if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
 /*
 			A_value = density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) / (2 * I->dx[pr]);
 			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
@@ -233,10 +243,10 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 			//WRITE_TO_A(p, i, j, k, -1);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 */
-/*
-			if (ddx_calc(I, p, pr, i, j, k, 1, 0.5, 0, 0)) return 1;
-*/
 
+			if (ddx_calc(I, p, pr, i, j, k, 1, 0.5, 0, 0)) return 1;
+
+/*
 			if (pr == 0)
 				pp = 1;
 			else if (pr == 1)
@@ -257,7 +267,7 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 					tmp += 0.125;
 			}
 			if (ddx_calc(I, p, pr, i, j, k, tmp, 0.5, 0, 0)) return 1;
-
+*/
 		}
 	}
 	return 0;
@@ -317,7 +327,8 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 	for (pr = 0; pr < 2; pr++) {
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
-		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
+		if (1) {
+		//if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
 /*
 			I->B[A_IND(I, p, i, j, k)] -= (density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
 				avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
@@ -403,10 +414,10 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 			A_value *= -1;
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 */
-/*
-			if (ddx_calc(I, p, pr, i, j, k, 1, 0.5, 0, 1)) return 1;
-*/
 
+			if (ddx_calc(I, p, pr, i, j, k, 1, 0.5, 0, 1)) return 1;
+
+/*
 			if (pr == 0)
 				pp = 1;
 			else if (pr == 1)
@@ -427,7 +438,7 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 					tmp += 0.125;
 			}
 			if (ddx_calc(I, p, pr, i, j, k, tmp, 0.5, 0, 1)) return 1;
-
+*/
 		}
 	}
 	return 0;
