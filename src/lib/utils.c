@@ -826,8 +826,9 @@ double grad_saturation(in *I, int p, int pr, int i, int j, int k)
 
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, water, gas; pr - x1, x2, x3
 {
-/*
+
 	if (pr == 0) {
+		return 1;
 		if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2) && (1))
 			return 0;
 		else if (i + I->ind_start_region_proc[0] > I->gl_nx / 2)
@@ -836,7 +837,7 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, wa
 			return -I->porousness * saturation(I, 2, i, j, k);
 	} else
 		return 0;
-*/
+
 //	return - I->porousness * density_t(I, );
 	if (!((pr == 0) || (pr == 1) || (pr == 2))) {
 		printf("Error avarage velocity index\n");

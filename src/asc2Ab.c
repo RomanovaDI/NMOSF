@@ -141,33 +141,13 @@ numbering faces of cells is so
 #include <sys/time.h>
 #include <time.h>
 
-struct timeval tv1,tv2,dtv;
-struct timezone tz;
-
 void display_usage(void);
-void time_start(void);
-long time_stop(void);
 
 /* modes of matrix creating */
 #define PATTERN 0
 #define MATRIX 1
 
 #define SET_CONDITION(type, object, mode) SET_##type##_CONDITION_##object##_##mode(I)
-
-void time_start(void)
-{
-	gettimeofday(&tv1, &tz);
-	return;
-}
-
-long time_stop(void)
-{
-	gettimeofday(&tv2, &tz);
-	dtv.tv_sec= tv2.tv_sec -tv1.tv_sec;
-	dtv.tv_usec=tv2.tv_usec-tv1.tv_usec;
-	if(dtv.tv_usec<0) { dtv.tv_sec--; dtv.tv_usec+=1000000; }
-		return dtv.tv_sec*1000+dtv.tv_usec/1000;
-}
 
 void display_usage(void)
 {
@@ -247,10 +227,13 @@ int main(int argc, char **argv)
 #if DEBUG
 		if ((I->my_rank == 0) && (I->nproc > 1) && (print_gl_B(I, 4, i))) return 1;
 #endif
+		time(&time1);
 		if (print_vtk(I, i)) {
 			printf("Error printing vtk file\n");
 			goto error;
 		}
+		time(&time2);
+		printf("Time of printing data is %lfsec.\n", difftime(time2, time1));
 //		if (i % 100 == 0) {
 //			if (print_vtk(I, i / 100) == 1) {
 //				printf("Error printing vtk file\n");
