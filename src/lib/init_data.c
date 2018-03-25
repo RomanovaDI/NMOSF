@@ -59,7 +59,7 @@ int set_parameters_termogas(in *I)
 	I->stencil_size = 9;//2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
-	I->dt = 1;//100.0;//10;//we need to set dt!!!
+	I->dt = 100;//100.0;//10;//we need to set dt!!!
 	I->porousness = 0.2; //0.3;
 	I->initial_pressure = 20000000;
 	I->initial_temperature = 400;//298;
@@ -77,7 +77,7 @@ int set_parameters_termogas(in *I)
 	I->molar_weight[2] = 0.04401; //CO2
 	I->molar_weight[3] = 0.01802; //H2O(g)
 	I->molar_weight[4] = 0.11423; //C8H18
-	I->permeability = 0.000000001;//0.00000000000001;
+	I->permeability = 0.00000000000001;
 	I->residual_saturation[0] = 0.15; // water
 	I->residual_saturation[1] = 0.2; // oil
 	I->residual_saturation[2] = 0.001;//I->epsilon; // gas

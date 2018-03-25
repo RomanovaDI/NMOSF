@@ -214,8 +214,8 @@ int create_Ab_termogas(in *I)
 						I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 					}
 					//if ((I->equation_num == 4) && (!(well(I, i, j, k)))) {
-					if ((1) && (!(well(I, i, j, k)))) {
-						if (DDT(p, i, j, k, coef_pressure, second, separated, FDM, termogas)) return 1;
+					if ((1) && (I->flag_first_time_step) && (!(well(I, i, j, k)))) {
+						//if (DDT(p, i, j, k, coef_pressure, second, separated, FDM, termogas)) return 1;
 						if (LAPL(p, i, j, k, coef_pressure, backward_euler, second, separated, FDM, termogas)) return 1;
 					} else {
 						if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;

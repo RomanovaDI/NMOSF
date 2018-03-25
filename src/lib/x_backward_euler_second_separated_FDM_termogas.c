@@ -55,24 +55,41 @@ double lambda2D(in *I, int p, int i, int j, int k, int ii, int jj, int kk, char 
 {
 	double lambda = 0, omega = 0, sign = 0;
 	for (int pr = 0; pr < 2; pr ++) {
-		if ((((pr == 0) && (j == jj)) || ((pr == 1) && (i == ii))))
-			omega = 0.75;
-		else
-			omega = 0.125;
-		if ((pr == 0) && (ii > i))
-			sign = -1;
-		else if ((pr == 0) && (ii < i))
-			sign = 1;
-		else if ((pr == 1) && (jj > j))
-			sign = -1;
-		else if ((pr == 1) && (jj < j))
-			sign = 1;
-		if ((pr == 0) && (i == ii))
-			lambda += omega * (multiplier(I, p, pr, ii + 1, jj, kk, object_multiplier) - multiplier(I, p, pr, ii - 1, jj, kk, object_multiplier));
-		else if ((pr == 1) && (j == jj))
-			lambda += omega * (multiplier(I, p, pr, ii, jj + 1, kk, object_multiplier) - multiplier(I, p, pr, ii, jj - 1, kk, object_multiplier));
-		else
+		if ((pr == 0) && (i == ii) && (j == jj)) {
+			for (int jjj = j - 1; jjj < j + 1; jjj++) {
+				if (jjj == j)
+					omega = 0.75;
+				else
+					omega = 0.125;
+				lambda += omega * (multiplier(I, p, pr, ii + 1, jjj, kk, object_multiplier) - multiplier(I, p, pr, ii - 1, jjj, kk, object_multiplier));
+			}
+		} else if ((pr == 1) && (i == ii) && (j == jj)) {
+			for (int iii = i - 1; iii < i + 1; iii++) {
+				if (iii == i)
+					omega = 0.75;
+				else
+					omega = 0.125;
+				lambda += omega * (multiplier(I, p, pr, iii, jj + 1, kk, object_multiplier) - multiplier(I, p, pr, iii, jj - 1, kk, object_multiplier));
+			}
+		} else {
+			if ((((pr == 0) && (j == jj)) || ((pr == 1) && (i == ii))))
+				omega = 0.75;
+			else
+				omega = 0.125;
+			if ((pr == 0) && (ii > i))
+				sign = -1;
+			else if ((pr == 0) && (ii < i))
+				sign = 1;
+			else if ((pr == 0) && (i == ii))
+				sign = 0;
+			else if ((pr == 1) && (jj > j))
+				sign = -1;
+			else if ((pr == 1) && (jj < j))
+				sign = 1;
+			else if ((pr == 1) && (j == jj))
+				sign = 0;
 			lambda += sign * omega * multiplier(I, p, pr, ii, jj, kk, object_multiplier);
+		}
 	}
 	return lambda;
 }
@@ -82,7 +99,7 @@ double delta(in *I, int p, int i, int j, int k, int ii, int jj, int kk, char obj
 	if ((i == ii) && (j == jj) && (k == kk))
 		return 0;
 	else
-		return max3(0, -lambda2D(I, p, i, j, k, ii, jj, kk, object_multiplier), -lambda2D(I, p, ii, jj, kk, i, j, k, object_multiplier));
+		return max3(0, - lambda2D(I, p, i, j, k, ii, jj, kk, object_multiplier), - lambda2D(I, p, ii, jj, kk, i, j, k, object_multiplier));
 }
 
 double alpha(in *I, int p, int i, int j, int k, int ii, int jj, int kk, char object_multiplier[50], char object_operand[50])
@@ -161,18 +178,22 @@ double lambda_res(in *I, int p, int i, int j, int k, int ii, int jj, int kk, cha
 
 int div_func(in *I, int p, int i, int j, int k, char object_multiplier[50], char object_operand[50], int antidiff, double tetta)
 {
+	if (k != 0)
+		return 0;
 	double A_value, tmp;
 	int kk = k;
 	for (int ii = i - 1; ii < i + 2; ii++) {
 		for (int jj = j - 1; jj < j + 2; jj++) {
-			tmp = lambda_res(I, p, i, j, k, ii, jj, kk, object_multiplier, object_operand, antidiff);
-			A_value = tetta * tmp;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * tmp * operand(I, p, i, j, k, object_operand);
-			if (!((i == ii) && (j == jj) && (k == kk))) {
-				A_value *= -1;
-				WRITE_TO_A(p, ii, jj, kk, -1);
-				I->B[A_IND(I, p, i, j, k)] += (1 - tetta) * tmp * operand(I, p, ii, jj, kk, object_operand);
+			if (!boundary_cell(I, ii, jj, kk)) {
+				tmp = lambda_res(I, p, i, j, k, ii, jj, kk, object_multiplier, object_operand, antidiff);
+				A_value = tetta * tmp;
+				WRITE_TO_A(p, i, j, k, -1);
+				I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * tmp * operand(I, p, i, j, k, object_operand);
+				if (!((i == ii) && (j == jj) && (k == kk))) {
+					A_value *= -1;
+					WRITE_TO_A(p, ii, jj, kk, -1);
+					I->B[A_IND(I, p, i, j, k)] += (1 - tetta) * tmp * operand(I, p, ii, jj, kk, object_operand);
+				}
 			}
 		}
 	}
@@ -182,7 +203,7 @@ int div_func(in *I, int p, int i, int j, int k, char object_multiplier[50], char
 int DIV_concentration_density_average_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (div_func(I, p, i, j, k, "density_avarage_velocity", "concentration", 1, 0.5)) return 1;
+	if (div_func(I, p, i, j, k, "density_avarage_velocity", "concentration", 2, 0.5)) return 1;
 	return 0;
 }
 
@@ -229,7 +250,7 @@ int LAPL_coef_pressure_backward_euler_second_separated_FDM_termogas(in *I, int p
 int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (div_func(I, p, i, j, k, "density_avarage_velocity_devide_by_saturation", "saturation", 1, 0.5)) return 1;
+	if (div_func(I, p, i, j, k, "density_avarage_velocity_devide_by_saturation", "saturation", 2, 0.5)) return 1;
 	return 0;
 }
 
