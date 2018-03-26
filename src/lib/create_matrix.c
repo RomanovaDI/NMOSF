@@ -191,7 +191,7 @@ int create_Ab_termogas(in *I)
 							I->Aiptr_csr[A_IND(I, p, i, j, k)] = I->A_ind_current;
 						}
 						//if (I->equation_num == 0) {
-						//if (p == 0) {
+						//if (p == 3) {
 						if (1) {
 							if (production_well(I, i, j, k)) {
 								if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 0;

@@ -203,7 +203,11 @@ int div_func(in *I, int p, int i, int j, int k, char object_multiplier[50], char
 int DIV_concentration_density_average_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (div_func(I, p, i, j, k, "density_avarage_velocity", "concentration", 2, 0.5)) return 1;
+	if ((p != 0) && (p != 1) && (p != 2) && (p != 3)) {
+		printf("Incorrect index of DIV_concentration_density_average_velocity\n");
+		return 1;
+	}
+	if (div_func(I, p, i, j, k, "density_avarage_velocity", "concentration", 0, 0.5)) return 1;
 	return 0;
 }
 
@@ -250,7 +254,11 @@ int LAPL_coef_pressure_backward_euler_second_separated_FDM_termogas(in *I, int p
 int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (div_func(I, p, i, j, k, "density_avarage_velocity_devide_by_saturation", "saturation", 2, 0.5)) return 1;
+	if ((p != 5) && (p != 6) && (p != 7)) {
+		printf("Incorrect index of DIV_density_average_velocity\n");
+		return 1;
+	}
+	if (div_func(I, p, i, j, k, "density_avarage_velocity_devide_by_saturation", "saturation", 0, 0.5)) return 1;
 	return 0;
 }
 

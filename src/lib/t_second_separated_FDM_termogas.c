@@ -17,6 +17,10 @@
 int DDT_concentration_density_saturation_porousness_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	if ((p != 0) && (p != 1) && (p != 2) && (p != 3)) {
+		printf("Incorrect index of DDT_concentration_density_saturation_porousness\n");
+		return 1;
+	}
 	double A_value;
 	A_value = density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->porousness / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
@@ -87,6 +91,10 @@ int DDT_coef_pressure_second_separated_FDM_termogas(in *I, int p, int i, int j, 
 int DDT_density_saturation_porousness_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	if ((p != 5) && (p != 6) && (p != 7)) {
+		printf("Incorrect index of DDT_density_saturation_porousness\n");
+		return 1;
+	}
 	double A_value;
 	A_value = density_t(I, p - 5, i, j, k) * I->porousness / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);

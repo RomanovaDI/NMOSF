@@ -87,11 +87,11 @@ int injection_well(in *I, int i, int j, int k)
 #endif
 	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
 		return 1;
-	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 + 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
 		return 1;
-	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 + 1))
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
 		return 1;
-	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 + 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 + 1))
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
 		return 1;
 	else
 		return 0;
@@ -617,14 +617,16 @@ double temperature_environment(in *I, int i, int j, int k)
 
 double density_t(in *I, int p, int i, int j, int k)
 {
-	if ((p == 0) || (p == 1))
+	if ((p == 0) || (p == 1)) {
+		//return I->density_0[p];
 		return ((I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
-	else if (p == 2)
+	} else if (p == 2) {
+		//return (I->initial_pressure * I->molar_weight[3] / (I->R * temperature_flow(I, i, j, k)));
 		return (pressure(I, i, j, k) * (concentration(I, 0, i, j, k) * I->molar_weight[0] +
 										concentration(I, 1, i, j, k) * I->molar_weight[1] +
 										concentration(I, 2, i, j, k) * I->molar_weight[2] +
 										concentration(I, 3, i, j, k) * I->molar_weight[3]) / (I->R * temperature_flow(I, i, j, k)));
-	else {
+	} else {
 		printf("Error density index\n");
 		return 0;
 	}
@@ -826,8 +828,8 @@ double grad_saturation(in *I, int p, int pr, int i, int j, int k)
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, water, gas; pr - x1, x2, x3
 {
 /*
-	if (pr == 0) {
-		return 10;
+	if (pr == 1) {
+		return 0.0002;
 		if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2) && (1))
 			return 0;
 		else if (i + I->ind_start_region_proc[0] > I->gl_nx / 2)

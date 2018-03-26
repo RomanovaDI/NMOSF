@@ -45,7 +45,8 @@ int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
 	//strcpy(I->map_name, "maps/map_termogas_test_big.asc");
-	strcpy(I->map_name, "maps/map_termogas.asc");
+	//strcpy(I->map_name, "maps/map_termogas.asc");
+	strcpy(I->map_name, "maps/map_termogas_small.asc");
 	//strcpy(I->map_name, "maps/map_termogas_1d.asc");
 	//strcpy(I->map_name, "maps/map_termogas_pattern.asc");
 	//strcpy(I->region_map_name, "maps/map_termogas_region.asc");
@@ -171,6 +172,7 @@ int set_parameters_termogas(in *I)
 		printf("Number of processes is not equal to number of subdomains\n");
 		return 1;
 	}
+	I->time = 0;
 #endif
 	return 0;
 }

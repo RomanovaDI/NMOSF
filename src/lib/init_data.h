@@ -146,6 +146,7 @@ typedef struct init_parameters_termogas {
 	int gl_n_cells_multipl;
 	double *gl_B;
 	int *ind_start_region_proc;
+	double time;
 } in_termogas;
 
 //typedef in_avalanche in;

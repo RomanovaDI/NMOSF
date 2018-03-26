@@ -5,5 +5,5 @@ int solve_matrix(in *I);
 int write_B_to_B_prev(in *I);
 int write_pressure(in *I);
 int write_B_prev_to_B(in *I);
-int print_gl_B(in *I, int p, int n);
+int print_gl_B(in *I, int p);
 int solve_test_matrix(void);

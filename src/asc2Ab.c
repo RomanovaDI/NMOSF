@@ -157,7 +157,6 @@ void display_usage(void)
 
 int main(int argc, char **argv)
 {
-	int i, time_steps, j;
 	double t;
 	time_t time1, time2;
 	in II;
@@ -213,22 +212,19 @@ int main(int argc, char **argv)
 	}
 	memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
 	SET_CONDITION(initial, termogas, fixed_value);
-	time_steps = I->end_time / I->dt;
 	I->flag_first_time_step = 1;
-	//time_steps = 0;
-	for (i = 0; i <= time_steps; i++) {
+	while (I->time < I->end_time) {
 		if (I->my_rank == 0) {
-			printf("Time step %d of %d\n", i + 1, time_steps);
+			printf("Time is %lf of %lf\n", I->time, I->end_time);
 		}
-		I->time_step = i;
 		if ((I->nproc > 1) && (reconstruct_src(I))) return 1;
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
-		if ((i == 0) && (I->nproc > 1) && (reconstruct_src(I))) return 1;
+		if ((I->flag_first_time_step) && (I->nproc > 1) && (reconstruct_src(I))) return 1;
 #if DEBUG
-		if ((I->my_rank == 0) && (I->nproc > 1) && (print_gl_B(I, 4, i))) return 1;
+		if ((I->my_rank == 0) && (I->nproc > 1) && (print_gl_B(I, 4))) return 1;
 #endif
 		time(&time1);
-		if (print_vtk(I, i)) {
+		if (print_vtk(I)) {
 			printf("Error printing vtk file\n");
 			goto error;
 		}
@@ -241,29 +237,21 @@ int main(int argc, char **argv)
 //			}
 //		}
 #if DEBUG
-		if (print_parameter_in_subdomains(I, 4, i)) return 1;
+		if (print_parameter_in_subdomains(I, 4)) return 1;
 #endif
-//		if (i % 10 == 0) {
-//			if (print_vtk(I, i / 10) == 1) {
-//				printf("Error printing vtk file\n");
-//				goto error;
-//			} else {
-//				printf("Result printed to vtk file\n");
-//			}
-//		}
 #if AVALANCHE
 		if (create_Ab_avalanche(I) == 1) goto error;
 #endif
 #if TERMOGAS
-		printf("avarage_velocity_global = %lf\tdt = %lf\n", avarage_velocity_global(I), 0.7 * I->dx[0] / avarage_velocity_global(I));
+		printf("avarage_velocity_global = %lf\tdt = %lf\n", avarage_velocity_global(I), 0.7 * I->dx[0] * I->porousness / avarage_velocity_global(I));
+		I->dt = 0.7 * I->dx[0] * I->porousness / avarage_velocity_global(I);
+		printf("dt = %lf\n", I->dt);
 		time(&time1);
 		if (create_Ab_termogas(I) == 1) goto error;
 		time(&time2);
 		printf("Time of matrix creating is %lfsec.\n", difftime(time2, time1));
 #endif
 		//print_A_csr(I);
-		if (i == 0)
-			I->flag_first_time_step = 0;
 		time(&time1);
 		if (solve_matrix(I)) goto error;
 		time(&time2);
@@ -272,27 +260,22 @@ int main(int argc, char **argv)
 			if (print_oil_production(I)) goto error;
 		}
 		//if (write_B_to_B_prev(I)) goto error;
-		if (i == 0) {
+		if (I->flag_first_time_step) {
 			if (write_pressure(I)) goto error;
 		} else {
 			if (write_B_to_B_prev(I)) goto error;
 		}
 		//if (check_sum(I)) goto error;
-//				if (print_vtk(I, j + (i + 1) * 1000) == 1) {
-//					printf("Error printing vtk file\n");
-//					goto error;
-//				} else {
-//					printf("Result printed to vtk file\n");
-//				}
-//		if (i == time_steps) {
-//			if (print_vtk(I, i / 10 + 1)) {
-//				printf("Error printing vtk file\n");
-//				goto error;
-//			} else {
-//				printf("Result printed to vtk file\n");
-//			}
-//		}
+		I->time += I->dt;
+		I->time_step++;
+		I->flag_first_time_step = 0;
 	}
+	time(&time1);
+	if (print_vtk(I)) {
+		printf("Error printing vtk file\n");
+		goto error;
+	}
+	time(&time2);
 	if (free_massives(I)) goto error;
 
 	if (I->my_rank == 0) printf("Calculations finished successfully\n");
