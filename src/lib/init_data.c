@@ -45,8 +45,8 @@ int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
 	//strcpy(I->map_name, "maps/map_termogas_test_big.asc");
-	//strcpy(I->map_name, "maps/map_termogas.asc");
-	strcpy(I->map_name, "maps/map_termogas_small.asc");
+	strcpy(I->map_name, "maps/map_termogas.asc");
+	//strcpy(I->map_name, "maps/map_termogas_small.asc");
 	//strcpy(I->map_name, "maps/map_termogas_1d.asc");
 	//strcpy(I->map_name, "maps/map_termogas_pattern.asc");
 	//strcpy(I->region_map_name, "maps/map_termogas_region.asc");
@@ -162,6 +162,8 @@ int set_parameters_termogas(in *I)
 	I->time_step = 0;
 	I->volume_producted_oil_kg = 0;
 	I->volume_producted_oil_m = 0;
+	I->volume_producted_fluid_m = 0;
+	I->volume_injected_fluid_m = 0;
 	MPI_Comm_rank(MPI_COMM_WORLD, &I->my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &I->nproc);
 	I->x_regions = 1;

@@ -87,12 +87,12 @@ int injection_well(in *I, int i, int j, int k)
 #endif
 	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
 		return 1;
-	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
-		return 1;
-	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
-		return 1;
-	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
-		return 1;
+	//else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
+	//	return 1;
+	//else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
+	//	return 1;
+	//else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
+	//	return 1;
 	else
 		return 0;
 }
@@ -1124,12 +1124,18 @@ int check_sum(in *I)
 int print_oil_production(in *I)
 {
 	FILE *f;
-	int well_coordinates[3];
-	well_coordinates[0] = well_coordinates[1] = well_coordinates[2] = 0;
-	double velocity_of_oil_production;
-	/*well_coordinates[0] = I->nx / 2;
-	well_coordinates[1] = I->ny / 2;
-	well_coordinates[2] = 0;*/
+	int production_well_coordinates[3];
+	production_well_coordinates[0] = production_well_coordinates[1] = production_well_coordinates[2] = 0;
+	int injection_well_coordinates[3];
+	injection_well_coordinates[0] = I->gl_nx / 2;
+	injection_well_coordinates[1] = I->gl_ny / 2;
+	injection_well_coordinates[2] = 0;
+
+	double velocity_of_oil_production =
+		saturation(I, 1, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2]) * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
+		I->B[A_IND(I, 6, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
+		avarage_velocity(I, 1, 0, production_well_coordinates[0] + 1, production_well_coordinates[1], production_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt -
+		avarage_velocity(I, 1, 1, production_well_coordinates[0], production_well_coordinates[1] + 1, production_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
 	if (I->time_step == 0) {
 		if ((f = fopen("result/velocity_of_oil_production_m.dat","w")) == NULL) {
 			printf("error openning file");
@@ -1142,11 +1148,7 @@ int print_oil_production(in *I)
 			return 1;
 		}
 	}
-	velocity_of_oil_production = saturation(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]) * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
-		I->B[A_IND(I, 6, well_coordinates[0], well_coordinates[1], well_coordinates[2])] * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
-		avarage_velocity(I, 1, 0, well_coordinates[0] + 1, well_coordinates[1], well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt -
-		avarage_velocity(I, 1, 1, well_coordinates[0], well_coordinates[1] + 1, well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, velocity_of_oil_production);
+	fprintf(f, "%lf\t%lf\n", I->time, velocity_of_oil_production / I->dt);
 	fclose(f);
 
 	I->volume_producted_oil_m += velocity_of_oil_production;
@@ -1162,23 +1164,23 @@ int print_oil_production(in *I)
 			return 1;
 		}
 	}
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->volume_producted_oil_m);
+	fprintf(f, "%lf\t%lf\n", I->time, I->volume_producted_oil_m);
 	fclose(f);
 
-	velocity_of_oil_production *= density_t(I, 1, well_coordinates[0], well_coordinates[1], well_coordinates[2]);
+	velocity_of_oil_production *= density_t(I, 1, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2]);
 	if (I->time_step == 0) {
 		if ((f = fopen("result/velocity_of_oil_production_kg.dat","w")) == NULL) {
 			printf("error openning file");
 			return 1;
 		}
-		fprintf(f, "#total oil volume %lf", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1));
+		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
 	} else {
 		if ((f = fopen("result/velocity_of_oil_production_kg.dat","a")) == NULL) {
 			printf("error openning file");
 			return 1;
 		}
 	}
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, velocity_of_oil_production);
+	fprintf(f, "%lf\t%lf\n", I->time, velocity_of_oil_production / I->dt);
 	fclose(f);
 
 	I->volume_producted_oil_kg += velocity_of_oil_production;
@@ -1194,7 +1196,83 @@ int print_oil_production(in *I)
 			return 1;
 		}
 	}
-	fprintf(f, "%lf\t%lf\n", (I->time_step + 1) * I->dt, I->volume_producted_oil_kg);
+	fprintf(f, "%lf\t%lf\n", I->time, I->volume_producted_oil_kg);
+	fclose(f);
+
+	double velocity_of_fluid_production = 0;
+	for (int p = 0; p < 3; p++) {
+		velocity_of_fluid_production +=
+			saturation(I, p, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2]) * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
+			I->B[A_IND(I, p + 5, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
+			avarage_velocity(I, p, 0, production_well_coordinates[0] + 1, production_well_coordinates[1], production_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt -
+			avarage_velocity(I, p, 1, production_well_coordinates[0], production_well_coordinates[1] + 1, production_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
+	}
+	if (I->time_step == 0) {
+		if ((f = fopen("result/velocity_of_fluid_production_m.dat","w")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+		fprintf(f, "#total fluid volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * I->porousness, 0.0, 0.0);
+	} else {
+		if ((f = fopen("result/velocity_of_fluid_production_m.dat","a")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	}
+	fprintf(f, "%lf\t%lf\n", I->time, velocity_of_fluid_production / I->dt);
+	fclose(f);
+
+	I->volume_producted_fluid_m += velocity_of_fluid_production;
+	if (I->time_step == 0) {
+		if ((f = fopen("result/fluid_production_m.dat","w")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+		fprintf(f, "#total fluid volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * I->porousness, 0.0, 0.0);
+	} else {
+		if ((f = fopen("result/fluid_production_m.dat","a")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	}
+	fprintf(f, "%lf\t%lf\n", I->time, I->volume_producted_fluid_m);
+	fclose(f);
+
+	double velocity_of_fluid_injection = 0;
+	for (int p = 0; p < 3; p += 2) {
+		velocity_of_fluid_production +=
+			avarage_velocity(I, p, 0, injection_well_coordinates[0] - 1, injection_well_coordinates[1], injection_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt +
+			avarage_velocity(I, p, 1, injection_well_coordinates[0], injection_well_coordinates[1] - 1, injection_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt -
+			avarage_velocity(I, p, 0, injection_well_coordinates[0] + 1, injection_well_coordinates[1], injection_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt -
+			avarage_velocity(I, p, 1, injection_well_coordinates[0], injection_well_coordinates[1] + 1, injection_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
+	}
+	if (I->time_step == 0) {
+		if ((f = fopen("result/velocity_of_fluid_injection_m.dat","w")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	} else {
+		if ((f = fopen("result/velocity_of_fluid_injection_m.dat","a")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	}
+	fprintf(f, "%lf\t%lf\n", I->time, velocity_of_fluid_injection / I->dt);
+	fclose(f);
+
+	I->volume_injected_fluid_m += velocity_of_fluid_injection;
+	if (I->time_step == 0) {
+		if ((f = fopen("result/fluid_injection_m.dat","w")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	} else {
+		if ((f = fopen("result/fluid_injection_m.dat","a")) == NULL) {
+			printf("error openning file");
+			return 1;
+		}
+	}
+	fprintf(f, "%lf\t%lf\n", I->time, I->volume_injected_fluid_m);
 	fclose(f);
 	return 0;
 }

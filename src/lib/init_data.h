@@ -135,6 +135,8 @@ typedef struct init_parameters_termogas {
 	int time_step;
 	double volume_producted_oil_kg;
 	double volume_producted_oil_m;
+	double volume_producted_fluid_m;
+	double volume_injected_fluid_m;
 	int my_rank;
 	int nproc;
 	int *ind_proc;

@@ -31,8 +31,12 @@ double multiplier(in *I, int p, int pr, int i, int j, int k, char object[50])
 	switch (obj) {
 		case 0:
 			return density_t(I, 2, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
+			//return avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, 2, i, j, k) * I->porousness);
+			//return density_t(I, 2, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->porousness);
 		case 1:
 			return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k));
+			//return avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * I->porousness);
+			//return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * density_t(I, p - 5, i, j, k) * I->porousness);
 	}
 }
 
@@ -56,7 +60,7 @@ double lambda2D(in *I, int p, int i, int j, int k, int ii, int jj, int kk, char 
 	double lambda = 0, omega = 0, sign = 0;
 	for (int pr = 0; pr < 2; pr ++) {
 		if ((pr == 0) && (i == ii) && (j == jj)) {
-			for (int jjj = j - 1; jjj < j + 1; jjj++) {
+			for (int jjj = j - 1; jjj <= j + 1; jjj++) {
 				if (jjj == j)
 					omega = 0.75;
 				else
@@ -64,7 +68,7 @@ double lambda2D(in *I, int p, int i, int j, int k, int ii, int jj, int kk, char 
 				lambda += omega * (multiplier(I, p, pr, ii + 1, jjj, kk, object_multiplier) - multiplier(I, p, pr, ii - 1, jjj, kk, object_multiplier));
 			}
 		} else if ((pr == 1) && (i == ii) && (j == jj)) {
-			for (int iii = i - 1; iii < i + 1; iii++) {
+			for (int iii = i - 1; iii <= i + 1; iii++) {
 				if (iii == i)
 					omega = 0.75;
 				else
@@ -184,7 +188,8 @@ int div_func(in *I, int p, int i, int j, int k, char object_multiplier[50], char
 	int kk = k;
 	for (int ii = i - 1; ii < i + 2; ii++) {
 		for (int jj = j - 1; jj < j + 2; jj++) {
-			if (!boundary_cell(I, ii, jj, kk)) {
+			//if (!boundary_cell(I, ii, jj, kk)) {
+			if (1) {
 				tmp = lambda_res(I, p, i, j, k, ii, jj, kk, object_multiplier, object_operand, antidiff);
 				A_value = tetta * tmp;
 				WRITE_TO_A(p, i, j, k, -1);
@@ -207,7 +212,7 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 		printf("Incorrect index of DIV_concentration_density_average_velocity\n");
 		return 1;
 	}
-	if (div_func(I, p, i, j, k, "density_avarage_velocity", "concentration", 0, 0.5)) return 1;
+	if (div_func(I, p, i, j, k, "density_avarage_velocity", "concentration", 1, 0.5)) return 1;
 	return 0;
 }
 
@@ -258,7 +263,7 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 		printf("Incorrect index of DIV_density_average_velocity\n");
 		return 1;
 	}
-	if (div_func(I, p, i, j, k, "density_avarage_velocity_devide_by_saturation", "saturation", 0, 0.5)) return 1;
+	if (div_func(I, p, i, j, k, "density_avarage_velocity_devide_by_saturation", "saturation", 1, 0.5)) return 1;
 	return 0;
 }
 

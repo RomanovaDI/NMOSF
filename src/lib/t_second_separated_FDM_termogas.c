@@ -23,6 +23,7 @@ int DDT_concentration_density_saturation_porousness_second_separated_FDM_termoga
 	}
 	double A_value;
 	A_value = density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->porousness / I->dt;
+	//A_value = 1.0 / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
 //	I->B[A_IND(I, p, i, j, k)] += A_value * (
 //		0.75 * concentration(I, p, i, j, k) +
@@ -97,6 +98,7 @@ int DDT_density_saturation_porousness_second_separated_FDM_termogas(in *I, int p
 	}
 	double A_value;
 	A_value = density_t(I, p - 5, i, j, k) * I->porousness / I->dt;
+	//A_value = 1.0 / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
 //	I->B[A_IND(I, p, i, j, k)] += A_value * (
 //		0.75 * saturation(I, p - 5, i, j, k) +

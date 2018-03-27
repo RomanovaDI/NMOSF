@@ -152,29 +152,6 @@ int print_vtk_termogas(in *I)
 		fprintf(f, "%d\n", 12);
 	}
 	fprintf(f, "CELL_DATA %d\n", I->n_cells_multipl * I->nz);
-//	fprintf(f, "COLOR_SCALARS concentration 4\n");
-//	for (k = 0; k < I->nz; k++) {
-//		for (i = 0; i < I->nx; i++) {
-//			for (j = 0; j < I->ny; j++) {
-//				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-//					for (p = 0; p < 4; p++)
-//						fprintf(f, "%20.10f\t", I->B_prev[B_IND(I, p, i, j, k)]);
-//					fprintf(f, "\n");
-//				}
-//			}
-//		}
-//	}
-	/*
-	fprintf(f, "SCALARS concentration_%d double 1\n", 0);
-	fprintf(f, "LOOKUP_TABLE default\n");
-	for (k = 0; k < I->nz; k++) {
-		for (i = 0; i < I->nx; i++) {
-			for (j = 0; j < I->ny; j++) {
-				if (I->ind_cell_multipl[i * I->ny + j] != -1)
-					fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, 0, i, j, k)]);
-			}
-		}
-	}*/
 /*
 	tmp = 0;
 	for (k = 0; k < I->nz; k++) {
@@ -209,18 +186,6 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
-//	fprintf(f, "COLOR_SCALARS saturation 3\n");
-//	for (k = 0; k < I->nz; k++) {
-//		for (i = 0; i < I->nx; i++) {
-//			for (j = 0; j < I->ny; j++) {
-//				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-//					for (p = 5; p < 8; p++)
-//						fprintf(f, "%20.10f\t", I->B_prev[B_IND(I, p, i, j, k)]);
-//					fprintf(f, "\n");
-//				}
-//			}
-//		}
-//	}
 	for (int p = 5; p < 8; p++) {
 		fprintf(f, "SCALARS saturation_%d double 1\n", p);
 		fprintf(f, "LOOKUP_TABLE default\n");
@@ -245,8 +210,6 @@ int print_vtk_termogas(in *I)
 	}
 	fprintf(f, "SCALARS temperature_environment double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
-//	fprintf(f, "SCALARS temperature_flow double 1\n");
-//	fprintf(f, "LOOKUP_TABLE default\n");
 	for (int k = 0; k < I->nz; k++) {
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {

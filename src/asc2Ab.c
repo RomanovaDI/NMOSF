@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 	I->flag_first_time_step = 1;
 	while (I->time < I->end_time) {
 		if (I->my_rank == 0) {
-			printf("Time is %lf of %lf\n", I->time, I->end_time);
+			printf("Time is %lf of %lf, time step %d\n", I->time, I->end_time, I->time_step);
 		}
 		if ((I->nproc > 1) && (reconstruct_src(I))) return 1;
 		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 		} else {
 			if (write_B_to_B_prev(I)) goto error;
 		}
-		//if (check_sum(I)) goto error;
+		if (check_sum(I)) goto error;
 		I->time += I->dt;
 		I->time_step++;
 		I->flag_first_time_step = 0;
