@@ -1240,10 +1240,10 @@ int print_oil_production(in *I)
 
 	double velocity_of_fluid_injection = 0;
 	for (int p = 0; p < 3; p += 2) {
-		velocity_of_fluid_production +=
+		velocity_of_fluid_injection +=
 			avarage_velocity(I, p, 0, injection_well_coordinates[0] + 1, injection_well_coordinates[1], injection_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt +
 			avarage_velocity(I, p, 1, injection_well_coordinates[0], injection_well_coordinates[1] + 1, injection_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt -
-			avarage_velocity(I, p, 0, injection_well_coordinates[0] - 1, injection_well_coordinates[1], injection_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt +
+			avarage_velocity(I, p, 0, injection_well_coordinates[0] - 1, injection_well_coordinates[1], injection_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt -
 			avarage_velocity(I, p, 1, injection_well_coordinates[0], injection_well_coordinates[1] - 1, injection_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
 	}
 	if (I->time_step == 0) {

@@ -28,6 +28,9 @@ double multiplier(in *I, int p, int pr, int i, int j, int k, char object[50])
 		obj = 0;
 	else if (strcmp(object, "density_avarage_velocity_devide_by_saturation") == 0)
 		obj = 1;
+	else if (strcmp(object, "density_internal_energy_avarage_velocity") == 0)
+		obj = 2;
+	double tmp = 0;
 	switch (obj) {
 		case 0:
 			return density_t(I, 2, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
@@ -37,6 +40,18 @@ double multiplier(in *I, int p, int pr, int i, int j, int k, char object[50])
 			return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k));
 			//return avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * I->porousness);
 			//return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * density_t(I, p - 5, i, j, k) * I->porousness);
+		case 2:
+			tmp = 0;
+			for (int pp = 0; pp < 2; pp++)
+				tmp -= density_t(I, pp, i, j, k) *
+					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
+					avarage_velocity(I, pp, pr, i, j, k) / (2 * I->dx[pr]);
+			for (int pp = 0; pp < 4; pp++)
+				tmp -= density_t(I, 2, i, j, k) *
+					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
+					concentration(I, pp, i, j, k) *
+					avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
+			return tmp;
 	}
 }
 
@@ -47,11 +62,15 @@ double operand(in * I, int p, int i, int j, int k, char object[50])
 		obj = 0;
 	else if (strcmp(object, "saturation") == 0)
 		obj = 1;
+	else if (strcmp(object, "temperature_flow") == 0)
+		obj = 2;
 	switch (obj){
 		case 0:
 			return concentration(I, p, i, j, k);
 		case 1:
 			return saturation(I, p - 5, i, j, k);
+		case 2:
+			return temperature_flow(I, i, j, k);
 	}
 }
 
@@ -333,125 +352,6 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 			//printf("%f\n", A_value);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 			I->B[A_IND(I, p, i, j, k)] -= B_value;
-
-/*
-		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
-			lambda1 = - multiplier(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			lambda2 = multiplier(i, j, k);
-			delta = max3(0, -lambda1, -lambda2);
-			Q1 = Q2 = P1 = P2 = 0;
-			for (pp = 0; pp < 3; pp++) {
-				ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-				ind_pp[pp] = 1;
-				Q1 += max2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * max2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				Q1 += max2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * max2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				Q2 += max2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * min2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				Q2 += max2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * min2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				P1 += min2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * min2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				P1 += min2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * min2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-				P2 += min2(0, -multiplier(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2])) * max2(operand(i + ind_pp[0], j + ind_pp[1], k + ind_pp[2]) - operand(i, j, k), 0);
-				P2 += min2(0,  multiplier(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2])) * max2(operand(i - ind_pp[0], j - ind_pp[1], k - ind_pp[2]) - operand(i, j, k), 0);
-			}
-			if (P1 == 0)
-				Q1 = 0;
-			else
-				Q1 /= P1;
-			if (P2 == 0)
-				Q2 = 0;
-			else
-				Q2 /= P2;
-			R1 = max2(0, min2(1, Q1));
-			R2 = max2(0, min2(1, Q2));
-			if (lambda1 <= lambda2) {
-				if (operand(i, j, k) >= operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
-					alpha = min2(R1 * delta, lambda2 + delta);
-				else
-					alpha = min2(R2 * delta, lambda2 + delta);
-			} else {
-				Q1 = Q2 = P1 = P2 = 0;
-				for (pp = 0; pp < 3; pp++) {
-					ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-					ind_pp[pp] = 1;
-					Q1 += max2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * max2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q1 += max2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * max2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q2 += max2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * min2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					Q2 += max2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * min2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P1 += min2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * min2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P1 += min2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * min2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P2 += min2(0, -multiplier(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2])) * max2(operand(i + ind_pp[0] + ind_pr[0], j + ind_pp[1] + ind_pr[1], k + ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-					P2 += min2(0,  multiplier(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2])) * max2(operand(i - ind_pp[0] + ind_pr[0], j - ind_pp[1] + ind_pr[1], k - ind_pp[2] + ind_pr[2]) - operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]), 0);
-				}
-				if (P1 == 0)
-					Q1 = 0;
-				else
-					Q1 /= P1;
-				if (P2 == 0)
-					Q2 = 0;
-				else
-					Q2 /= P2;
-				R1 = max2(0, min2(1, Q1));
-				R2 = max2(0, min2(1, Q2));
-				if (operand(i, j, k) <= operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
-					alpha = min2(R1 * delta, lambda1 + delta);
-				else
-					alpha = min2(R2 * delta, lambda1 + delta);
-			}
-			A_value = -lambda1 - delta + alpha;
-			A_value *= tetta;
-			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			A_value *= -1;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
-			lambda1 = multiplier(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			lambda2 = -multiplier(i, j, k);
-			delta = max3(0, -lambda1, -lambda2);
-			if (lambda1 <= lambda2) {
-				if (operand(i, j, k) >= operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
-					alpha = min2(R1 * delta, lambda2 + delta);
-				else
-					alpha = min2(R2 * delta, lambda2 + delta);
-			} else {
-				Q1 = Q2 = P1 = P2 = 0;
-				for (pp = 0; pp < 3; pp++) {
-					ind_pp[0] = ind_pp[1] = ind_pp[2] = 0;
-					ind_pp[pp] = 1;
-					Q1 += max2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * max2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q1 += max2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * max2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q2 += max2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * min2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					Q2 += max2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * min2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P1 += min2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * min2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P1 += min2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * min2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P2 += min2(0, -multiplier(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2])) * max2(operand(i + ind_pp[0] - ind_pr[0], j + ind_pp[1] - ind_pr[1], k + ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-					P2 += min2(0,  multiplier(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2])) * max2(operand(i - ind_pp[0] - ind_pr[0], j - ind_pp[1] - ind_pr[1], k - ind_pp[2] - ind_pr[2]) - operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]), 0);
-				}
-				if (P1 == 0)
-					Q1 = 0;
-				else
-					Q1 /= P1;
-				if (P2 == 0)
-					Q2 = 0;
-				else
-					Q2 /= P2;
-				R1 = max2(0, min2(1, Q1));
-				R2 = max2(0, min2(1, Q2));
-				if (operand(i, j, k) <= operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
-					alpha = min2(R1 * delta, lambda1 + delta);
-				else
-					alpha = min2(R2 * delta, lambda1 + delta);
-			}
-			A_value = -lambda1 - delta + alpha;
-			A_value *= tetta;
-			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			A_value *= -1;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
-			A_value = multiplier(i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - multiplier(i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			A_value *= tetta;
-			WRITE_TO_A(p, i, j, k, -1);
-			I->B[A_IND(I, p, i, j, k)] -= A_value * operand(i, j, k);
-*/
 		}
 	}
 	return 0;
@@ -460,57 +360,25 @@ int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_secon
 int DIV_density_internal_energy_avarage_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	double A_value;
-	int pp, pr, ind_pr[3];
-	for (pr = 0; pr < 3; pr++) {
-		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
-		ind_pr[pr] = 1;
-		A_value = 0;
-		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
-			for (pp = 0; pp < 2; pp++) {
-				A_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
-					avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			}
-			for (pp = 0; pp < 4; pp++) {
-				A_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
-					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			}
-			A_value /= (2 * I->dx[pr]);
-			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			A_value = 0;
-			for (pp = 0; pp < 2; pp++) {
-				A_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
-					avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			}
-			for (pp = 0; pp < 4; pp++) {
-				A_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
-					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			}
-			A_value /= (2 * I->dx[pr]);
-			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-		}
+	if (p != 8) {
+		printf("Incorrect index of DIV_density_internal_energy_average_velocity\n");
+		return 1;
 	}
+	if (div_func(I, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow", 1, 0.5)) return 1;
 	return 0;
 }
 
 int DIV_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	double A_value, x;
-	int pr, ind_pr[3], pp;
-	for (pr = 0; pr < 3; pr++) {
+	for (int pr = 0; pr < 3; pr++) {
+		int ind_pr[3];
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
 		if (! boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2])) {
-			A_value = - I->porousness;
-			x = 0;
-			for (pp = 0; pp < 3; pp++)
+			double A_value = - I->porousness;
+			double x = 0;
+			for (int pp = 0; pp < 3; pp++)
 				x += I->thermal_conductivity_coef[pp] * (saturation(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) + saturation(I, pp, i, j, k)) / 2;
 			A_value *= x / (I->dx[pr] * I->dx[pr]);
 			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
@@ -518,9 +386,9 @@ int DIV_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in 
 			WRITE_TO_A(p, i, j, k, -1);
 		}
 		if (! boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) {
-			A_value = - I->porousness;
-			x = 0;
-			for (pp = 0; pp < 3; pp++)
+			double A_value = - I->porousness;
+			double x = 0;
+			for (int pp = 0; pp < 3; pp++)
 				x += I->thermal_conductivity_coef[pp] * (saturation(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) + saturation(I, pp, i, j, k)) / 2;
 			A_value *= x / (I->dx[pr] * I->dx[pr]);
 			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
@@ -528,7 +396,6 @@ int DIV_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in 
 			WRITE_TO_A(p, i, j, k, -1);
 		}
 	}
-//	if (LAPL(p, i, j, k, thermal_conductivity_coef_saturation_temperature_flow, backward_euler, second, separated, FDM, termogas)) return 1;
 	return 0;
 }
 
