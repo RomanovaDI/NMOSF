@@ -2,8 +2,8 @@ NAME	=	NMOSF
 CC		=	mpicc
 LD		=	mpicc
 DEBUG	=	-g -O0
-CFLAGS	=	$(DEBUG) -shared -fPIC -I src/lib/ -L build/lib/ -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -I /usr/include/SuperLU/ -L /usr/lib64/ -I include/ -L lib/
-LDFLAGS	=	$(DEBUG) -I src/lib/ -L build/lib/ -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -I /usr/include/SuperLU/ -L /usr/lib64/ -I include/ -L lib/
+CFLAGS	=	$(DEBUG) -std=c99 -shared -fPIC -I src/lib/ -L build/lib/ -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -I /usr/include/SuperLU/ -L /usr/lib64/ -I include/ -L lib/
+LDFLAGS	=	$(DEBUG) -std=c99 -I src/lib/ -L build/lib/ -I /usr/include/superlu/ -L /usr/lib/x86_64-linux-gnu/ -I /usr/include/SuperLU/ -L /usr/lib64/ -I include/ -L lib/
 
 OBJ0	=	init_data
 LIB0	=	-lm
