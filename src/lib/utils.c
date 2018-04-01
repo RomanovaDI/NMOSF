@@ -1072,6 +1072,14 @@ double enthalpy_flow(in *I, int i, int j, int k)
 	return internal_energy(I, 0, i, j, k) - internal_energy(I, 1, i, j, k) - internal_energy(I, 2, i, j, k) + 2 * internal_energy(I, 5, i, j, k) + 2 * internal_energy(I, 6, i, j, k);
 }
 
+double thermal_conductivity(in *I, int i, int j, int k)
+{
+	double tmp = 0;
+	for (int pp = 0; pp < 3; pp++)
+		tmp += I->thermal_conductivity_coef[pp] * saturation(I, pp, i, j, k);
+	return tmp;
+}
+
 int check_sum(in *I)
 {
 	int i, j, k, p;

@@ -738,6 +738,17 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
+	fprintf(f, "SCALARS thermal_conductivity double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", thermal_conductivity(I, i, j, k));
+				}
+			}
+		}
+	}
 	fprintf(f, "VECTORS avarage_velocity_water double\n");
 	for (int k = 0; k < I->nz; k++) {
 		for (int i = 0; i < I->nx; i++) {

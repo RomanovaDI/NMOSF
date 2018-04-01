@@ -376,24 +376,16 @@ int DIV_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in 
 		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 		ind_pr[pr] = 1;
 		if (! boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2])) {
-			double A_value = - I->porousness;
-			double x = 0;
-			for (int pp = 0; pp < 3; pp++)
-				x += I->thermal_conductivity_coef[pp] * (saturation(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) + saturation(I, pp, i, j, k)) / 2;
-			A_value *= x / (I->dx[pr] * I->dx[pr]);
-			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			A_value *= -1;
+			double A_value = I->porousness * (thermal_conductivity(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) + thermal_conductivity(I, i, j, k)) / (2 * I->dx[pr] * I->dx[pr]);
 			WRITE_TO_A(p, i, j, k, -1);
+			A_value *= -1;
+			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
 		}
 		if (! boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) {
-			double A_value = - I->porousness;
-			double x = 0;
-			for (int pp = 0; pp < 3; pp++)
-				x += I->thermal_conductivity_coef[pp] * (saturation(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) + saturation(I, pp, i, j, k)) / 2;
-			A_value *= x / (I->dx[pr] * I->dx[pr]);
-			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-			A_value *= -1;
+			double A_value = I->porousness * (thermal_conductivity(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) + thermal_conductivity(I, i, j, k)) / (2 * I->dx[pr] * I->dx[pr]);
 			WRITE_TO_A(p, i, j, k, -1);
+			A_value *= -1;
+			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
 		}
 	}
 	return 0;
