@@ -45,8 +45,8 @@ int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
 	//strcpy(I->map_name, "maps/map_termogas_test_big.asc");
-	strcpy(I->map_name, "maps/map_termogas.asc");
-	//strcpy(I->map_name, "maps/map_termogas_small.asc");
+	//strcpy(I->map_name, "maps/map_termogas.asc");
+	strcpy(I->map_name, "maps/map_termogas_small.asc");
 	//strcpy(I->map_name, "maps/map_termogas_1d.asc");
 	//strcpy(I->map_name, "maps/map_termogas_pattern.asc");
 	//strcpy(I->region_map_name, "maps/map_termogas_region.asc");
@@ -56,7 +56,7 @@ int set_parameters_termogas(in *I)
 	I->ky = 1;
 	I->kz = 1;
 	I->epsilon = 1e-10;
-	I->end_time = 5 * 86400;//1000000;
+	I->end_time = 365 * 86400;//1000000;
 	I->stencil_size = 9;//2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
