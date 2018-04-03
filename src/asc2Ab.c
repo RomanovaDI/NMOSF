@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 		} else {
 			if (write_B_to_B_prev(I)) goto error;
 		}
-		if (check_sum(I)) goto error;
+		//if (check_sum(I)) goto error;
 		I->time += I->dt;
 		I->time_step++;
 		I->flag_first_time_step = 0;

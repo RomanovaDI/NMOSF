@@ -785,6 +785,42 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
+	fprintf(f, "VECTORS avarage_velocity_water_divide_by_saturation double\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (int p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 0, p, i, j, k) / saturation(I, 0, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS avarage_velocity_oil_divide_by_saturation double\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (int p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 1, p, i, j, k) / saturation(I, 1, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS avarage_velocity_gas_divide_by_saturation double\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (int p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 2, p, i, j, k) / saturation(I, 2, i, j, k));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
 	fprintf(f, "VECTORS grad_pressure double\n");
 	for (int k = 0; k < I->nz; k++) {
 		for (int i = 0; i < I->nx; i++) {

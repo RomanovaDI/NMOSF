@@ -124,9 +124,9 @@ int DDT_porousness_density_energy_flow_second_separated_FDM_termogas(in *I, int 
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value = 0;
 	int pp;
-	for (pp = 0; pp < 2; pp++)
+	for (pp = 0; pp < 1; pp++)
 		A_value += I->porousness * density_t(I, pp, i, j, k) * saturation(I, pp, i, j, k) * I->specific_heat[pp] / I->dt;
-	for (pp = 0; pp < 4; pp++)
+	for (pp = 0; pp < 0; pp++)
 		A_value += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k) / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
 //	I->B[A_IND(I, p, i, j, k)] += A_value * (
