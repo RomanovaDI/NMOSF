@@ -37,8 +37,8 @@ double multiplier(in *I, int p, int pr, int i, int j, int k, char object[50])
 			//return avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, 2, i, j, k) * I->porousness);
 			//return density_t(I, 2, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->porousness);
 		case 1:
-			return density_t(I, p - 5, i, j, k) * avarage_velocity_derivative_with_respect_to_saturation(I, p - 5, pr, i, j, k) / (2 * I->dx[pr]);
-			//return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k));
+			//return density_t(I, p - 5, i, j, k) * avarage_velocity_derivative_with_respect_to_saturation(I, p - 5, pr, i, j, k) / (2 * I->dx[pr]);
+			return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k));
 			//return avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * I->porousness);
 			//return avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * I->porousness);
 			//return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * density_t(I, p - 5, i, j, k) * I->porousness);

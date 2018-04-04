@@ -631,9 +631,9 @@ int set_injection_well(in *I, int i, int j, int k)
 	I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
 	I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
 	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-	I->B_prev[B_IND(I, 5, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
+	I->B_prev[B_IND(I, 5, i, j, k)] = 0.7 - (I->residual_saturation[1] + I->epsilon) / 2;
 	I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-	I->B_prev[B_IND(I, 7, i, j, k)] = 0.5 - (I->residual_saturation[1] + I->epsilon) / 2;
+	I->B_prev[B_IND(I, 7, i, j, k)] = 0.3 - (I->residual_saturation[1] + I->epsilon) / 2;
 	I->B_prev[B_IND(I, 8, i, j, k)] = I->injection_well_temperature;
 	return 0;
 }
