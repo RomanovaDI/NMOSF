@@ -30,15 +30,22 @@ double multiplier(in *I, int p, int pr, int i, int j, int k, char object[50])
 		obj = 1;
 	else if (strcmp(object, "density_internal_energy_avarage_velocity") == 0)
 		obj = 2;
+	else if (strcmp(object, "Darsi_M_coef") == 0)
+		obj = 3;
+	else if (strcmp(object, "thermal_conductivity") == 0)
+		obj = 4;
 	double tmp = 0;
 	switch (obj) {
 		case 0:
-			return density_t(I, 2, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
+			return density_t(I, 2, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * I->porousness);
 			//return avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, 2, i, j, k) * I->porousness);
 			//return density_t(I, 2, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->porousness);
 		case 1:
-			//return density_t(I, p - 5, i, j, k) * avarage_velocity_derivative_with_respect_to_saturation(I, p - 5, pr, i, j, k) / (2 * I->dx[pr]);
-			return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k));
+			tmp = 0;
+			for (int pp = 0; pp < 3; pp++)
+				tmp -= I->permeability * relative_permeability_derivative_with_recpect_to_saturation(I, pp, p - 5, i, j, k) * grad_pressure(I, pr, i, j, k) / (2 * I->dx[pr] * viscosity(I, pp, i, j, k) * I->porousness);
+			return tmp;
+			//return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k));
 			//return avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * I->porousness);
 			//return avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * I->porousness);
 			//return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * density_t(I, p - 5, i, j, k) * I->porousness);
@@ -54,6 +61,10 @@ double multiplier(in *I, int p, int pr, int i, int j, int k, char object[50])
 					concentration(I, pp, i, j, k) *
 					avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
 			return tmp;
+		case 3:
+			return Darsi_M_coef(I, i, j, k) / (2 * I->dx[pr] * I->dx[pr]); 
+		case 4:
+			return I->porousness * thermal_conductivity(I, i, j, k) / (2 * I->dx[pr] * I->dx[pr]);
 	}
 }
 
@@ -66,6 +77,8 @@ double operand(in * I, int p, int i, int j, int k, char object[50])
 		obj = 1;
 	else if (strcmp(object, "temperature_flow") == 0)
 		obj = 2;
+	else if (strcmp(object, "pressure") == 0)
+		obj = 3;
 	switch (obj){
 		case 0:
 			return concentration(I, p, i, j, k);
@@ -74,6 +87,8 @@ double operand(in * I, int p, int i, int j, int k, char object[50])
 			return saturation(I, p - 5, i, j, k);
 		case 2:
 			return temperature_flow(I, i, j, k);
+		case 3:
+			return pressure(I, i, j, k);
 	}
 }
 
@@ -202,7 +217,7 @@ double lambda_res(in *I, int p, int i, int j, int k, int ii, int jj, int kk, cha
 	return 0;
 }
 
-int div_func(in *I, int p, int i, int j, int k, char object_multiplier[50], char object_operand[50], int antidiff, double tetta)
+int div_func(in *I, int p, int pp, int i, int j, int k, char object_multiplier[50], char object_operand[50], int antidiff, double tetta)
 {
 	if (k != 0)
 		return 0;
@@ -212,19 +227,40 @@ int div_func(in *I, int p, int i, int j, int k, char object_multiplier[50], char
 		for (int jj = j - 1; jj < j + 2; jj++) {
 			//if (!boundary_cell(I, ii, jj, kk)) {
 			if (1) {
-				tmp = lambda_res(I, p, i, j, k, ii, jj, kk, object_multiplier, object_operand, antidiff);
+				tmp = lambda_res(I, pp, i, j, k, ii, jj, kk, object_multiplier, object_operand, antidiff);
 				A_value = tetta * tmp;
-				WRITE_TO_A(p, i, j, k, -1);
-				I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * tmp * operand(I, p, i, j, k, object_operand);
+				WRITE_TO_A(pp, i, j, k, -1);
+				I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * tmp * operand(I, pp, i, j, k, object_operand);
 				if (!((i == ii) && (j == jj) && (k == kk))) {
 					A_value *= -1;
-					WRITE_TO_A(p, ii, jj, kk, -1);
-					I->B[A_IND(I, p, i, j, k)] += (1 - tetta) * tmp * operand(I, p, ii, jj, kk, object_operand);
+					WRITE_TO_A(pp, ii, jj, kk, -1);
+					I->B[A_IND(I, p, i, j, k)] += (1 - tetta) * tmp * operand(I, pp, ii, jj, kk, object_operand);
 				}
 			}
 		}
 	}
 	return 0;
+}
+
+int lapl_func(in *I, int p, int pp, int i, int j, int k, char object_multiplier[50], char object_operand[50])
+{
+	int pr, ind_pr[3];
+	for (pr = 0; pr < 3; pr++) {
+		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
+		ind_pr[pr] = 1;
+		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))) {
+			A_value = multiplier(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], object_multiplier) + multiplier(I, p, i, j, k, object_multiplier);
+			WRITE_TO_A(pp, i, j, k, -1);
+			A_value = - A_value;
+			WRITE_TO_A(pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
+		}
+		if (!(boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
+			A_value = multiplier(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], object_multiplier) + multiplier(I, p, i, j, k, object_multiplier);
+			WRITE_TO_A(pp, i, j, k, -1);
+			A_value = - A_value;
+			WRITE_TO_A(pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
+		}
+	}
 }
 
 int DIV_concentration_density_average_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
@@ -234,7 +270,7 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 		printf("Incorrect index of DIV_concentration_density_average_velocity\n");
 		return 1;
 	}
-	if (div_func(I, p, i, j, k, "density_avarage_velocity", "concentration", 1, 0.5)) return 1;
+	if (div_func(I, p, p, i, j, k, "density_avarage_velocity", "concentration", 1, 0.5)) return 1;
 	return 0;
 }
 
@@ -257,24 +293,10 @@ int SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas(in *I, in
 int LAPL_coef_pressure_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	double A_value;
-	int pr, ind_pr[3];
-	for (pr = 0; pr < 3; pr++) {
-		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
-		ind_pr[pr] = 1;
-		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))) {
-			A_value = (Darsi_M_coef(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) + Darsi_M_coef(I, i, j, k)) / (2 * I->dx[pr] * I->dx[pr]);
-			WRITE_TO_A(p, i, j, k, -1);
-			A_value = - A_value;
-			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-		}
-		if (!(boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
-			A_value = (Darsi_M_coef(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) + Darsi_M_coef(I, i, j, k)) / (2 * I->dx[pr] * I->dx[pr]);
-			WRITE_TO_A(p, i, j, k, -1);
-			A_value = - A_value;
-			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-		}
+	if (p != 4) {
+		printf("Error LAPL_coef_pressure_backward_euler_second_separated_FDM_termogas index.\n");
 	}
+	if (lapl_func(I, p, p, i, j, k, "Darsi_M_coef", "pressure")) return 1;
 	return 0;
 }
 
@@ -285,84 +307,9 @@ int DIV_density_average_velocity_backward_euler_second_separated_FDM_termogas(in
 		printf("Incorrect index of DIV_density_average_velocity\n");
 		return 1;
 	}
-	if (div_func(I, p, i, j, k, "density_avarage_velocity_divide_by_saturation", "saturation", 1, 0.5)) return 1;
-	/*for (int pr = 0; pr < 3; pr++) {
-		int ind_pr[3];
-		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
-		ind_pr[pr] = 1;
-		I->B[A_IND(I, p, i, j, k)] -= (density_t(I, p - 5, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) * avarage_velocity(I, p - 5, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) -
-			density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k)) / (I->dx[pr] * I->porousness);
-	}*/
-	return 0;
-}
-
-int DIV_density_saturation_internal_energy_avarage_velocity_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
-{
-	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	double A_value, B_value;
-	int pr, ind_pr[3], pp, ind_pp[3];
-	double lambda1, lambda2, delta, alpha, Q1, Q2, P1, P2, R1, R2, tetta = 0.5;
-	double multiplier(int ii, int jj, int kk)
-	{
-		return density_t(I, 2, ii, jj, kk) * avarage_velocity(I, 2, pr, ii, jj, kk) / (2 * I->dx[pr] * saturation(I, p - 5, ii, jj, kk));
-	}
-	double operand(int ii, int jj, int kk)
-	{
-		return saturation(I, p - 5, ii, jj, kk);
-	}
-	for (pr = 0; pr < 3; pr++) {
-		ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
-		ind_pr[pr] = 1;
-
-		A_value = B_value = 0;
-		if (!(boundary_cell(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) || boundary_cell(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))) {
-			for (pp = 0; pp < 2; pp++) {
-				A_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
-					avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-				B_value += density_t(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					(- I->specific_heat[pp] * I->adiabatic_exponent[pp] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp]) *
-					avarage_velocity(I, pp, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			}
-			for (pp = 0; pp < 4; pp++) {
-				A_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
-					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-				B_value += density_t(I, 2, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					(- I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp + 2]) *
-					concentration(I, pp, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) *
-					avarage_velocity(I, 2, pr, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]);
-			}
-			A_value /= (2 * I->dx[pr]);
-			//printf("%d:\t%d\t%d\t", pr, i, k);
-			//printf("%f\t", A_value);
-			WRITE_TO_A(p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] -= B_value;
-			A_value = B_value = 0;
-			for (pp = 0; pp < 2; pp++) {
-				A_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					I->specific_heat[pp] * I->adiabatic_exponent[pp] *
-					avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-				B_value -= density_t(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					(- I->specific_heat[pp] * I->adiabatic_exponent[pp] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp]) *
-					avarage_velocity(I, pp, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			}
-			for (pp = 0; pp < 4; pp++) {
-				A_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] *
-					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-				B_value -= density_t(I, 2, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					(- I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * I->tempetarure_for_calculation_internal_energy + I->initial_enthalpy[pp + 2]) *
-					concentration(I, pp, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]) *
-					avarage_velocity(I, 2, pr, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]);
-			}
-			A_value /= (2 * I->dx[pr]);
-			//printf("%f\n", A_value);
-			WRITE_TO_A(p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2], -1);
-			I->B[A_IND(I, p, i, j, k)] -= B_value;
-		}
+	for (int pp = 5; pp < 8; pp++) {
+		if (div_func(I, p, pp, i, j, k, "density_avarage_velocity_divide_by_saturation", "saturation", 1, 0.5)) return 1;
+		if (LAPL(p, i, j, k, thermal_conductivity_coef_saturation_temperature_environment, backward_euler, second, separated, FDM, termogas)) return 1;
 	}
 	return 0;
 }
@@ -375,6 +322,13 @@ int DIV_density_internal_energy_avarage_velocity_backward_euler_second_separated
 		return 1;
 	}
 	if (div_func(I, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow", 1, 0.5)) return 1;
+	return 0;
+}
+
+int LAPL_heat_influx_vector_flow_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	if (lapl_func(I, p, p, i, j, k, "thermal_conductivity", "temperature_flow")) return 1;
 	return 0;
 }
 

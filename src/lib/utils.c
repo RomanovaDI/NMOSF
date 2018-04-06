@@ -684,27 +684,70 @@ double relative_permeability(in *I, int p, int i, int j, int k)
 	}
 }
 
-double relative_permeability_derivative_with_recpect_to_saturation(in *I, int p, int i, int j, int k)
+double two_phase_relative_permeability_of_saturation(in *I, int p, int pr, int i, int j, int k, double epsilon[3])
+{
+	double S;
+	if ((p == 0) && (pr == 1)) {
+		S = (saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[2]);
+		return (pow(S, 4));
+	}
+	else if ((p == 1) && (pr == 0)) {
+		S = (saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[2]);
+		return ((1 - S) * (1 - S) * (1 - S * S));
+	}
+	else if ((p == 0) && (pr == 2)) {
+		S = (saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[1]);
+		return (pow(S, 4));
+	}
+	else if ((p == 2) && (pr == 0)) {
+		S = (saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[1]);
+		return ((1 - S) * (1 - S) * (1 - S * S));
+	}
+	else if ((p == 1) && (pr == 2)) {
+		S = (saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]) / (1 - I->residual_saturation[1] - I->residual_saturation[0]);
+		return (pow(S, 4));
+	}
+	else if ((p == 2) && (pr == 1)) {
+		S = (saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]) / (1 - I->residual_saturation[1] - I->residual_saturation[0]);
+		return ((1 - S) * (1 - S) * (1 - S * S));
+	} else {
+		printf("Error two phase relative permeability index\n");
+		return 0;
+	}
+}
+
+double relative_permeability_of_saturation(in *I, int p, int i, int j, int k, double epsilon[3])
 {
 	if (p == 0)
-		return ((saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k) +
-				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k)) /
-				((saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2]) *
-				(saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2]));
+		return ((saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k, epsilon) +
+				(saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k, epsilon)) /
+				(saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1] + saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]);
 	else if (p == 1)
-		return ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k) +
-				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k)) /
-				((saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 2, i, j, k) - I->residual_saturation[2]) *
-				(saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 2, i, j, k) - I->residual_saturation[2]));
+		return ((saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k, epsilon) +
+				(saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k, epsilon)) /
+				(saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0] + saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]);
 	else if (p == 2)
-		return ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
-				(saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) /
-				((saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 1, i, j, k) - I->residual_saturation[1]) *
-				(saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 1, i, j, k) - I->residual_saturation[1]));
+		return ((saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k, epsilon) +
+				(saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k, epsilon)) /
+				(saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0] + saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]);
 	else {
 		printf("Error relative permeability index\n");
 		return 0;
 	}
+}
+
+double relative_permeability_derivative_with_recpect_to_saturation(in *I, int p, int pr, int i, int j, int k)
+{
+	if ((pr != 0) && (pr != 1) && (p != 2))
+		printf("Error relative_permeability_derivative_with_recpect_to_saturation index.\n");
+	double epsilon = 0.001;
+	double epsilon_plus[3];
+	epsilon_plus[0] = epsilon_plus[1] = epsilon_plus[2] = 0;
+	epsilon_plus[pr] = epsilon;
+	double epsilon_minus[3];
+	epsilon_minus[0] = epsilon_minus[1] = epsilon_minus[2] = 0;
+	epsilon_minus[pr] = - epsilon;
+	return (relative_permeability_of_saturation(I, p, i, j, k, epsilon_plus) - relative_permeability_of_saturation(I, p, i, j, k, epsilon_minus)) / (2 * epsilon);
 }
 
 double viscosity_gas(in *I, int p, int i, int j, int k)
@@ -848,6 +891,27 @@ double grad_saturation(in *I, int p, int pr, int i, int j, int k)
 	return (saturation(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
 }
 
+double coef_grad_saturation(in *I, int p, int pr, int i, int j, int k)
+{
+	if (p == 0) {
+		if (pr == 0)
+			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1;
+		if (pr == 2)
+			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k);
+	} else if (p == 1) {
+		if (pr == 0)
+			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k);
+		if (pr == 2)
+			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k);
+	} else if (p == 2) {
+		if (pr == 0)
+			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k);
+		if (pr == 2)
+			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1;
+	} else
+		printf("Error coef_grad_saturation index.\n");
+}
+
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, water, gas; pr - x1, x2, x3
 {
 /*
@@ -870,128 +934,11 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, wa
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
-	if (p == 0) {
-#if DEBUG
-		if (viscosity(I, p, i, j, k) < 0.0000001) {
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: viscosity = %lf\n", I->my_rank, getpid(), p, i, j, k, viscosity(I, p, i, j, k));
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: density_t(I, p, i, j, k) = %lf\n", I->my_rank, getpid(), p, i, j, k, density_t(I, p, i, j, k));
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: numerator of density = %lf\n",\
-				I->my_rank, getpid(), p, i, j, k, (I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)));
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: denominator of density = %lf\n",\
-				I->my_rank, getpid(), p, i, j, k, (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: temperature_flow = %lf\n",\
-				I->my_rank, getpid(), p, i, j, k, temperature_flow(I, i, j, k));
-		}
-#endif
-		//printf("p = 0, grad_pressure = %lf, ", grad_pressure(I, pr, i, j, k));
-		//printf("capil_0 = %lf, ", (Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *	capillary_pressure_derivative_by_saturation(I, 0, i, j, k) * grad_saturation(I, 0, pr, i, j, k));
-		//printf("capil_2 = %lf.\n", (Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) * capillary_pressure_derivative_by_saturation(I, 2, i, j, k) * grad_saturation(I, 2, pr, i, j, k));
-		//return - I->permeability * relative_permeability(I, p, i, j, k) * grad_pressure(I, pr, i, j, k);
-		return - I->permeability * relative_permeability(I, p, i, j, k) *(
-			grad_pressure(I, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
-			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			grad_saturation(I, 0, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
-			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			grad_saturation(I, 2, pr, i, j, k)
-			) / viscosity(I, p, i, j, k);
-	} else if (p == 1) {
-#if DEBUG
-		if (viscosity(I, p, i, j, k) < 0.0000001) {
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: viscosity = %lf\n", I->my_rank, getpid(), p, i, j, k, viscosity(I, p, i, j, k));
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: density_t(I, p, i, j, k) = %lf\n", I->my_rank, getpid(), p, i, j, k, density_t(I, p, i, j, k));
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: numerator of density = %lf\n",\
-				I->my_rank, getpid(), p, i, j, k, (I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)));
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: denominator of density = %lf\n",\
-				I->my_rank, getpid(), p, i, j, k, (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: temperature_flow = %lf\n",\
-				I->my_rank, getpid(), p, i, j, k, temperature_flow(I, i, j, k));
-		}
-#endif
-		//printf("p = 1, grad_pressure = %lf, ", grad_pressure(I, pr, i, j, k));
-		//printf("capil_0 = %lf, ", (Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) * capillary_pressure_derivative_by_saturation(I, 0, i, j, k) * grad_saturation(I, 0, pr, i, j, k));
-		//printf("capil_2 = %lf.\n", (Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) * capillary_pressure_derivative_by_saturation(I, 2, i, j, k) * grad_saturation(I, 2, pr, i, j, k));
-		//return - I->permeability * relative_permeability(I, p, i, j, k) * grad_pressure(I, pr, i, j, k);
-		return - I->permeability * relative_permeability(I, p, i, j, k) * (
-			grad_pressure(I, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
-			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			grad_saturation(I, 0, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
-			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			grad_saturation(I, 2, pr, i, j, k)
-			) / viscosity(I, p, i, j, k);
-	} else if (p == 2) {
-#if DEBUG
-		if (viscosity(I, p, i, j, k) < 0.0000001)
-			printf("Process %d, PID %d, p = %d, i = %d, j = %d, k = %d: viscosity = %lf\n", I->my_rank, getpid(), p, i, j, k, viscosity(I, p, i, j, k));
-#endif
-		//printf("p = 2, , pr = %d, i = %d, j = %d, k = %d, grad_pressure = %lf, ", pr, i, j, k, grad_pressure(I, pr, i, j, k));
-		//printf("capil_0 = %lf, ", (Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) * capillary_pressure_derivative_by_saturation(I, 0, i, j, k) * grad_saturation(I, 0, pr, i, j, k));
-		//printf("capil_2 = %lf,\n", (Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) * capillary_pressure_derivative_by_saturation(I, 2, i, j, k) * grad_saturation(I, 2, pr, i, j, k));
-		//printf("capil_2_0 = %lf.\n", (Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1));
-		//printf("capil_2_1 = %lf.\n", capillary_pressure_derivative_by_saturation(I, 2, i, j, k));
-		//printf("capil_2_2 = %lf.\n", grad_saturation(I, 2, pr, i, j, k));
-		//return - I->permeability * relative_permeability(I, p, i, j, k) * grad_pressure(I, pr, i, j, k);
-		return - I->permeability * relative_permeability(I, p, i, j, k) * (
-			grad_pressure(I, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
-			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			grad_saturation(I, 0, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
-			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			grad_saturation(I, 2, pr, i, j, k)
-			) / viscosity(I, p, i, j, k);
-	} else {
-		printf("Error avarage velocity index\n");
-		return 0;
-	}
-}
-
-double avarage_velocity_derivative_with_respect_to_saturation(in *I, int p, int pr, int i, int j, int k) //p - oil, water, gas; pr - x1, x2, x3
-{
-	if (!((pr == 0) || (pr == 1) || (pr == 2))) {
-		printf("Error avarage velocity index\n");
-		return 0;
-	}
-	int ind_pr[3];
-	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
-	ind_pr[pr] = 1;
-	if (p == 0) {
-		return - I->permeability * relative_permeability_derivative_with_recpect_to_saturation(I, p, i, j, k) *(
-			grad_pressure(I, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
-			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			grad_saturation(I, 0, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
-			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			grad_saturation(I, 2, pr, i, j, k)
-			) / viscosity(I, p, i, j, k);
-	} else if (p == 1) {
-		return - I->permeability * relative_permeability_derivative_with_recpect_to_saturation(I, p, i, j, k) * (
-			grad_pressure(I, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
-			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			grad_saturation(I, 0, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k)) *
-			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			grad_saturation(I, 2, pr, i, j, k)
-			) / viscosity(I, p, i, j, k);
-	} else if (p == 2) {
-		return - I->permeability * relative_permeability_derivative_with_recpect_to_saturation(I, p, i, j, k) * (
-			grad_pressure(I, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k)) *
-			capillary_pressure_derivative_by_saturation(I, 0, i, j, k) *
-			grad_saturation(I, 0, pr, i, j, k) +
-			(Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1) *
-			capillary_pressure_derivative_by_saturation(I, 2, i, j, k) *
-			grad_saturation(I, 2, pr, i, j, k)
-			) / viscosity(I, p, i, j, k);
-	} else {
-		printf("Error avarage velocity index\n");
-		return 0;
-	}
+	return - I->permeability * relative_permeability(I, p, i, j, k) *(
+		grad_pressure(I, pr, i, j, k) +
+		coef_grad_saturation(I, p, 0, i, j, k) * capillary_pressure_derivative_by_saturation(I, 0, i, j, k) * grad_saturation(I, 0, pr, i, j, k) +
+		coef_grad_saturation(I, p, 2, i, j, k) * capillary_pressure_derivative_by_saturation(I, 2, i, j, k) * grad_saturation(I, 2, pr, i, j, k)
+		) / viscosity(I, p, i, j, k);
 }
 
 double rate_of_reaction_coef(in *I, int i, int j, int k)

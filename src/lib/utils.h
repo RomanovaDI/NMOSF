@@ -48,6 +48,8 @@ double temperature_environment(in *I, int i, int j, int k);
 double density_t(in *I, int p, int i, int j, int k);
 double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k);
 double relative_permeability(in *I, int p, int i, int j, int k);
+double two_phase_relative_permeability_of_saturation(in *I, int p, int pr, int i, int j, int k, double epsilon[3]);
+double relative_permeability_of_saturation(in *I, int p, int i, int j, int k, double epsilon[3]);
 double relative_permeability_derivative_with_recpect_to_saturation(in *I, int p, int i, int j, int k);
 double viscosity_gas(in *I, int p, int i, int j, int k);
 double molar_fraction(in *I, int p, int i, int j, int k);
@@ -57,8 +59,8 @@ double Darsi_M_coef(in *I, int i, int j, int k);
 double capillary_pressure_derivative_by_saturation(in *I, int p, int i, int j, int k);
 double grad_pressure(in *I, int pr, int i, int j, int k);
 double grad_saturation(in *I, int p, int pr, int i, int j, int k);
+double coef_grad_saturation(in *I, int p, int pr, int i, int j, int k);
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k);
-double avarage_velocity_derivative_with_respect_to_saturation(in *I, int p, int pr, int i, int j, int k); //p - oil, water, gas; pr - x1, x2, x3
 double rate_of_reaction_coef(in *I, int i, int j, int k);
 double rate_of_reaction(in *I, int i, int j, int k);
 double rate_of_reaction_derivative_by_temperature(in *I, int i, int j, int k);
