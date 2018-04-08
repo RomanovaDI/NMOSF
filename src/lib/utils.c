@@ -87,12 +87,12 @@ int injection_well(in *I, int i, int j, int k)
 #endif
 	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
 		return 1;
-	//else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
-	//	return 1;
-	//else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
-	//	return 1;
-	//else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
-	//	return 1;
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
+		return 1;
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
+		return 1;
+	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2 - 1))
+		return 1;
 	else
 		return 0;
 }
@@ -719,16 +719,16 @@ double two_phase_relative_permeability_of_saturation(in *I, int p, int pr, int i
 double relative_permeability_of_saturation(in *I, int p, int i, int j, int k, double epsilon[3])
 {
 	if (p == 0)
-		return ((saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k, epsilon) +
-				(saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k, epsilon)) /
+		return ((saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]) * two_phase_relative_permeability_of_saturation(I, 0, 1, i, j, k, epsilon) +
+				(saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]) * two_phase_relative_permeability_of_saturation(I, 0, 2, i, j, k, epsilon)) /
 				(saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1] + saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]);
 	else if (p == 1)
-		return ((saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k, epsilon) +
-				(saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k, epsilon)) /
+		return ((saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) * two_phase_relative_permeability_of_saturation(I, 1, 0, i, j, k, epsilon) +
+				(saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]) * two_phase_relative_permeability_of_saturation(I, 1, 2, i, j, k, epsilon)) /
 				(saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0] + saturation(I, 2, i, j, k) + epsilon[2] - I->residual_saturation[2]);
 	else if (p == 2)
-		return ((saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k, epsilon) +
-				(saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k, epsilon)) /
+		return ((saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0]) * two_phase_relative_permeability_of_saturation(I, 2, 0, i, j, k, epsilon) +
+				(saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]) * two_phase_relative_permeability_of_saturation(I, 2, 1, i, j, k, epsilon)) /
 				(saturation(I, 0, i, j, k) + epsilon[0] - I->residual_saturation[0] + saturation(I, 1, i, j, k) + epsilon[1] - I->residual_saturation[1]);
 	else {
 		printf("Error relative permeability index\n");
@@ -738,7 +738,7 @@ double relative_permeability_of_saturation(in *I, int p, int i, int j, int k, do
 
 double relative_permeability_derivative_with_recpect_to_saturation(in *I, int p, int pr, int i, int j, int k)
 {
-	if ((pr != 0) && (pr != 1) && (p != 2))
+	if ((pr != 0) && (pr != 1) && (pr != 2))
 		printf("Error relative_permeability_derivative_with_recpect_to_saturation index.\n");
 	double epsilon = 0.001;
 	double epsilon_plus[3];
@@ -872,14 +872,6 @@ double grad_pressure(in *I, int pr, int i, int j, int k)
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
-/*
-	if (i + I->ind_start_region_proc[0] == I->gl_nx / 2)
-		return 0;
-	else if (i + I->ind_start_region_proc[0] < I->gl_nx / 2)
-		return (pressure(I, i, j, k) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (I->dx[pr]);
-	else
-		return (pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i, j, k)) / (I->dx[pr]);
-*/
 	return (pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
 }
 
@@ -898,16 +890,22 @@ double coef_grad_saturation(in *I, int p, int pr, int i, int j, int k)
 			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1;
 		if (pr == 2)
 			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k);
+		else
+			printf("Error coef_grad_saturation index.\n");
 	} else if (p == 1) {
 		if (pr == 0)
 			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k);
 		if (pr == 2)
 			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k);
+		else
+			printf("Error coef_grad_saturation index.\n");
 	} else if (p == 2) {
 		if (pr == 0)
 			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k);
 		if (pr == 2)
 			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1;
+		else
+			printf("Error coef_grad_saturation index.\n");
 	} else
 		printf("Error coef_grad_saturation index.\n");
 }
@@ -915,18 +913,24 @@ double coef_grad_saturation(in *I, int p, int pr, int i, int j, int k)
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, water, gas; pr - x1, x2, x3
 {
 /*
-	if (pr == 1) {
-		return 0.001;
-		if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2) && (1))
-			return 0;
-		else if (i + I->ind_start_region_proc[0] > I->gl_nx / 2)
-			return I->porousness * saturation(I, 2, i, j, k);
+	if (pr == 0)
+		if (i < I->gl_nx / 2)
+			return -1;
 		else
-			return -I->porousness * saturation(I, 2, i, j, k);
-	} else
+			return 1;
+	else
 		return 0;
 */
-//	return - I->porousness * density_t(I, );
+/*
+	if (injection_well(I, i, j, k))
+		return 0;
+	else if (pr == 0)
+		return (i - I->gl_nx / 2) / sqrt(pow(i - I->gl_nx / 2, 2) + pow(j - I->gl_ny / 2, 2));
+	else if (pr == 1)
+		return (j - I->gl_ny / 2) / sqrt(pow(i - I->gl_nx / 2, 2) + pow(j - I->gl_ny / 2, 2));
+	else
+		return 0;
+*/
 	if (!((pr == 0) || (pr == 1) || (pr == 2))) {
 		printf("Error avarage velocity index\n");
 		return 0;
@@ -1137,6 +1141,8 @@ int check_sum(in *I)
 						I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon + (concentration(I, 2, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
 						I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon + (concentration(I, 3, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
 					}
+					if (temperature_flow(I, i, j, k) < I->initial_temperature)
+						I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
 				}
 			}
 		}
@@ -1265,9 +1271,7 @@ int print_oil_production(in *I)
 	for (int p = 0; p < 3; p += 2) {
 		velocity_of_fluid_injection +=
 			avarage_velocity(I, p, 0, injection_well_coordinates[0] + 1, injection_well_coordinates[1], injection_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt +
-			avarage_velocity(I, p, 1, injection_well_coordinates[0], injection_well_coordinates[1] + 1, injection_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt -
-			avarage_velocity(I, p, 0, injection_well_coordinates[0] - 1, injection_well_coordinates[1], injection_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt -
-			avarage_velocity(I, p, 1, injection_well_coordinates[0], injection_well_coordinates[1] - 1, injection_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
+			avarage_velocity(I, p, 1, injection_well_coordinates[0], injection_well_coordinates[1] + 1, injection_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
 	}
 	if (I->time_step == 0) {
 		if ((f = fopen("result/velocity_of_fluid_injection_m.dat","w")) == NULL) {

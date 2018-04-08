@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 #endif
 #if TERMOGAS
 		printf("avarage_velocity_global = %lf\tdt = %lf\n", avarage_velocity_global(I), 0.7 * I->dx[0] * I->porousness / avarage_velocity_global(I));
-		I->dt = 0.7 * I->dx[0] * I->porousness / avarage_velocity_global(I);
+		I->dt = 0.7 * I->dx[0] / avarage_velocity_global(I);
 		printf("dt = %lf\n", I->dt);
 		time(&time1);
 		if (create_Ab_termogas(I) == 1) goto error;
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 		} else {
 			if (write_B_to_B_prev(I)) goto error;
 		}
-		//if (check_sum(I)) goto error;
+		if (check_sum(I)) goto error;
 		I->time += I->dt;
 		I->time_step++;
 		I->flag_first_time_step = 0;

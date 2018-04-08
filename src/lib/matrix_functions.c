@@ -98,6 +98,16 @@ void print_A_csr(in *I)
 		fprintf(f, "%20.10lf\t%10d\t%10d\n", I->Aelem_csr[i], j, I->Ajptr_csr[i]);
 	}
 	fclose(f);
+	sprintf(file_name, "tmp/B%d.txt", I->time_step);
+	if ((f = fopen(file_name,"w")) == NULL) {
+		printf("error openning file");
+		return;
+	}
+	fprintf(f, "#%10d\n", I->system_dimension);
+	for (i = 0; i < I->system_dimension; i++) {
+		fprintf(f, "%20.10lf\t%10d\n", I->B[i], i);
+	}
+	fclose(f);
 	if ((f = fopen("tmp/A_B.txt","w")) == NULL) {
 		printf("error openning file");
 		return;

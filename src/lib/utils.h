@@ -50,7 +50,7 @@ double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k
 double relative_permeability(in *I, int p, int i, int j, int k);
 double two_phase_relative_permeability_of_saturation(in *I, int p, int pr, int i, int j, int k, double epsilon[3]);
 double relative_permeability_of_saturation(in *I, int p, int i, int j, int k, double epsilon[3]);
-double relative_permeability_derivative_with_recpect_to_saturation(in *I, int p, int i, int j, int k);
+double relative_permeability_derivative_with_recpect_to_saturation(in *I, int p, int pr, int i, int j, int k);
 double viscosity_gas(in *I, int p, int i, int j, int k);
 double molar_fraction(in *I, int p, int i, int j, int k);
 double viscosity(in *I, int p, int i, int j, int k);

@@ -80,10 +80,10 @@ export LD_LIBRARY_PATH=./build/lib
 #mpirun -np 1 ./build/NMOSF 2>&1 > result/log.log &
 mpirun -np 1 ./build/NMOSF 2>&1 | tee result/log.log
 #mpirun -np 1 valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF 2>&1 | tee result/log.log
+#mpirun -np 1 gdb ./build/NMOSF
 #./build/NMOSF
 #valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF
 #gdb ./build/NMOSF
-#mpirun -np 1 gdb ./build/NMOSF
 #rm tmp/*
 #gcc -g -O0 asc2Ab.c -lm -I/usr/include/superlu/ -L/usr/lib/x86_64-linux-gnu/ -lsuperlu
 #valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes

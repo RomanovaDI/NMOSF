@@ -45,18 +45,18 @@ int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
 	//strcpy(I->map_name, "maps/map_termogas_test_big.asc");
-	//strcpy(I->map_name, "maps/map_termogas.asc");
-	strcpy(I->map_name, "maps/map_termogas_small.asc");
+	strcpy(I->map_name, "maps/map_termogas.asc");
+	//strcpy(I->map_name, "maps/map_termogas_small.asc");
 	//strcpy(I->map_name, "maps/map_termogas_1d.asc");
 	//strcpy(I->map_name, "maps/map_termogas_pattern.asc");
 	//strcpy(I->region_map_name, "maps/map_termogas_region.asc");
 	//strcpy(I->map_name, "maps/map_cavity.asc");
-	I->hight = 1;//30;
+	I->hight = 10;//30;
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
 	I->epsilon = 1e-10;
-	I->end_time = 365 * 86400;//1000000;
+	I->end_time = 50 * 86400;//1000000;
 	I->stencil_size = 9;//2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
@@ -138,7 +138,7 @@ int set_parameters_termogas(in *I)
 	I->thermal_conductivity_coef[1] = 0.128; // oil
 	I->thermal_conductivity_coef[2] = 0.05; // gas
 	I->thermal_conductivity_coef[3] = 2; // environment
-	I->heat_transfer_coef = 0.3;
+	I->heat_transfer_coef = 7500;//0.3;
 	I->tempetarure_for_calculation_internal_energy = I->initial_temperature;//298;
 	I->initial_enthalpy[0] = -285800; // water
 	I->initial_enthalpy[1] = -249950; // oil
