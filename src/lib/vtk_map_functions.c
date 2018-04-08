@@ -110,8 +110,8 @@ int print_vtk_termogas(in *I)
 	sprintf(file_name, "result/map%d.vtk", (int) I->time_step);
 	FILE *f = fopen(file_name, "w");
 	fprintf(f, "# vtk DataFile Version 2.0\n");
-	fprintf(f, "#time = %lf\n", I->time);
-	fprintf(f, "slope\n");
+//	fprintf(f, "#time = %lf\n", I->time);
+	fprintf(f, "oil displacement, time = %lf\n", I->time);
 	fprintf(f, "ASCII\n");
 	fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
 //	printf("n_points_multipl = %d\n", I->n_points_multipl);
