@@ -177,6 +177,18 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
+	for (int p = 0; p < 4; p++) {
+		fprintf(f, "SCALARS concentration_%d_saturation_gas double 1\n", p);
+		fprintf(f, "LOOKUP_TABLE default\n");
+		for (int k = 0; k < I->nz; k++) {
+			for (int i = 0; i < I->nx; i++) {
+				for (int j = 0; j < I->ny; j++) {
+					if (I->ind_cell_multipl[i * I->ny + j] != -1)
+						fprintf(f, "%20.20f\n", concentration(I, p, i, j, k) * saturation(I, 2, i, j, k));
+				}
+			}
+		}
+	}
 	fprintf(f, "SCALARS pressure double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
 	for (int k = 0; k < I->nz; k++) {
@@ -1039,6 +1051,7 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
+	*/
 	fprintf(f, "VECTORS velosity_temperature_flow double\n");
 	for (int k = 0; k < I->nz; k++) {
 		for (int i = 0; i < I->nx; i++) {
@@ -1063,7 +1076,6 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
-	*/
 
 
 	fclose(f);

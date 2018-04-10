@@ -150,7 +150,7 @@ int set_parameters_termogas(in *I)
 	I->density_environment = 2000;
 	//I->injection_well_pressure = 30000000;
 	I->injection_well_pressure = 30000000;
-	I->injection_well_temperature = 600;//I->initial_temperature;//600;
+	I->injection_well_temperature = 800;//I->initial_temperature;//600;
 	I->production_well_pressure = 10000000;
 	I->adiabatic_exponent[0] = 1; // water
 	I->adiabatic_exponent[1] = 1; // oil

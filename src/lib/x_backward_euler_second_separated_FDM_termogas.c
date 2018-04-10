@@ -96,13 +96,13 @@ double multiplier(in *I, int p, int pp, int pr, int i, int j, int k, char object
 			for (pp = 0; pp < 4; pp++)
 				tmp += density_t(I, 2, i, j, k) * I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * concentration(I, pp, i, j, k) *
 					avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
-			return tmp;
-			/*tmp1 = 0;
+			//return tmp;
+			tmp1 = 0;
 			for (pp = 0; pp < 2; pp++)
 				tmp1 += I->porousness * density_t(I, pp, i, j, k) * saturation(I, pp, i, j, k) * I->specific_heat[pp];
 			for (pp = 0; pp < 4; pp++)
 				tmp1 += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k);
-			return tmp / tmp1;*/
+			return tmp / tmp1;
 		case 3:
 			return Darsi_M_coef(I, i, j, k) / (2 * I->dx[pr] * I->dx[pr]); 
 		case 4:
@@ -412,7 +412,8 @@ int DIV_density_internal_energy_avarage_velocity_backward_euler_second_separated
 		printf("Incorrect index of DIV_density_internal_energy_average_velocity\n");
 		return 1;
 	}
-	if (div_func(I, p, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow", "porousness_density_internal_energy", 1, 0.5)) return 1;
+	//if (div_func(I, p, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow", "porousness_density_internal_energy", 1, 0.5)) return 1;
+	if (div_func(I, p, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow", "identity", 1, 0.5)) return 1;
 	return 0;
 }
 
