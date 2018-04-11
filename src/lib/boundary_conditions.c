@@ -635,13 +635,14 @@ int set_injection_well(in *I, int i, int j, int k)
 	I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
 	I->B_prev[B_IND(I, 7, i, j, k)] = 0.3 - (I->residual_saturation[1] + I->epsilon) / 2;
 	//I->B_prev[B_IND(I, 7, i, j, k)] = I->residual_saturation[2] + I->epsilon;//0.3 - (I->residual_saturation[1] + I->epsilon) / 2;
-	I->B_prev[B_IND(I, 8, i, j, k)] = I->injection_well_temperature;
+	I->B_prev[B_IND(I, 8, i, j, k)] = I->injection_well_temperature - I->initial_temperature;
 	return 0;
 }
 
 int set_production_well(in *I, int i, int j, int k)
 {
 	I->B_prev[B_IND(I, 4, i, j, k)] = I->production_well_pressure;
+	//I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
 	//I->B_prev[B_IND(I, 4, i+1, j, k)] = I->production_well_pressure;
 	//I->B_prev[B_IND(I, 4, i-1, j, k)] = I->production_well_pressure;
 	return 0;

@@ -96,13 +96,13 @@ double multiplier(in *I, int p, int pp, int pr, int i, int j, int k, char object
 			for (pp = 0; pp < 4; pp++)
 				tmp += density_t(I, 2, i, j, k) * I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * concentration(I, pp, i, j, k) *
 					avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
-			//return tmp;
-			tmp1 = 0;
+			return tmp;
+			/*tmp1 = 0;
 			for (pp = 0; pp < 2; pp++)
 				tmp1 += I->porousness * density_t(I, pp, i, j, k) * saturation(I, pp, i, j, k) * I->specific_heat[pp];
 			for (pp = 0; pp < 4; pp++)
 				tmp1 += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k);
-			return tmp / tmp1;
+			return tmp / tmp1;*/
 		case 3:
 			return Darsi_M_coef(I, i, j, k) / (2 * I->dx[pr] * I->dx[pr]); 
 		case 4:
@@ -129,6 +129,10 @@ double operand(in * I, int p, int i, int j, int k, char object[50])
 		obj = 3;
 	else if (strcmp(object, "temperature_environment") == 0)
 		obj = 4;
+	else if (strcmp(object, "temperature_flow_minus_initial") == 0)
+		obj = 5;
+	else if (strcmp(object, "temperature_environment_minus_initial") == 0)
+		obj = 6;
 	else
 		printf("Error object of operand function.\n");
 	switch (obj){
@@ -142,6 +146,10 @@ double operand(in * I, int p, int i, int j, int k, char object[50])
 			return pressure(I, i, j, k);
 		case 4:
 			return temperature_environment(I, i, j, k);
+		case 5:
+			return temperature_flow(I, i, j, k) - I->initial_temperature;
+		case 6:
+			return temperature_environment(I, i, j, k) - I->initial_temperature;
 	}
 }
 /*
@@ -157,7 +165,7 @@ double lambda2D(in *I, int p, int pp, int i, int j, int k, int ii, int jj, int k
 {
 	double lambda = 0, omega = 0, sign = 0;
 	for (int pr = 0; pr < 2; pr ++) {
-		if ((pr == 0) && (i == ii) && (j == jj)) {
+		if ((pr == 0) && (i == ii) && (j == jj) && !(boundary_cell(I, i + 1, j, k)) && !(boundary_cell(I, i - 1, j, k))) {
 			for (int jjj = j - 1; jjj <= j + 1; jjj++) {
 				if (jjj == j)
 					omega = 0.75;
@@ -165,7 +173,7 @@ double lambda2D(in *I, int p, int pp, int i, int j, int k, int ii, int jj, int k
 					omega = 0.125;
 				lambda += omega * (multiplier(I, p, pp, pr, ii + 1, jjj, kk, object_multiplier) - multiplier(I, p, pp, pr, ii - 1, jjj, kk, object_multiplier));
 			}
-		} else if ((pr == 1) && (i == ii) && (j == jj)) {
+		} else if ((pr == 1) && (i == ii) && (j == jj) && !(boundary_cell(I, i, j + 1, k)) && !(boundary_cell(I, i, j - 1, k))) {
 			for (int iii = i - 1; iii <= i + 1; iii++) {
 				if (iii == i)
 					omega = 0.75;
@@ -289,8 +297,8 @@ int div_func(in *I, int p, int pp, int i, int j, int k, char object_multiplier[5
 		for (int jj = j - 1; jj < j + 2; jj++) {
 			double A_value, tmp;
 			int kk = k;
-			//if (!boundary_cell(I, ii, jj, kk)) {
-			if (1) {
+			if (!boundary_cell(I, ii, jj, kk)) {
+			//if (1) {
 				tmp = lambda_res(I, p, pp, i, j, k, ii, jj, kk, object_multiplier, object_operand, object_divider, antidiff);
 				A_value = tetta * tmp;
 				WRITE_TO_A(pp, i, j, k, -1);
@@ -412,8 +420,9 @@ int DIV_density_internal_energy_avarage_velocity_backward_euler_second_separated
 		printf("Incorrect index of DIV_density_internal_energy_average_velocity\n");
 		return 1;
 	}
+	if (div_func(I, p, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow_minus_initial", "porousness_density_internal_energy", 1, 0.5)) return 1;
 	//if (div_func(I, p, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow", "porousness_density_internal_energy", 1, 0.5)) return 1;
-	if (div_func(I, p, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow", "identity", 1, 0.5)) return 1;
+	//if (div_func(I, p, p, i, j, k, "density_internal_energy_avarage_velocity", "temperature_flow", "identity", 1, 0.5)) return 1;
 	return 0;
 }
 
@@ -452,7 +461,7 @@ int SCAL_chemical_reaction_heat_flow_backward_euler_second_separated_FDM_termoga
 int LAPL_heat_influx_vector_environment_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	if (lapl_func(I, p, p, i, j, k, "heat_influx_vector_environment", "temperature_environment", "inverse_porousness_density_environment_specific_heat_environment")) return 1;
+	if (lapl_func(I, p, p, i, j, k, "heat_influx_vector_environment", "temperature_environment_minus_initial", "inverse_porousness_density_environment_specific_heat_environment")) return 1;
 	return 0;
 }
 
@@ -460,7 +469,7 @@ int SCAL_minus_heat_flow_backward_euler_second_separated_FDM_termogas(in *I, int
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
-	A_value = I->heat_transfer_coef;
+	A_value = I->heat_transfer_coef / divider(I, p, i, j, k, "inverse_porousness_density_environment_specific_heat_environment");
 	WRITE_TO_A(p, i, j, k, -1);
 	A_value *= -1;
 	WRITE_TO_A(8, i, j, k, -1);

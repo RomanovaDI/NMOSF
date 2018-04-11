@@ -172,7 +172,7 @@ int print_vtk_termogas(in *I)
 			for (int i = 0; i < I->nx; i++) {
 				for (int j = 0; j < I->ny; j++) {
 					if (I->ind_cell_multipl[i * I->ny + j] != -1)
-						fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, p, i, j, k)]);
+						fprintf(f, "%20.20f\n", concentration(I, p, i, j, k));
 				}
 			}
 		}
@@ -195,18 +195,18 @@ int print_vtk_termogas(in *I)
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1)
-					fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, 4, i, j, k)]);
+					fprintf(f, "%20.20f\n", pressure(I, i, j, k));
 			}
 		}
 	}
-	for (int p = 5; p < 8; p++) {
+	for (int p = 0; p < 3; p++) {
 		fprintf(f, "SCALARS saturation_%d double 1\n", p);
 		fprintf(f, "LOOKUP_TABLE default\n");
 		for (int k = 0; k < I->nz; k++) {
 			for (int i = 0; i < I->nx; i++) {
 				for (int j = 0; j < I->ny; j++) {
 					if (I->ind_cell_multipl[i * I->ny + j] != -1)
-						fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, p, i, j, k)]);
+						fprintf(f, "%20.20f\n", saturation(I, p, i, j, k));
 				}
 			}
 		}
@@ -217,7 +217,7 @@ int print_vtk_termogas(in *I)
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1)
-					fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, 8, i, j, k)]);
+					fprintf(f, "%20.20f\n", temperature_flow(I, i, j, k));
 			}
 		}
 	}
@@ -227,7 +227,7 @@ int print_vtk_termogas(in *I)
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1)
-					fprintf(f, "%20.20f\n", I->B_prev[B_IND(I, 9, i, j, k)]);
+					fprintf(f, "%20.20f\n", temperature_environment(I, i, j, k));
 			}
 		}
 	}

@@ -255,6 +255,7 @@ int create_Ab_termogas(in *I)
 					//if (I->equation_num == 2) {
 					if (1) {
 						if (production_well(I, i, j, k)) {
+							//if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 							if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 0;
 						} else if (injection_well(I, i, j, k)) {
 							if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;

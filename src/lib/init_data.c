@@ -138,7 +138,7 @@ int set_parameters_termogas(in *I)
 	I->thermal_conductivity_coef[1] = 0.128; // oil
 	I->thermal_conductivity_coef[2] = 0.05; // gas
 	I->thermal_conductivity_coef[3] = 2; // environment
-	I->heat_transfer_coef = 7500;//0.3;
+	I->heat_transfer_coef = 1100;
 	I->tempetarure_for_calculation_internal_energy = I->initial_temperature;//298;
 	I->initial_enthalpy[0] = -285800; // water
 	I->initial_enthalpy[1] = -249950; // oil

@@ -607,12 +607,12 @@ double pressure(in *I, int i, int j, int k)
 
 double temperature_flow(in *I, int i, int j, int k)
 {
-	return I->B_prev[B_IND(I, 8, i, j, k)];
+	return I->B_prev[B_IND(I, 8, i, j, k)] + I->initial_temperature;
 }
 
 double temperature_environment(in *I, int i, int j, int k)
 {
-	return I->B_prev[B_IND(I, 9, i, j, k)];
+	return I->B_prev[B_IND(I, 9, i, j, k)] + I->initial_temperature;
 }
 
 double density_t(in *I, int p, int i, int j, int k)
@@ -1141,8 +1141,8 @@ int check_sum(in *I)
 						I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon + (concentration(I, 2, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
 						I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon + (concentration(I, 3, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
 					}
-					if (temperature_flow(I, i, j, k) < I->initial_temperature)
-						I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
+					//if (temperature_flow(I, i, j, k) < I->initial_temperature)
+					//	I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
 				}
 			}
 		}
