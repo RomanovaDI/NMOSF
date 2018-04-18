@@ -23,44 +23,44 @@ set style line 3 lc 3 lt 1 dt 3 lw 4
 #plot 'result/oil_production_m.dat' with lines ls 1 notitle
 #
 #
-set xlabel "Время, часы"
-set title "Поток массы нефти в час"
-set ylabel "Масса в секунду, кг/{час*м}"
-set output 'images/velocity_of_oil_production_kg.png'
-set logscale y
-plot	'new_termo_on2/result/velocity_of_oil_production_kg.dat' using ($1/3600.0):($2*36.0) with lines ls 1 title "с термогазом", \
-		'new_termo_chem_off1/result/velocity_of_oil_production_kg.dat' using ($1/3600.0):($2*36.0) with lines ls 2 title "температурное вытеснение", \
-		'new_termo_off1/result/velocity_of_oil_production_kg.dat' using ($1/3600.0):($2*36.0) with lines ls 3 title "простое вытеснение"
-set title "Масса вытесненной нефти на метр мощности пласта"
-set ylabel "Масса, кг/м"
-set output 'images/oil_production_kg.png'
-unset logscale y
-set key right bottom
-plot	'new_termo_on2/result/oil_production_kg.dat' using ($1/3600.0):($2/10.0) with lines ls 1 title "с термогазом", \
-		'new_termo_chem_off1/result/oil_production_kg.dat' using ($1/3600.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
-		'new_termo_off1/result/oil_production_kg.dat' using ($1/3600.0):($2/10.0) with lines ls 3 title "простое вытеснение"
+set xlabel "Время, сутки"
+#set title "Поток массы нефти в час"
+#set ylabel "Масса в секунду, кг/{час*м}"
+#set output 'images/velocity_of_oil_production_kg.png'
+#set logscale y
+#plot	'termo_on/result/velocity_of_oil_production_kg.dat' using ($1/3600.0):($2*36.0) with lines ls 1 title "с термогазом", \
+#		'termo_chem_off/result/velocity_of_oil_production_kg.dat' using ($1/3600.0):($2*36.0) with lines ls 2 title "температурное вытеснение", \
+#		'termo_off/result/velocity_of_oil_production_kg.dat' using ($1/3600.0):($2*36.0) with lines ls 3 title "простое вытеснение"
+#set title "Масса вытесненной нефти на метр мощности пласта"
+#set ylabel "Масса, кг/м"
+#set output 'images/oil_production_kg.png'
+#unset logscale y
+#set key right bottom
+#plot	'termo_on/result/oil_production_kg.dat' using ($1/3600.0):($2/10.0) with lines ls 1 title "с термогазом", \
+#		'termo_chem_off/result/oil_production_kg.dat' using ($1/3600.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
+#		'termo_off/result/oil_production_kg.dat' using ($1/3600.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 set title "Поток нефти на метр мощности пласта"
-set ylabel "Объём нефти в час, м^3/{час*м}"
+set ylabel "Объём нефти в сутки, м^3/{сутки*м}"
 set output 'images/velocity_of_oil_production_m.png'
-set logscale y
+#set logscale y
 set key right top
-plot	'new_termo_on2/result/velocity_of_oil_production_m.dat' using ($1/3600.0):($2*36.0) with lines ls 1 title "с термогазом", \
-		'new_termo_chem_off1/result/velocity_of_oil_production_m.dat' using ($1/3600.0):($2*36.0) with lines ls 2 title "температурное вытеснение", \
-		'new_termo_off1/result/velocity_of_oil_production_m.dat' using ($1/3600.0):($2*36.0) with lines ls 3 title "простое вытеснение"
+plot	'termo_on/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
+		'termo_chem_off/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
+		'termo_off/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 set title "Объём вытесненной нефти на метр мощности пласта"
 set ylabel "Объём, м^3/м"
 set output 'images/oil_production_m.png'
-unset logscale y
+#unset logscale y
 set key right bottom
-plot	'new_termo_on2/result/oil_production_m.dat' using ($1/3600.0):($2/10.0) with lines ls 1 title "с термогазом", \
-		'new_termo_chem_off1/result/oil_production_m.dat' using ($1/3600.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
-		'new_termo_off1/result/oil_production_m.dat' using ($1/3600.0):($2/10.0) with lines ls 3 title "простое вытеснение"
+plot	'termo_on/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
+		'termo_chem_off/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
+		'termo_off/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 set title "Объём вытесненного флюида на метр мощности пласта             "
 set output 'images/fluid_production_m.png'
-set key width -52 left top at 10, 250 Left samplen 2
-plot	'new_termo_on2/result/fluid_production_m.dat' using ($1/3600.0):($2/10.0) with lines ls 1 title "с термогазом", \
-		'new_termo_chem_off1/result/fluid_production_m.dat' using ($1/3600.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
-		'new_termo_off1/result/fluid_production_m.dat' using ($1/3600.0):($2/10.0) with lines ls 3 title "простое вытеснение"
+#set key width -52 left top at 10, 250 Left samplen 2
+plot	'termo_on/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
+		'termo_chem_off/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
+		'termo_off/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 
 #set xlabel "Time, hours"
 #set title "Oil production rate per meter of reservoir power"
