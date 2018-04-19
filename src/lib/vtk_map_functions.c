@@ -398,7 +398,6 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
-	/*
 	fprintf(f, "SCALARS rate_of_reaction_coef double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
 	for (int k = 0; k < I->nz; k++) {
@@ -406,6 +405,17 @@ int print_vtk_termogas(in *I)
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					fprintf(f, "%20.20f\n", rate_of_reaction_coef(I, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS pressure_in_rate_of_reaction double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", pow(pressure(I, i, j, k) / I->pressure_activ, I->stoichiometric_coef_activ));
 				}
 			}
 		}
@@ -443,6 +453,7 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
+	/*
 	fprintf(f, "SCALARS press_oxigen double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
 	for (int k = 0; k < I->nz; k++) {

@@ -351,7 +351,7 @@ int DIV_concentration_density_average_velocity_backward_euler_second_separated_F
 int SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	double A_value;
+	double A_value, tetta = 1;
 	/*if ((p == 6) || (p == 7)) {
 		A_value = - mass_inflow_rate_func(I, p, i, j, k) / saturation(I, p - 5, i, j, k);
 		WRITE_TO_A(p, i, j, k, -1);
@@ -361,11 +361,23 @@ int SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas(in *I, in
 	} else {
 		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k);
 	}*/
+/*
 	if ((p == 0) || (p == 1) || (p == 2) || (p == 3))
 		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k) / divider(I, p, i, j, k, "density_gas_saturation_gas_porousness");
 	else if ((p == 5) || (p == 6) || (p == 7))
 		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k) / divider(I, p, i, j, k, "density_porousness");
 	else
+		printf("Error SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas index.\n");
+*/
+	if ((p == 0) || (p == 1) || (p == 2) || (p == 3)) {
+		I->B[A_IND(I, p, i, j, k)] += (1 - tetta) * mass_inflow_rate_func(I, p, i, j, k) / divider(I, p, i, j, k, "density_gas_saturation_gas_porousness");
+		A_value = - tetta * mass_inflow_rate_func(I, p, i, j, k) / (divider(I, p, i, j, k, "density_gas_saturation_gas_porousness") * I->B_prev[B_IND(I, p, i, j, k)]);
+		WRITE_TO_A(p, i, j, k, -1);
+	} else if ((p == 5) || (p == 6) || (p == 7)) {
+		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k) / divider(I, p, i, j, k, "density_porousness");
+		A_value = - tetta * mass_inflow_rate_func(I, p, i, j, k) / (divider(I, p, i, j, k, "density_porousness") * I->B_prev[B_IND(I, p, i, j, k)]);
+		WRITE_TO_A(p, i, j, k, -1);
+	} else
 		printf("Error SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas index.\n");
 	return 0;
 }
@@ -437,24 +449,37 @@ int SCAL_heat_flow_backward_euler_second_separated_FDM_termogas(in *I, int p, in
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
-	//I->B[A_IND(I, p, i, j, k)] += I->heat_transfer_coef * temperature_environment(I, i, j, k);
 	A_value = I->heat_transfer_coef / divider(I, p, i, j, k, "porousness_density_internal_energy");
 	WRITE_TO_A(p, i, j, k, -1);
-	A_value *= -1;
-	WRITE_TO_A(9, i, j, k, -1);
+	//A_value *= -1;
+	//WRITE_TO_A(9, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] += I->heat_transfer_coef * (temperature_environment(I, i, j, k) - I->initial_temperature) / divider(I, p, i, j, k, "porousness_density_internal_energy");
 	return 0;
 }
 
 int SCAL_chemical_reaction_heat_flow_backward_euler_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
-	double A_value;
+/*
 	for (int pp = 0; pp < 4; pp++) {
 		I->B[A_IND(I, p, i, j, k)] -= mass_inflow_rate_func(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] / divider(I, p, i, j, k, "porousness_density_internal_energy");
 	}
 	for (int pp = 0; pp < 2; pp++) {
 		I->B[A_IND(I, p, i, j, k)] -= mass_inflow_rate_func(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] / divider(I, p, i, j, k, "porousness_density_internal_energy");
 	}
+*/
+	double A_value, tetta = 0.5;
+	for (int pp = 0; pp < 4; pp++) {
+		A_value += tetta * mass_inflow_rate_func(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] /
+			(divider(I, p, i, j, k, "porousness_density_internal_energy") * temperature_flow(I, i, j, k));
+		I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * mass_inflow_rate_func(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] / divider(I, p, i, j, k, "porousness_density_internal_energy");
+	}
+	for (int pp = 0; pp < 2; pp++) {
+		A_value += tetta * mass_inflow_rate_func(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] /
+			(divider(I, p, i, j, k, "porousness_density_internal_energy") * temperature_flow(I, i, j, k));
+		I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * mass_inflow_rate_func(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] / divider(I, p, i, j, k, "porousness_density_internal_energy");
+	}
+	WRITE_TO_A(p, i, j, k, -1);
 	return 0;
 }
 
@@ -471,9 +496,9 @@ int SCAL_minus_heat_flow_backward_euler_second_separated_FDM_termogas(in *I, int
 	double A_value;
 	A_value = I->heat_transfer_coef / divider(I, p, i, j, k, "inverse_porousness_density_environment_specific_heat_environment");
 	WRITE_TO_A(p, i, j, k, -1);
-	A_value *= -1;
-	WRITE_TO_A(8, i, j, k, -1);
-	//I->B[A_IND(I, p, i, j, k)] += I->heat_transfer_coef * temperature_flow(I, i, j, k);
+	//A_value *= -1;
+	//WRITE_TO_A(8, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] += I->heat_transfer_coef * (temperature_flow(I, i, j, k) - I->initial_temperature) / divider(I, p, i, j, k, "inverse_porousness_density_environment_specific_heat_environment");
 	return 0;
 }
 
