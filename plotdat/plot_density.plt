@@ -50,7 +50,7 @@ plot	[380:900]	20000000 * 4 / (8.314 * x * (1. / 0.02801 + 1. / 0.032 + 1. / 0.0
 					30000000 * 4 / (8.314 * x * (1. / 0.02801 + 1. / 0.032 + 1. / 0.04401 + 1. / 0.01802))	w l ls 2 title 'Плотность газа при p = 3*10^7 Па', \
 					10000000  * 4 / (8.314 * x * (1. / 0.02801 + 1. / 0.032 + 1. / 0.04401 + 1. / 0.01802))	w l ls 3 title 'Плотность газа при p = 10^7 Па'
 #set key width -50 left top at 3500000, 490 Left samplen 2
-set key width -50 left top at 3500000, 240 Left samplen 2
+set key width -50 left top at 12000000, 250 Left samplen 2
 set title "Зависимость плотности газа от давления"
 set output 'images/density_gas_pressure.png'
 set xlabel "Давление, Па"
