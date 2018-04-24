@@ -4,7 +4,7 @@ set term pngcairo size 	800, 600 enhanced dashed font 'Helvetica,20'
 #set term postscript eps size 	800, 600 enhanced dashed color font 'Helvetica,20'
 #set term png size 550, 450
 set style line 1 lc 1 lt 1 dt 1 lw 4
-set style line 2 lc 2 lt 1 dt 2 lw 4
+set style line 2 lc 9 lt 1 dt 2 lw 4
 set style line 3 lc 3 lt 1 dt 3 lw 4
 #set xlabel "Время, сек"
 #set title "Скорость добычи нефти"
@@ -45,8 +45,9 @@ set ylabel "Объём нефти в сутки, м^3/{сутки*м}"
 set output 'images/velocity_of_oil_production_m.png'
 #set output 'images/velocity_of_oil_production_m.eps'
 #set logscale y
+set format y "%10.1e"
 set key right top
-plot	'termo_on/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
+plot	'termo_on1/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
 		'termo_chem_off/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
 		'termo_off/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 set title "Объём вытесненной нефти на метр мощности пласта"
@@ -55,14 +56,15 @@ set output 'images/oil_production_m.png'
 #set output 'images/oil_production_m.eps'
 #unset logscale y
 set key right bottom
-plot	'termo_on/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
+unset format y
+plot	'termo_on1/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
 		'termo_chem_off/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
 		'termo_off/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 set title "Объём вытесненного флюида на метр мощности пласта             "
 set output 'images/fluid_production_m.png'
 #set output 'images/fluid_production_m.eps'
 #set key width -52 left top at 10, 250 Left samplen 2
-plot	'termo_on/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
+plot	'termo_on1/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "с термогазом", \
 		'termo_chem_off/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
 		'termo_off/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 
