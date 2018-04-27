@@ -10,9 +10,11 @@ int main(void)
 	in II;
 	in *I = &II;
 	read_I_termogas(I);
-	for (int i = 0; i <= 50726; i += 50726 / 5) {
+	int num_res = 43984;
+	int num_plots = 5;
+	for (int i = 0; i <= num_res; i += num_res / num_plots) {
 		char file_name[14 + 20];
-		sprintf(file_name, "result/map%d.vtk", i / (50726 / 5));
+		sprintf(file_name, "result/map%d.vtk", i / (num_res / num_plots));
 		FILE *f = fopen(file_name, "w");
 		sprintf(file_name, "result/s_o%d.dat", i);
 		FILE *f1 = fopen(file_name, "w");
@@ -57,7 +59,7 @@ int main(void)
 			fprintf(f1, "%lf\t%lf\n", step, tmp);
 		}
 		fclose(f1);
-		sprintf(file_name, "result/T%d.dat", i / (50726 / 5));
+		sprintf(file_name, "result/T%d.dat", i / (num_res / num_plots));
 		f1 = fopen(file_name, "w");
 		for (j = j_pointer; j < j_pointer + I->nx * I->ny * I->nz + 2; j++)
 			if (fgets(s, 100, f) == NULL)
@@ -80,7 +82,7 @@ int main(void)
 			fprintf(f1, "%lf\t%lf\n", step, tmp);
 		}
 		fclose(f1);
-		sprintf(file_name, "result/omega%d.dat", i / (50726 / 5));
+		sprintf(file_name, "result/omega%d.dat", i / (num_res / num_plots));
 		f1 = fopen(file_name, "w");
 		for (j = j_pointer; j < j_pointer + I->nx * I->ny * I->nz + 2; j++)
 			if (fgets(s, 100, f) == NULL)
