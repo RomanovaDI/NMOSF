@@ -4,7 +4,7 @@ set term pngcairo size 	800, 600 enhanced dashed font 'Helvetica,20'
 #set term postscript eps size 	800, 600 enhanced dashed color font 'Helvetica,20'
 #set term png size 550, 450
 set style line 1 lc 1 lt 1 dt 1 lw 4
-set style line 2 lc 9 lt 1 dt 2 lw 4
+set style line 2 lc rgb '#00ad00' lt 1 dt 2 lw 4
 set style line 3 lc 3 lt 1 dt 3 lw 4
 #set xlabel "Время, сек"
 #set title "Скорость добычи нефти"

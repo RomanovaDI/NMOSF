@@ -76,4 +76,6 @@ double thermal_conductivity(in *I, int i, int j, int k);
 int check_sum(in *I);
 int print_oil_production(in *I);
 double avarage_velocity_global(in *I);
+int save_I_termogas(in *I);
+int read_I_termogas(in *I);
 #endif

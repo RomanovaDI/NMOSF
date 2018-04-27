@@ -275,6 +275,7 @@ int main(int argc, char **argv)
 		goto error;
 	}
 	time(&time2);
+	save_I_termogas(I);
 	if (free_massives(I)) goto error;
 
 	if (I->my_rank == 0) printf("Calculations finished successfully\n");

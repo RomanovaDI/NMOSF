@@ -1329,4 +1329,200 @@ double avarage_velocity_global(in *I)
 	return y;
 }
 
+int save_I_termogas(in *I)
+{
+	FILE *f = fopen("result/I", "w");
+	fprintf(f, "%s\n", I->map_name);
+	fprintf(f, "%s\n", I->region_map_name);
+	fprintf(f, "%lf\n", I->hight);
+	fprintf(f, "%d %d %d\n", I->kx, I->ky, I->kz);
+	fprintf(f, "%d %d %d\n", I->nx, I->ny, I->nz);
+	fprintf(f, "%d %d %d\n", I->n_bl_x, I->n_bl_y, I->n_bl_z);
+	fprintf(f, "%d\n", I->ncols);
+	fprintf(f, "%d\n", I->nrows);
+	fprintf(f, "%lf\n", I->cellsize);
+	fprintf(f, "%d %d\n", I->n_points, I->n_cells);
+	fprintf(f, "%d\n", I->n_points_multipl);
+	fprintf(f, "%d\n", I->n_cells_multipl);
+	fprintf(f, "%lf %lf\n", I->interpolation, I->interpolation_poli);
+	fprintf(f, "%lf\n", I->nodata_value);
+	fprintf(f, "%lf %lf %lf\n", I->dx[0], I->dx[1], I->dx[2]);
+	fprintf(f, "%d\n", I->num_parameters);
+	fprintf(f, "%d %d\n", I->system_dimension, I->system_dimension_with_boundary);
+	fprintf(f, "%d\n", I->non_zero_elem);
+	fprintf(f, "%lf\n", I->end_time);
+	fprintf(f, "%d\n", I->stencil_size);
+	fprintf(f, "%d\n", I->n_boundary_cells);
+	fprintf(f, "%lf\n", I->mass_quantity);
+	fprintf(f, "%lf\n", I->porousness);
+	fprintf(f, "%lf %lf\n", I->density_0[0], I->density_0[1]);
+	fprintf(f, "%lf\n", I->pressure_0);
+	fprintf(f, "%lf %lf\n", I->density_coef_beta[0], I->density_coef_beta[1]);
+	fprintf(f, "%lf\n", I->temperature_0);
+	fprintf(f, "%lf %lf\n", I->density_coef_a[0], I->density_coef_a[1]);
+	fprintf(f, "%lf\n", I->R);
+	fprintf(f, "%lf %lf %lf %lf %lf\n", I->molar_weight[0],
+		I->molar_weight[1], I->molar_weight[2], I->molar_weight[3],
+		I->molar_weight[4]);
+	fprintf(f, "%lf\n", I->permeability);
+	fprintf(f, "%lf %lf %lf\n", I->residual_saturation[0], I->residual_saturation[1], I->residual_saturation[2]);
+	fprintf(f, "%lf %lf\n", I->viscosity_coef_A[0], I->viscosity_coef_A[1]);
+	fprintf(f, "%lf %lf %lf %lf\n", I->viscosity_coef_A_gas[0], I->viscosity_coef_A_gas[1],
+		I->viscosity_coef_A_gas[2], I->viscosity_coef_A_gas[3]);
+	fprintf(f, "%lf %lf\n", I->viscosity_coef_B[0], I->viscosity_coef_B[1]);
+	fprintf(f, "%lf %lf %lf %lf\n", I->viscosity_coef_C_gas[0], I->viscosity_coef_C_gas[1],
+		I->viscosity_coef_C_gas[2], I->viscosity_coef_C_gas[3]);
+	fprintf(f, "%lf %lf %lf %lf\n", I->temperature_0_gas[0], I->temperature_0_gas[1],
+		I->temperature_0_gas[2], I->temperature_0_gas[3]);
+	fprintf(f, "%lf %lf %lf\n", I->capillary_pressure_at_maximum_saturation[0],
+		I->capillary_pressure_at_maximum_saturation[1], I->capillary_pressure_at_maximum_saturation[2]);
+	fprintf(f, "%lf %lf %lf\n", I->residual_saturation_two_phase[0],
+		I->residual_saturation_two_phase[1], I->residual_saturation_two_phase[2]);
+	fprintf(f, "%lf\n", I->capillary_pressure_coef);
+	fprintf(f, "%lf\n", I->num_carbon_atoms);
+	fprintf(f, "%lf\n", I->num_hydrogen_atoms);
+	fprintf(f, "%lf %lf %lf\n", I->stoichiometric_coef[0], I->stoichiometric_coef[1], I->stoichiometric_coef[2]);
+	fprintf(f, "%lf %lf %lf %lf %lf %lf\n", I->stoichiometric_coef_before[0], I->stoichiometric_coef_before[1],
+		I->stoichiometric_coef_before[2], I->stoichiometric_coef_before[3], I->stoichiometric_coef_before[4],
+		I->stoichiometric_coef_before[5]);
+	fprintf(f, "%lf %lf %lf %lf %lf %lf\n", I->stoichiometric_coef_after[0], I->stoichiometric_coef_after[1],
+		I->stoichiometric_coef_after[2], I->stoichiometric_coef_after[3], I->stoichiometric_coef_after[4],
+		I->stoichiometric_coef_after[5]);
+	fprintf(f, "%lf\n", I->threshold_temperature);
+	fprintf(f, "%lf\n", I->frequency_factor);
+	fprintf(f, "%lf\n", I->activation_temperature);
+	fprintf(f, "%lf\n", I->stoichiometric_coef_activ);
+	fprintf(f, "%lf\n", I->pressure_activ);
+	fprintf(f, "%lf %lf %lf %lf %lf %lf %lf\n", I->specific_heat[0], I->specific_heat[1],
+		I->specific_heat[2], I->specific_heat[3], I->specific_heat[4], I->specific_heat[5], I->specific_heat[6]);
+	fprintf(f, "%lf %lf %lf %lf\n", I->thermal_conductivity_coef[0], I->thermal_conductivity_coef[1],
+		I->thermal_conductivity_coef[2], I->thermal_conductivity_coef[3]);
+	fprintf(f, "%lf\n", I->heat_transfer_coef);
+	fprintf(f, "%lf\n", I->tempetarure_for_calculation_internal_energy);
+	fprintf(f, "%lf %lf %lf %lf %lf %lf %lf\n", I->initial_enthalpy[0], I->initial_enthalpy[1],
+		I->initial_enthalpy[2], I->initial_enthalpy[3], I->initial_enthalpy[4], I->initial_enthalpy[5], I->initial_enthalpy[6]);
+	fprintf(f, "%lf\n", I->density_environment);
+	fprintf(f, "%lf\n", I->initial_pressure);
+	fprintf(f, "%lf\n", I->initial_temperature);
+	fprintf(f, "%lf\n", I->injection_well_pressure);
+	fprintf(f, "%lf\n", I->injection_well_temperature);
+	fprintf(f, "%lf\n", I->production_well_pressure);
+	fprintf(f, "%d\n", I->equation_num);
+	fprintf(f, "%lf\n", I->epsilon);
+	fprintf(f, "%lf %lf %lf %lf %lf %lf\n", I->adiabatic_exponent[0], I->adiabatic_exponent[1],
+		I->adiabatic_exponent[2], I->adiabatic_exponent[3], I->adiabatic_exponent[4], I->adiabatic_exponent[5]);
+	fprintf(f, "%lf\n", I->heat_liberation);
+	fprintf(f, "%d\n", I->time_step);
+	fprintf(f, "%lf\n", I->volume_producted_oil_kg);
+	fprintf(f, "%lf\n", I->volume_producted_oil_m);
+	fprintf(f, "%lf\n", I->volume_producted_fluid_m);
+	fprintf(f, "%lf\n", I->volume_injected_fluid_m);
+	fprintf(f, "%d\n", I->my_rank);
+	fprintf(f, "%d\n", I->nproc);
+	fprintf(f, "%d %d %d\n", I->gl_nx, I->gl_ny, I->gl_nz);
+	fprintf(f, "%d %d\n", I->x_regions, I->y_regions);
+	fprintf(f, "%d %d\n", I->num_el_in_x_region, I->num_el_in_y_region);
+	fprintf(f, "%d %d\n", I->max_num_el_in_x_region, I->max_num_el_in_y_region);
+	fprintf(f, "%d\n", I->gl_n_cells_multipl);
+	fclose(f);
+}
+
+int read_I_termogas(in *I)
+{
+	FILE *f = fopen("result/I", "r");
+	fscanf(f, "%s\n", I->map_name);
+	fscanf(f, "%s\n", I->region_map_name);
+	fscanf(f, "%lf\n", &I->hight);
+	fscanf(f, "%d %d %d\n", &I->kx, &I->ky, &I->kz);
+	fscanf(f, "%d %d %d\n", &I->nx, &I->ny, &I->nz);
+	fscanf(f, "%d %d %d\n", &I->n_bl_x, &I->n_bl_y, &I->n_bl_z);
+	fscanf(f, "%d\n", &I->ncols);
+	fscanf(f, "%d\n", &I->nrows);
+	fscanf(f, "%lf\n", &I->cellsize);
+	fscanf(f, "%d %d\n", &I->n_points, &I->n_cells);
+	fscanf(f, "%d\n", &I->n_points_multipl);
+	fscanf(f, "%d\n", &I->n_cells_multipl);
+	fscanf(f, "%lf %lf\n", &I->interpolation, &I->interpolation_poli);
+	fscanf(f, "%lf\n", &I->nodata_value);
+	fscanf(f, "%lf %lf %lf\n", &I->dx[0], &I->dx[1], &I->dx[2]);
+	fscanf(f, "%d\n", &I->num_parameters);
+	fscanf(f, "%d %d\n", &I->system_dimension, &I->system_dimension_with_boundary);
+	fscanf(f, "%d\n", &I->non_zero_elem);
+	fscanf(f, "%lf\n", &I->end_time);
+	fscanf(f, "%d\n", &I->stencil_size);
+	fscanf(f, "%d\n", &I->n_boundary_cells);
+	fscanf(f, "%lf\n", &I->mass_quantity);
+	fscanf(f, "%lf\n", &I->porousness);
+	fscanf(f, "%lf %lf\n", &I->density_0[0], &I->density_0[1]);
+	fscanf(f, "%lf\n", &I->pressure_0);
+	fscanf(f, "%lf %lf\n", &I->density_coef_beta[0], &I->density_coef_beta[1]);
+	fscanf(f, "%lf\n", &I->temperature_0);
+	fscanf(f, "%lf %lf\n", &I->density_coef_a[0], &I->density_coef_a[1]);
+	fscanf(f, "%lf\n", &I->R);
+	fscanf(f, "%lf %lf %lf %lf %lf\n", &I->molar_weight[0],
+			&I->molar_weight[1], &I->molar_weight[2], &I->molar_weight[3],
+			&I->molar_weight[4]);
+	fscanf(f, "%lf\n", &I->permeability);
+	fscanf(f, "%lf %lf %lf\n", &I->residual_saturation[0], &I->residual_saturation[1], &I->residual_saturation[2]);
+	fscanf(f, "%lf %lf\n", &I->viscosity_coef_A[0], &I->viscosity_coef_A[1]);
+	fscanf(f, "%lf %lf %lf %lf\n", &I->viscosity_coef_A_gas[0], &I->viscosity_coef_A_gas[1],
+			&I->viscosity_coef_A_gas[2], &I->viscosity_coef_A_gas[3]);
+	fscanf(f, "%lf %lf\n", &I->viscosity_coef_B[0], &I->viscosity_coef_B[1]);
+	fscanf(f, "%lf %lf %lf %lf\n", &I->viscosity_coef_C_gas[0], &I->viscosity_coef_C_gas[1],
+			&I->viscosity_coef_C_gas[2], &I->viscosity_coef_C_gas[3]);
+	fscanf(f, "%lf %lf %lf %lf\n", &I->temperature_0_gas[0], &I->temperature_0_gas[1],
+			&I->temperature_0_gas[2], &I->temperature_0_gas[3]);
+	fscanf(f, "%lf %lf %lf\n", &I->capillary_pressure_at_maximum_saturation[0],
+			&I->capillary_pressure_at_maximum_saturation[1], &I->capillary_pressure_at_maximum_saturation[2]);
+	fscanf(f, "%lf %lf %lf\n", &I->residual_saturation_two_phase[0],
+			&I->residual_saturation_two_phase[1], &I->residual_saturation_two_phase[2]);
+	fscanf(f, "%lf\n", &I->capillary_pressure_coef);
+	fscanf(f, "%lf\n", &I->num_carbon_atoms);
+	fscanf(f, "%lf\n", &I->num_hydrogen_atoms);
+	fscanf(f, "%lf %lf %lf\n", &I->stoichiometric_coef[0], &I->stoichiometric_coef[1], &I->stoichiometric_coef[2]);
+	fscanf(f, "%lf %lf %lf %lf %lf %lf\n", &I->stoichiometric_coef_before[0], &I->stoichiometric_coef_before[1],
+			&I->stoichiometric_coef_before[2], &I->stoichiometric_coef_before[3], &I->stoichiometric_coef_before[4],
+			&I->stoichiometric_coef_before[5]);
+	fscanf(f, "%lf %lf %lf %lf %lf %lf\n", &I->stoichiometric_coef_after[0], &I->stoichiometric_coef_after[1],
+			&I->stoichiometric_coef_after[2], &I->stoichiometric_coef_after[3], &I->stoichiometric_coef_after[4],
+			&I->stoichiometric_coef_after[5]);
+	fscanf(f, "%lf\n", &I->threshold_temperature);
+	fscanf(f, "%lf\n", &I->frequency_factor);
+	fscanf(f, "%lf\n", &I->activation_temperature);
+	fscanf(f, "%lf\n", &I->stoichiometric_coef_activ);
+	fscanf(f, "%lf\n", &I->pressure_activ);
+	fscanf(f, "%lf %lf %lf %lf %lf %lf %lf\n", &I->specific_heat[0], &I->specific_heat[1],
+			&I->specific_heat[2], &I->specific_heat[3], &I->specific_heat[4], &I->specific_heat[5], &I->specific_heat[6]);
+	fscanf(f, "%lf %lf %lf %lf\n", &I->thermal_conductivity_coef[0], &I->thermal_conductivity_coef[1],
+			&I->thermal_conductivity_coef[2], &I->thermal_conductivity_coef[3]);
+	fscanf(f, "%lf\n", &I->heat_transfer_coef);
+	fscanf(f, "%lf\n", &I->tempetarure_for_calculation_internal_energy);
+	fscanf(f, "%lf %lf %lf %lf %lf %lf %lf\n", &I->initial_enthalpy[0], &I->initial_enthalpy[1],
+			&I->initial_enthalpy[2], &I->initial_enthalpy[3], &I->initial_enthalpy[4], &I->initial_enthalpy[5], &I->initial_enthalpy[6]);
+	fscanf(f, "%lf\n", &I->density_environment);
+	fscanf(f, "%lf\n", &I->initial_pressure);
+	fscanf(f, "%lf\n", &I->initial_temperature);
+	fscanf(f, "%lf\n", &I->injection_well_pressure);
+	fscanf(f, "%lf\n", &I->injection_well_temperature);
+	fscanf(f, "%lf\n", &I->production_well_pressure);
+	fscanf(f, "%d\n", &I->equation_num);
+	fscanf(f, "%lf\n", &I->epsilon);
+	fscanf(f, "%lf %lf %lf %lf %lf %lf\n", &I->adiabatic_exponent[0], &I->adiabatic_exponent[1],
+			&I->adiabatic_exponent[2], &I->adiabatic_exponent[3], &I->adiabatic_exponent[4], &I->adiabatic_exponent[5]);
+	fscanf(f, "%lf\n", &I->heat_liberation);
+	fscanf(f, "%d\n", &I->time_step);
+	fscanf(f, "%lf\n", &I->volume_producted_oil_kg);
+	fscanf(f, "%lf\n", &I->volume_producted_oil_m);
+	fscanf(f, "%lf\n", &I->volume_producted_fluid_m);
+	fscanf(f, "%lf\n", &I->volume_injected_fluid_m);
+	fscanf(f, "%d\n", &I->my_rank);
+	fscanf(f, "%d\n", &I->nproc);
+	fscanf(f, "%d %d %d\n", &I->gl_nx, &I->gl_ny, &I->gl_nz);
+	fscanf(f, "%d %d\n", &I->x_regions, &I->y_regions);
+	fscanf(f, "%d %d\n", &I->num_el_in_x_region, &I->num_el_in_y_region);
+	fscanf(f, "%d %d\n", &I->max_num_el_in_x_region, &I->max_num_el_in_y_region);
+	fscanf(f, "%d\n", &I->gl_n_cells_multipl);
+	fclose(f);
+}
+
 #endif

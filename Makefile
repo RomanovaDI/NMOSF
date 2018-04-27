@@ -51,6 +51,7 @@ $(NAME):
 	$(CC) $(CFLAGS) src/lib/matrix_functions.c $(LIB3) -o build/lib/libmatrix_functions.so
 	$(CC) $(CFLAGS) src/lib/create_matrix.c $(LIB4) -o build/lib/libcreate_matrix.so
 	$(LD) $(LDFLAGS) src/asc2Ab.c $(LDLIB) -o build/NMOSF
+	$(LD) $(LDFLAGS) src/postprocessing.c $(LDLIB) -o build/postprocessing
 	export LD_LIBRARY_PATH=./build/lib
 #./build/NMOSF
 #valgrind --leak-check=full --leak-resolution=med --show-leak-kinds=all --track-origins=yes ./build/NMOSF
