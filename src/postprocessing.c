@@ -103,6 +103,7 @@ int main(void)
 			fprintf(f1, "%lf\t%lf\n", step, tmp);
 		}
 		fclose(f1);
+		fclose(f);
 	}
 	return 0;
 }
