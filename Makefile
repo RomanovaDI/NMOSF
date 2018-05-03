@@ -11,7 +11,7 @@ LIB0	=	-lm
 OBJ1	=	read_files utils
 LIB1	=	$(LIB0) $(addprefix -l,$(OBJ0))
 
-OBJ2	=	mesh_operations vtk_map_functions boundary_conditions initial_conditions array_functions t_test t_second_combined_FDM_termogas x_backward_euler_second_combined_FDM_termogas t_second_separated_FDM_termogas x_backward_euler_second_separated_FDM_termogas
+OBJ2	=	mesh_operations vtk_map_functions boundary_conditions initial_conditions array_functions t_test t_second_combined_FDM_termogas t_second_separated_FDM_termogas x_backward_euler_second_separated_FDM_termogas
 LIB2	=	$(LIB1) $(addprefix -l,$(OBJ1))
 
 OBJ3	=	matrix_functions
@@ -45,7 +45,6 @@ $(NAME):
 	#gcc -g -O0 -shared src/lib/x_backward_euler_second_combined_FDM_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_combined_FDM_avalanche.so -fPIC
 	#gcc -g -O0 -shared src/lib/x_backward_euler_second_ultra_combined_VOF_avalanche.c -lm -I src/lib/ -L build/lib/ -linit_data -lutils -o build/lib/libx_backward_euler_second_ultra_combined_VOF_avalanche.so -fPIC
 	$(CC) $(CFLAGS) src/lib/t_second_combined_FDM_termogas.c $(LIB2) -o build/lib/libt_second_combined_FDM_termogas.so
-	$(CC) $(CFLAGS) src/lib/x_backward_euler_second_combined_FDM_termogas.c $(LIB2) -o build/lib/libx_backward_euler_second_combined_FDM_termogas.so
 	$(CC) $(CFLAGS) src/lib/t_second_separated_FDM_termogas.c $(LIB2) -o build/lib/libt_second_separated_FDM_termogas.so
 	$(CC) $(CFLAGS) src/lib/x_backward_euler_second_separated_FDM_termogas.c $(LIB2) -o build/lib/libx_backward_euler_second_separated_FDM_termogas.so
 	$(CC) $(CFLAGS) src/lib/matrix_functions.c $(LIB3) -o build/lib/libmatrix_functions.so

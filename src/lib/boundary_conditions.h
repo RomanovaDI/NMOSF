@@ -12,5 +12,5 @@ int SET_boundary_CONDITION_pressure_zero_gradient_on_all(in *I);
 #if TERMOGAS
 int set_injection_well(in *I, int i, int j, int k);
 int set_production_well(in *I, int i, int j, int k);
-int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out(in *I);
+int SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out(in *I);
 #endif

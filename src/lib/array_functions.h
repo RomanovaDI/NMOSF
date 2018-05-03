@@ -4,3 +4,4 @@ int free_initial_arrays(in *I);
 void print_mass(in *I);
 int set_arrays(in *I);
 int print_B_prev(in *I);
+int set_array_of_parameters_termogas(in *I);

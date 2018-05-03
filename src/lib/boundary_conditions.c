@@ -567,7 +567,7 @@ int SET_boundary_CONDITION_pressure_zero_gradient_on_all(in *I)
 #endif
 
 #if TERMOGAS
-int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_consistent(in *I)
+int SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out_consistent(in *I)
 {
 #if DEBUG
 	printf("Set the boundary condition in termogas case for all values with no boundaries condition, 4 injection well and 1 production well.\n");
@@ -648,7 +648,7 @@ int set_production_well(in *I, int i, int j, int k)
 	return 0;
 }
 
-int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
+int SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out_parallel(in *I)
 {
 #if DEBUG
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -705,12 +705,12 @@ int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(in *I)
 	return 0;
 }
 
-int SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out(in *I)
+int SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out(in *I)
 {
 	if (I->nproc > 1) {
-		if (SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_parallel(I)) return 1;
+		if (SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out_parallel(I)) return 1;
 	} else {
-		if (SET_boundary_CONDITION_termogas_no_bounadries_4_in_1_out_consistent(I)) return 1;
+		if (SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out_consistent(I)) return 1;
 	}
 	return 0;
 }

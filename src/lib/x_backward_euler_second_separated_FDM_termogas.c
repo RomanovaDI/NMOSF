@@ -82,14 +82,10 @@ double multiplier(in *I, int p, int pp, int pr, int i, int j, int k, char object
 	switch (obj) {
 		case 0:
 			return density_t(I, 2, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
-			//return avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, 2, i, j, k) * I->porousness);
 		case 1:
 			return density_t(I, p - 5, i, j, k) * avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr]);
 			return avarage_velocity(I, p - 5, pr, i, j, k) / (2 * I->dx[pr] * saturation(I, p - 5, i, j, k) * I->porousness);
-			//return -density_t(I, p - 5, i, j, k) * I->permeability * relative_permeability_derivative_with_recpect_to_saturation(I, p - 5, pp - 5, i, j, k) * grad_pressure(I, pr, i, j, k) /
-			//		(2 * I->dx[pr] * viscosity(I, p - 5, i, j, k));
 		case 2:
-			//return avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr] * I->porousness);
 			tmp = 0;
 			for (pp = 0; pp < 2; pp++)
 				tmp += density_t(I, pp, i, j, k) * I->specific_heat[pp] * I->adiabatic_exponent[pp] * avarage_velocity(I, pp, pr, i, j, k) / (2 * I->dx[pr]);
@@ -97,12 +93,6 @@ double multiplier(in *I, int p, int pp, int pr, int i, int j, int k, char object
 				tmp += density_t(I, 2, i, j, k) * I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * concentration(I, pp, i, j, k) *
 					avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
 			return tmp;
-			/*tmp1 = 0;
-			for (pp = 0; pp < 2; pp++)
-				tmp1 += I->porousness * density_t(I, pp, i, j, k) * saturation(I, pp, i, j, k) * I->specific_heat[pp];
-			for (pp = 0; pp < 4; pp++)
-				tmp1 += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k);
-			return tmp / tmp1;*/
 		case 3:
 			return Darsi_M_coef(I, i, j, k) / (2 * I->dx[pr] * I->dx[pr]); 
 		case 4:
@@ -353,29 +343,29 @@ int SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas(in *I, in
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value, tetta = 1;
 	/*if ((p == 6) || (p == 7)) {
-		A_value = - mass_inflow_rate_func(I, p, i, j, k) / saturation(I, p - 5, i, j, k);
+		A_value = - mass_inflow_rate(I, p, i, j, k) / saturation(I, p - 5, i, j, k);
 		WRITE_TO_A(p, i, j, k, -1);
 	} else if (p == 1) {
-		A_value = - mass_inflow_rate_func(I, p, i, j, k) / concentration(I, p, i, j, k);
+		A_value = - mass_inflow_rate(I, p, i, j, k) / concentration(I, p, i, j, k);
 		WRITE_TO_A(p, i, j, k, -1);
 	} else {
-		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k);
+		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate(I, p, i, j, k);
 	}*/
 /*
 	if ((p == 0) || (p == 1) || (p == 2) || (p == 3))
-		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k) / divider(I, p, i, j, k, "density_gas_saturation_gas_porousness");
+		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate(I, p, i, j, k) / divider(I, p, i, j, k, "density_gas_saturation_gas_porousness");
 	else if ((p == 5) || (p == 6) || (p == 7))
-		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k) / divider(I, p, i, j, k, "density_porousness");
+		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate(I, p, i, j, k) / divider(I, p, i, j, k, "density_porousness");
 	else
 		printf("Error SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas index.\n");
 */
 	if ((p == 0) || (p == 1) || (p == 2) || (p == 3)) {
-		I->B[A_IND(I, p, i, j, k)] += (1 - tetta) * mass_inflow_rate_func(I, p, i, j, k) / divider(I, p, i, j, k, "density_gas_saturation_gas_porousness");
-		A_value = - tetta * mass_inflow_rate_func(I, p, i, j, k) / (divider(I, p, i, j, k, "density_gas_saturation_gas_porousness") * I->B_prev[B_IND(I, p, i, j, k)]);
+		I->B[A_IND(I, p, i, j, k)] += (1 - tetta) * mass_inflow_rate(I, p, i, j, k) / divider(I, p, i, j, k, "density_gas_saturation_gas_porousness");
+		A_value = - tetta * mass_inflow_rate(I, p, i, j, k) / (divider(I, p, i, j, k, "density_gas_saturation_gas_porousness") * I->B_prev[B_IND(I, p, i, j, k)]);
 		WRITE_TO_A(p, i, j, k, -1);
 	} else if ((p == 5) || (p == 6) || (p == 7)) {
-		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate_func(I, p, i, j, k) / divider(I, p, i, j, k, "density_porousness");
-		A_value = - tetta * mass_inflow_rate_func(I, p, i, j, k) / (divider(I, p, i, j, k, "density_porousness") * I->B_prev[B_IND(I, p, i, j, k)]);
+		I->B[A_IND(I, p, i, j, k)] += mass_inflow_rate(I, p, i, j, k) / divider(I, p, i, j, k, "density_porousness");
+		A_value = - tetta * mass_inflow_rate(I, p, i, j, k) / (divider(I, p, i, j, k, "density_porousness") * I->B_prev[B_IND(I, p, i, j, k)]);
 		WRITE_TO_A(p, i, j, k, -1);
 	} else
 		printf("Error SCAL_mass_inflow_rate_backward_euler_second_separated_FDM_termogas index.\n");
@@ -462,22 +452,22 @@ int SCAL_chemical_reaction_heat_flow_backward_euler_second_separated_FDM_termoga
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 /*
 	for (int pp = 0; pp < 4; pp++) {
-		I->B[A_IND(I, p, i, j, k)] -= mass_inflow_rate_func(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] / divider(I, p, i, j, k, "porousness_density_internal_energy");
+		I->B[A_IND(I, p, i, j, k)] -= mass_inflow_rate(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] / divider(I, p, i, j, k, "porousness_density_internal_energy");
 	}
 	for (int pp = 0; pp < 2; pp++) {
-		I->B[A_IND(I, p, i, j, k)] -= mass_inflow_rate_func(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] / divider(I, p, i, j, k, "porousness_density_internal_energy");
+		I->B[A_IND(I, p, i, j, k)] -= mass_inflow_rate(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] / divider(I, p, i, j, k, "porousness_density_internal_energy");
 	}
 */
 	double A_value, tetta = 0.5;
 	for (int pp = 0; pp < 4; pp++) {
-		A_value += tetta * mass_inflow_rate_func(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] /
+		A_value += tetta * mass_inflow_rate(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] /
 			(divider(I, p, i, j, k, "porousness_density_internal_energy") * temperature_flow(I, i, j, k));
-		I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * mass_inflow_rate_func(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] / divider(I, p, i, j, k, "porousness_density_internal_energy");
+		I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * mass_inflow_rate(I, pp, i, j, k) * I->initial_enthalpy[pp + 2] / divider(I, p, i, j, k, "porousness_density_internal_energy");
 	}
 	for (int pp = 0; pp < 2; pp++) {
-		A_value += tetta * mass_inflow_rate_func(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] /
+		A_value += tetta * mass_inflow_rate(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] /
 			(divider(I, p, i, j, k, "porousness_density_internal_energy") * temperature_flow(I, i, j, k));
-		I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * mass_inflow_rate_func(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] / divider(I, p, i, j, k, "porousness_density_internal_energy");
+		I->B[A_IND(I, p, i, j, k)] -= (1 - tetta) * mass_inflow_rate(I, pp + 5, i, j, k) * I->initial_enthalpy[pp] / divider(I, p, i, j, k, "porousness_density_internal_energy");
 	}
 	WRITE_TO_A(p, i, j, k, -1);
 	return 0;

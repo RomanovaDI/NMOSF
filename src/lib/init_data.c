@@ -56,7 +56,7 @@ int set_parameters_termogas(in *I)
 	I->ky = 1;
 	I->kz = 1;
 	I->epsilon = 1e-10;
-	I->end_time = 50 * 86400;//1000000;
+	I->end_time = 365 * 86400;//1000000;
 	I->stencil_size = 9;//2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
@@ -158,7 +158,6 @@ int set_parameters_termogas(in *I)
 	I->adiabatic_exponent[3] = 1.4; // O2
 	I->adiabatic_exponent[4] = 1.35; // CO2
 	I->adiabatic_exponent[5] = 1.3; // H2O(g)
-	I->heat_liberation = 43739500;
 	I->time_step = 0;
 	I->volume_producted_oil_kg = 0;
 	I->volume_producted_oil_m = 0;
@@ -175,6 +174,7 @@ int set_parameters_termogas(in *I)
 		return 1;
 	}
 	I->time = 0;
+	I->dependent_variables = 69;
 #endif
 	return 0;
 }

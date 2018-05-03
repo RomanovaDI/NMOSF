@@ -32,6 +32,7 @@ int free_massives(in *I)
 		if (free_parallel_arrays(I)) return 1;
 	}
 	free(I->ind_start_region_proc);
+	free(I->array_of_parameters);
 	return 0;
 }
 
@@ -202,3 +203,85 @@ int print_B_prev(in *I)
 	}
 }
 
+int set_array_of_parameters_termogas(in *I)
+{
+	if ((I->flag_first_time_step) && ((I->array_of_parameters = (double *) malloc(I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * I->dependent_variables * sizeof(double))) == NULL)) {
+		printf("Memory error\n");
+		return 1;
+	}
+	for (int k = - I->stencil_size + 1; k < I->gl_nz + I->stencil_size - 1; k++) {
+		for (int i = - I->stencil_size + 1; i < I->gl_nx + I->stencil_size - 1; i++) {
+			for (int j = - I-> stencil_size + 1; j < I->gl_ny + I->stencil_size - 1; j++) {
+				I->array_of_parameters[PARAM_IND(I, 0, i, j, k)] = density_t_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 1, i, j, k)] = density_t_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 2, i, j, k)] = density_t_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 3, i, j, k)] = two_phase_relative_permeability_func(I, 0, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 4, i, j, k)] = two_phase_relative_permeability_func(I, 1, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 5, i, j, k)] = two_phase_relative_permeability_func(I, 0, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 6, i, j, k)] = two_phase_relative_permeability_func(I, 2, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 7, i, j, k)] = two_phase_relative_permeability_func(I, 1, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 8, i, j, k)] = two_phase_relative_permeability_func(I, 2, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 9, i, j, k)] = relative_permeability_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 10, i, j, k)] = relative_permeability_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 11, i, j, k)] = relative_permeability_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 12, i, j, k)] = viscosity_gas_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 13, i, j, k)] = viscosity_gas_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 14, i, j, k)] = viscosity_gas_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 15, i, j, k)] = viscosity_gas_func(I, 3, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 16, i, j, k)] = molar_fraction_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 17, i, j, k)] = molar_fraction_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 18, i, j, k)] = molar_fraction_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 19, i, j, k)] = molar_fraction_func(I, 3, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 20, i, j, k)] = viscosity_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 21, i, j, k)] = viscosity_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 22, i, j, k)] = viscosity_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 23, i, j, k)] = Darsi_M_coef_phases_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 24, i, j, k)] = Darsi_M_coef_phases_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 25, i, j, k)] = Darsi_M_coef_phases_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 26, i, j, k)] = Darsi_M_coef_func(I, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 27, i, j, k)] = capillary_pressure_derivative_by_saturation_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 28, i, j, k)] = capillary_pressure_derivative_by_saturation_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 29, i, j, k)] = grad_pressure_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 30, i, j, k)] = grad_pressure_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 31, i, j, k)] = grad_pressure_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 32, i, j, k)] = grad_saturation_func(I, 0, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 33, i, j, k)] = grad_saturation_func(I, 0, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 34, i, j, k)] = grad_saturation_func(I, 0, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 35, i, j, k)] = grad_saturation_func(I, 1, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 36, i, j, k)] = grad_saturation_func(I, 1, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 37, i, j, k)] = grad_saturation_func(I, 1, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 38, i, j, k)] = grad_saturation_func(I, 2, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 39, i, j, k)] = grad_saturation_func(I, 2, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 40, i, j, k)] = grad_saturation_func(I, 2, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 41, i, j, k)] = coef_grad_saturation_func(I, 0, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 42, i, j, k)] = coef_grad_saturation_func(I, 0, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 43, i, j, k)] = coef_grad_saturation_func(I, 1, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 44, i, j, k)] = coef_grad_saturation_func(I, 1, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 45, i, j, k)] = coef_grad_saturation_func(I, 2, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 46, i, j, k)] = coef_grad_saturation_func(I, 2, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 47, i, j, k)] = avarage_velocity_func(I, 0, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 48, i, j, k)] = avarage_velocity_func(I, 0, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 49, i, j, k)] = avarage_velocity_func(I, 0, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 50, i, j, k)] = avarage_velocity_func(I, 1, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 51, i, j, k)] = avarage_velocity_func(I, 1, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 52, i, j, k)] = avarage_velocity_func(I, 1, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 53, i, j, k)] = avarage_velocity_func(I, 2, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 54, i, j, k)] = avarage_velocity_func(I, 2, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 55, i, j, k)] = avarage_velocity_func(I, 2, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 56, i, j, k)] = rate_of_reaction_coef_func(I, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 57, i, j, k)] = rate_of_reaction_func(I, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 58, i, j, k)] = mass_inflow_rate_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 59, i, j, k)] = mass_inflow_rate_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 60, i, j, k)] = mass_inflow_rate_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 61, i, j, k)] = mass_inflow_rate_func(I, 3, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 62, i, j, k)] = mass_inflow_rate_func(I, 5, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 63, i, j, k)] = mass_inflow_rate_func(I, 6, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 64, i, j, k)] = mass_inflow_rate_func(I, 7, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 65, i, j, k)] = chemical_reaction_heat_flow_func(I, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 66, i, j, k)] = Darsi_A_coef_func(I, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 67, i, j, k)] = thermal_conductivity_func(I, i, j, k);
+			}
+		}
+	}
+	return 0;
+}

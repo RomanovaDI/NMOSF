@@ -62,7 +62,6 @@ typedef struct init_parameters_termogas {
 	double hight;
 	int kx, ky, kz;
 	int nx, ny, nz;
-	int n_bl_x, n_bl_y, n_bl_z;
 	int ncols;
 	int nrows;
 	double cellsize;
@@ -131,7 +130,6 @@ typedef struct init_parameters_termogas {
 	int equation_num;
 	double epsilon;
 	double adiabatic_exponent[6];
-	double heat_liberation;
 	int time_step;
 	double volume_producted_oil_kg;
 	double volume_producted_oil_m;
@@ -149,6 +147,8 @@ typedef struct init_parameters_termogas {
 	double *gl_B;
 	int *ind_start_region_proc;
 	double time;
+	int dependent_variables;
+	double *array_of_parameters;
 } in_termogas;
 
 //typedef in_avalanche in;

@@ -162,35 +162,9 @@ int main(int argc, char **argv)
 	in II;
 	in *I = &II;
 	MPI_Init(&argc, &argv);
-#if DEBUG
-	int qwerty;
-	MPI_Comm_rank(MPI_COMM_WORLD, &qwerty);
-	printf("Synchronization in start in process %d, PID %d\n", qwerty, getpid());
-	int qwerty1;
-	if (qwerty == 0)
-		qwerty1 = 5;
-	else
-		qwerty1 = 6;
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Bcast(&qwerty1, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	printf("Process %d: qwerty1 = %d\n", qwerty, qwerty1);
-#endif
-//	if (rank == 1) {
-//		solve_test_matrix();
-//		return 0;
-//	}
 	if (set_parameters_termogas(I)) goto error;
 	MPI_Barrier(MPI_COMM_WORLD);
 	t = MPI_Wtime();
-	// GDB
-/*	char hostname[256];
-	i = 0;
-	gethostname(hostname, sizeof(hostname));
-	printf("Process %d: PID %d on %s ready for attach\n", I->my_rank, getpid(), hostname);
-	fflush(stdout);
-	while (0 == i)
-		sleep(5);*/
-	// GDB
 	if (read_asc_and_declare_variables(I)) goto error;
 	if (I->my_rank == 0)
 		if (do_interpolation(I)) goto error;
@@ -218,7 +192,8 @@ int main(int argc, char **argv)
 			printf("Time is %lf of %lf, time step %d\n", I->time, I->end_time, I->time_step);
 		}
 		if ((I->nproc > 1) && (reconstruct_src(I))) return 1;
-		SET_CONDITION(boundary, termogas, no_bounadries_4_in_1_out);
+		SET_CONDITION(boundary, termogas, no_boundaries_4_in_1_out);
+		if (set_array_of_parameters_termogas(I)) return 1;
 		if ((I->flag_first_time_step) && (I->nproc > 1) && (reconstruct_src(I))) return 1;
 #if DEBUG
 		if ((I->my_rank == 0) && (I->nproc > 1) && (print_gl_B(I, 4))) return 1;
