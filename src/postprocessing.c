@@ -134,6 +134,7 @@ int main(int argc, char **argv)
 	in *I = &II;
 	//read_I_termogas(I);
 	MPI_Init(&argc, &argv);
+	I->flag_first_time_step = 1;
 	if (set_parameters_termogas(I)) return 1;
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (read_asc_and_declare_variables(I)) return 1;
@@ -153,10 +154,12 @@ int main(int argc, char **argv)
 		printf("Memory error in function %s.\n", __func__);
 		return 1;
 	}
-	int num_res = 46457;
+	int num_res = 273615;
 	int num_plots = 5;
 	for (int i = 0; i <= num_res; i += num_res / num_plots) {
 		read_map(i, I);
+		if (set_array_of_parameters_termogas(I)) return 1;
+		I->flag_first_time_step = 0;
 		if (write_B_to_B_prev(I)) return 1;
 		SET_CONDITION(boundary, termogas, no_boundaries_4_in_1_out);
 		for (int j = 0; j < I->num_parameters; j++)
@@ -165,6 +168,7 @@ int main(int argc, char **argv)
 	}
 	free(I->B);
 	free(I->B_prev);
+	free(I->array_of_parameters);
 	MPI_Finalize();
 	return 0;
 }
