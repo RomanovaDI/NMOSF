@@ -144,24 +144,35 @@ plot	'result/p7s0.dat' using ($1):($2) smooth csplines with lines ls 31 title "0
 		'result/p7s3.dat' using ($1):($2) smooth csplines with lines ls 34 title "219 день", \
 		'result/p7s4.dat' using ($1):($2) smooth csplines with lines ls 35 title "292 день", \
 		'result/p7s5.dat' using ($1):($2) smooth csplines with lines ls 36 title "365 день"
-set term pngcairo size 	800, 1500 enhanced dashed font 'Helvetica,20'
+
+set term pngcairo size 	1000, 1300 enhanced dashed font 'Helvetica,20'
 set output 'images/multiplot_parameters567.png'
-set tmargin 0
-set bmargin 0
+#set tmargin 0
+#set bmargin 0
 set ytics 0, 0.2, 0.8
-set multiplot layout 4,1 title "Насыщенность потока фазами\n" font "12"
+#set multiplot layout 4,1 title "Насыщенность потока фазами\n" font "12"
+set multiplot title "Насыщенность потока фазами\n" font "12"
 set key outside right top width -5
-set yrange [0:0.99]
 unset xtics
 unset xlabel
-set label "Вода" at 130, 0.85
+set lmargin at screen 0.1
+set rmargin at screen 0.7
+set bmargin at screen 0.644
+set tmargin at screen 0.95
+set yrange [0:0.79]
+set label "Вода" at 130, 0.65
 plot	'result/p5s0.dat' using ($1):($2) smooth csplines with lines ls 11 title "0 день", \
 		'result/p5s1.dat' using ($1):($2) smooth csplines with lines ls 12 title "73 день", \
 		'result/p5s2.dat' using ($1):($2) smooth csplines with lines ls 13 title "146 день", \
 		'result/p5s3.dat' using ($1):($2) smooth csplines with lines ls 14 title "219 день", \
 		'result/p5s4.dat' using ($1):($2) smooth csplines with lines ls 15 title "292 день", \
 		'result/p5s5.dat' using ($1):($2) smooth csplines with lines ls 16 title "365 день"
+#set bmargin at screen 0.244
+#set tmargin at screen 0.612
+set bmargin at screen 0.253
+set tmargin at screen 0.644
 unset label
+set yrange [0:0.99]
 set label "Нефть" at 130, 0.85
 plot	'result/p6s0.dat' using ($1):($2) smooth csplines with lines ls 21 title "0 день", \
 		'result/p6s1.dat' using ($1):($2) smooth csplines with lines ls 22 title "73 день", \
@@ -169,14 +180,119 @@ plot	'result/p6s0.dat' using ($1):($2) smooth csplines with lines ls 21 title "0
 		'result/p6s3.dat' using ($1):($2) smooth csplines with lines ls 24 title "219 день", \
 		'result/p6s4.dat' using ($1):($2) smooth csplines with lines ls 25 title "292 день", \
 		'result/p6s5.dat' using ($1):($2) smooth csplines with lines ls 26 title "365 день"
+#set bmargin at screen 0.1
+#set tmargin at screen 0.244
+set bmargin at screen 0.1
+set tmargin at screen 0.253
 set xtics nomirror
 set xlabel "Расстояние, м"
 unset label
-set label "Газ" at 130, 0.85
+set yrange [0:0.39]
+set label "Газ" at 130, 0.25
+set key outside right top width -5 height -2
 plot	'result/p7s0.dat' using ($1):($2) smooth csplines with lines ls 31 title "0 день", \
 		'result/p7s1.dat' using ($1):($2) smooth csplines with lines ls 32 title "73 день", \
 		'result/p7s2.dat' using ($1):($2) smooth csplines with lines ls 33 title "146 день", \
 		'result/p7s3.dat' using ($1):($2) smooth csplines with lines ls 34 title "219 день", \
 		'result/p7s4.dat' using ($1):($2) smooth csplines with lines ls 35 title "292 день", \
 		'result/p7s5.dat' using ($1):($2) smooth csplines with lines ls 36 title "365 день"
+unset multiplot
+
+set term pngcairo size 	1000, 1000 enhanced dashed font 'Helvetica,20'
+set output 'images/multiplot_parameters567_bw.png'
+#set tmargin 0
+#set bmargin 0
+set ytics 0, 0.1, 0.8
+#set multiplot layout 4,1 title "Насыщенность потока фазами\n" font "12"
+#set multiplot title "Насыщенность потока фазами\n" font "12"
+set multiplot
+set key outside right top height 0
+unset xtics
+unset xlabel
+set lmargin at screen 0.1
+set rmargin at screen 0.7
+set bmargin at screen 0.664
+set tmargin at screen 0.99
+set yrange [0.2:0.75]
+unset label
+set label "Вода" at 150, 0.65
+plot	'result/p5s0.dat' using ($1):($2) smooth csplines with lines ls 1 title "0 день", \
+		'result/p5s1.dat' using ($1):($2) smooth csplines with lines ls 2 title "73 день", \
+		'result/p5s2.dat' using ($1):($2) smooth csplines with lines ls 3 title "146 день", \
+		'result/p5s3.dat' using ($1):($2) smooth csplines with lines ls 4 title "219 день", \
+		'result/p5s4.dat' using ($1):($2) smooth csplines with lines ls 5 title "292 день", \
+		'result/p5s5.dat' using ($1):($2) smooth csplines with lines ls 6 title "365 день"
+#set bmargin at screen 0.244
+#set tmargin at screen 0.612
+set bmargin at screen 0.278
+set tmargin at screen 0.664
+unset label
+set yrange [0.2:0.85]
+set label "Нефть" at 150, 0.75
+plot	'result/p6s0.dat' using ($1):($2) smooth csplines with lines ls 1 notitle, \
+		'result/p6s1.dat' using ($1):($2) smooth csplines with lines ls 2 notitle, \
+		'result/p6s2.dat' using ($1):($2) smooth csplines with lines ls 3 notitle, \
+		'result/p6s3.dat' using ($1):($2) smooth csplines with lines ls 4 notitle, \
+		'result/p6s4.dat' using ($1):($2) smooth csplines with lines ls 5 notitle, \
+		'result/p6s5.dat' using ($1):($2) smooth csplines with lines ls 6 notitle
+#set bmargin at screen 0.1
+#set tmargin at screen 0.244
+set bmargin at screen 0.1
+set tmargin at screen 0.278
+set xtics nomirror
+#set xlabel "Расстояние, м"
+unset label
+set yrange [0:0.29]
+set label "Газ" at 150, 0.25
+set label "Расстояние, м" at 130, -0.13
+set key outside right top width -5 height -2
+plot	'result/p7s0.dat' using ($1):($2) smooth csplines with lines ls 1 notitle, \
+		'result/p7s1.dat' using ($1):($2) smooth csplines with lines ls 2 notitle, \
+		'result/p7s2.dat' using ($1):($2) smooth csplines with lines ls 3 notitle, \
+		'result/p7s3.dat' using ($1):($2) smooth csplines with lines ls 4 notitle, \
+		'result/p7s4.dat' using ($1):($2) smooth csplines with lines ls 5 notitle, \
+		'result/p7s5.dat' using ($1):($2) smooth csplines with lines ls 6 notitle 
+unset multiplot
+
+set term pngcairo size 	1000, 600 enhanced dashed font 'Helvetica,20'
+set output 'images/multiplot_parameters567_bw_2.png'
+#set tmargin 0
+#set bmargin 0
+set ytics 0, 0.1, 0.8
+#set multiplot layout 4,1 title "Насыщенность потока фазами\n" font "12"
+#set multiplot title "Насыщенность потока фазами\n" font "12"
+set multiplot
+set key outside right top height 0
+unset xtics
+unset xlabel
+set lmargin at screen 0.1
+set rmargin at screen 0.75
+set bmargin at screen 0.45
+set tmargin at screen 0.99
+unset label
+set yrange [0.2:0.85]
+set label "Нефть" at 150, 0.75
+plot	'result/p6s0.dat' using ($1):($2) smooth csplines with lines ls 1 title "0 день", \
+		'result/p6s1.dat' using ($1):($2) smooth csplines with lines ls 2 title "73 день",  \
+		'result/p6s2.dat' using ($1):($2) smooth csplines with lines ls 3 title "146 день", \
+		'result/p6s3.dat' using ($1):($2) smooth csplines with lines ls 4 title "219 день", \
+		'result/p6s4.dat' using ($1):($2) smooth csplines with lines ls 5 title "292 день", \
+		'result/p6s5.dat' using ($1):($2) smooth csplines with lines ls 6 title "365 день"
+#set bmargin at screen 0.1
+#set tmargin at screen 0.244
+set bmargin at screen 0.2
+set tmargin at screen 0.45
+set xtics nomirror
+set xlabel "Расстояние, м"
+unset label
+set yrange [0:0.29]
+set label "Газ" at 150, 0.25
+#set label "Расстояние, м" at 130, -0.13
+set key outside right top width -5 height -2
+plot	'result/p7s0.dat' using ($1):($2) smooth csplines with lines ls 1 notitle, \
+		'result/p7s1.dat' using ($1):($2) smooth csplines with lines ls 2 notitle, \
+		'result/p7s2.dat' using ($1):($2) smooth csplines with lines ls 3 notitle, \
+		'result/p7s3.dat' using ($1):($2) smooth csplines with lines ls 4 notitle, \
+		'result/p7s4.dat' using ($1):($2) smooth csplines with lines ls 5 notitle, \
+		'result/p7s5.dat' using ($1):($2) smooth csplines with lines ls 6 notitle 
 unset multiplot
