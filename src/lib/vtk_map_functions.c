@@ -107,7 +107,9 @@ int print_vtk_avalanche(in *I)
 int print_vtk_termogas(in *I)
 {
 	char file_name[14 + 20];
-	sprintf(file_name, "result/map%d.vtk", (int) I->time_step);
+	if (I->time_step % I->write_interval)
+		return 0;
+	sprintf(file_name, "result/map%d.vtk", I->time_step / I->write_interval);
 	FILE *f = fopen(file_name, "w");
 	fprintf(f, "# vtk DataFile Version 2.0\n");
 //	fprintf(f, "#time = %lf\n", I->time);
@@ -1036,7 +1038,7 @@ int print_vtk_termogas(in *I)
 int print_vtk_termogas_parallel(in *I)
 {
 	char file_name[14 + 20];
-	sprintf(file_name, "result/map%d.vtk", (int) I->time);
+	sprintf(file_name, "result/map%d.vtk", I->time_step);
 	FILE *f = fopen(file_name, "w");
 	fprintf(f, "# vtk DataFile Version 2.0\n");
 	fprintf(f, "slope\n");

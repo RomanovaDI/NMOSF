@@ -149,6 +149,7 @@ typedef struct init_parameters_termogas {
 	double time;
 	int dependent_variables;
 	double *array_of_parameters;
+	int write_interval;
 } in_termogas;
 
 //typedef in_avalanche in;

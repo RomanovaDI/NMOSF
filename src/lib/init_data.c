@@ -175,6 +175,7 @@ int set_parameters_termogas(in *I)
 	}
 	I->time = 0;
 	I->dependent_variables = 69;
+	I->write_interval = 100;
 #endif
 	return 0;
 }
