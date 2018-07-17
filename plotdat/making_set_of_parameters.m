@@ -1,23 +1,23 @@
-load ../result/parameter5_step0.dat;
-load ../result/parameter5_step1.dat;
-load ../result/parameter5_step2.dat;
-load ../result/parameter5_step3.dat;
-load ../result/parameter5_step4.dat;
-load ../result/parameter5_step5.dat;
+load result/parameter5_step0.dat;
+load result/parameter5_step1.dat;
+load result/parameter5_step2.dat;
+load result/parameter5_step3.dat;
+load result/parameter5_step4.dat;
+load result/parameter5_step5.dat;
 
-load ../result/parameter6_step0.dat;
-load ../result/parameter6_step1.dat;
-load ../result/parameter6_step2.dat;
-load ../result/parameter6_step3.dat;
-load ../result/parameter6_step4.dat;
-load ../result/parameter6_step5.dat;
+load result/parameter6_step0.dat;
+load result/parameter6_step1.dat;
+load result/parameter6_step2.dat;
+load result/parameter6_step3.dat;
+load result/parameter6_step4.dat;
+load result/parameter6_step5.dat;
 
-load ../result/parameter7_step0.dat;
-load ../result/parameter7_step1.dat;
-load ../result/parameter7_step2.dat;
-load ../result/parameter7_step3.dat;
-load ../result/parameter7_step4.dat;
-load ../result/parameter7_step5.dat;
+load result/parameter7_step0.dat;
+load result/parameter7_step1.dat;
+load result/parameter7_step2.dat;
+load result/parameter7_step3.dat;
+load result/parameter7_step4.dat;
+load result/parameter7_step5.dat;
 
 x = parameter5_step0(:,1);
 xs =[0:1:350];
@@ -106,26 +106,26 @@ p7s3 = p7s3';
 p7s4 = p7s4';
 p7s5 = p7s5';
 
-save p5s0.dat p5s0;
-save p5s1.dat p5s1;
-save p5s2.dat p5s2;
-save p5s3.dat p5s3;
-save p5s4.dat p5s4;
-save p5s5.dat p5s5;
+save result/p5s0.dat p5s0;
+save result/p5s1.dat p5s1;
+save result/p5s2.dat p5s2;
+save result/p5s3.dat p5s3;
+save result/p5s4.dat p5s4;
+save result/p5s5.dat p5s5;
 
-save p6s0.dat p6s0;
-save p6s1.dat p6s1;
-save p6s2.dat p6s2;
-save p6s3.dat p6s3;
-save p6s4.dat p6s4;
-save p6s5.dat p6s5;
+save result/p6s0.dat p6s0;
+save result/p6s1.dat p6s1;
+save result/p6s2.dat p6s2;
+save result/p6s3.dat p6s3;
+save result/p6s4.dat p6s4;
+save result/p6s5.dat p6s5;
 
-save p7s0.dat p7s0;
-save p7s1.dat p7s1;
-save p7s2.dat p7s2;
-save p7s3.dat p7s3;
-save p7s4.dat p7s4;
-save p7s5.dat p7s5;
+save result/p7s0.dat p7s0;
+save result/p7s1.dat p7s1;
+save result/p7s2.dat p7s2;
+save result/p7s3.dat p7s3;
+save result/p7s4.dat p7s4;
+save result/p7s5.dat p7s5;
 
 cp5s0 = [255 200 200] ./ 255;
 cp5s1 = [255 160 160] ./ 255;
@@ -191,4 +191,4 @@ legend_parameters = legend ("0 день", "73 день", "146 день", "219 д
 legend (legend_parameters, "location", "northeastoutside");
 set (legend_parameters, "fontsize", 30);
 
-saveas(1, "saturation.png");
+saveas(1, "images/saturation.png");

@@ -96,6 +96,30 @@ plot	'result/parameter7_step0.dat' using ($1):($2) smooth csplines with lines ls
 		'result/parameter7_step3.dat' using ($1):($2) smooth csplines with lines ls 4 title "219 день", \
 		'result/parameter7_step4.dat' using ($1):($2) smooth csplines with lines ls 5 title "292 день", \
 		'result/parameter7_step5.dat' using ($1):($2) smooth csplines with lines ls 6 title "365 день"
+set output 'images/parameter5_real.png'
+set key right top
+plot	'result/parameter5_step0.dat' using ($1):($2) smooth unique with lines ls 1 title "0 день", \
+		'result/parameter5_step1.dat' using ($1):($2) smooth unique with lines ls 2 title "73 день", \
+		'result/parameter5_step2.dat' using ($1):($2) smooth unique with lines ls 3 title "146 день", \
+		'result/parameter5_step3.dat' using ($1):($2) smooth unique with lines ls 4 title "219 день", \
+		'result/parameter5_step4.dat' using ($1):($2) smooth unique with lines ls 5 title "292 день", \
+		'result/parameter5_step5.dat' using ($1):($2) smooth unique with lines ls 6 title "365 день"
+set output 'images/parameter6_real.png'
+set key right bottom
+plot	'result/parameter6_step0.dat' using ($1):($2) smooth unique with lines ls 1 title "0 день", \
+		'result/parameter6_step1.dat' using ($1):($2) smooth unique with lines ls 2 title "73 день", \
+		'result/parameter6_step2.dat' using ($1):($2) smooth unique with lines ls 3 title "146 день", \
+		'result/parameter6_step3.dat' using ($1):($2) smooth unique with lines ls 4 title "219 день", \
+		'result/parameter6_step4.dat' using ($1):($2) smooth unique with lines ls 5 title "292 день", \
+		'result/parameter6_step5.dat' using ($1):($2) smooth unique with lines ls 6 title "365 день"
+set output 'images/parameter7_real.png'
+set key right top
+plot	'result/parameter7_step0.dat' using ($1):($2) smooth unique with lines ls 1 title "0 день", \
+		'result/parameter7_step1.dat' using ($1):($2) smooth unique with lines ls 2 title "73 день", \
+		'result/parameter7_step2.dat' using ($1):($2) smooth unique with lines ls 3 title "146 день", \
+		'result/parameter7_step3.dat' using ($1):($2) smooth unique with lines ls 4 title "219 день", \
+		'result/parameter7_step4.dat' using ($1):($2) smooth unique with lines ls 5 title "292 день", \
+		'result/parameter7_step5.dat' using ($1):($2) smooth unique with lines ls 6 title "365 день"
 set output 'images/parameter8.png'
 set key right top
 plot	'result/parameter8_step0.dat' using ($1):($2) with lines ls 1 title "0 день", \

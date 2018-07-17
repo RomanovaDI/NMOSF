@@ -84,6 +84,8 @@ int read_map(int map_num, in *I)
 						if (fgets(s, 100, f) == NULL)
 							return 1;
 						sscanf(s, "%lf", &I->B[A_IND(I, p, i, j, k)]);
+						if ((p == 8) || (p == 9))
+							I->B[A_IND(I, p, i, j, k)] -= I->initial_temperature;
 					}
 				}
 			}
@@ -128,6 +130,24 @@ int print_injection_production_rate_of_reaction(int step_num, in *I)
 	return 0;
 }
 
+int print_symmetrical_case(int step_num, in *I)
+{
+	int k = 0;
+	for (int i = 0; i < I->gl_nx / 2; i++) {
+		for (int j = 0; j < I->gl_ny / 2; j++) {
+			for (int p = 0; p < I->num_parameters; p++) {
+				I->B_prev[B_IND(I, p, i, I->gl_ny - 1 - j, k)] = I->B_prev[B_IND(I, p, i, j, k)];
+				I->B_prev[B_IND(I, p, I->gl_nx - 1 - i, j, k)] = I->B_prev[B_IND(I, p, i, j, k)];
+				I->B_prev[B_IND(I, p, I->gl_nx - 1 - i, I->gl_ny - 1 - j, k)] = I->B_prev[B_IND(I, p, i, j, k)];
+			}
+		}
+	}
+	I->time_step = -step_num;
+	if (print_vtk(I))
+		return 1;
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	in II;
@@ -154,9 +174,10 @@ int main(int argc, char **argv)
 		printf("Memory error in function %s.\n", __func__);
 		return 1;
 	}
-	int num_res = 273615;
+	int num_res = 268910;
 	int num_plots = 5;
 	for (int i = 0; i <= num_res; i += num_res / num_plots) {
+		printf("%d\n", i);
 		read_map(i, I);
 		if (set_array_of_parameters_termogas(I)) return 1;
 		I->flag_first_time_step = 0;
@@ -165,6 +186,8 @@ int main(int argc, char **argv)
 		for (int j = 0; j < I->num_parameters; j++)
 			print_injection_production_param(j, i / (num_res / num_plots), I);
 		print_injection_production_rate_of_reaction(i / (num_res / num_plots), I);
+		if (print_symmetrical_case(i, I))
+			return 1;
 	}
 	free(I->B);
 	free(I->B_prev);
