@@ -52,8 +52,7 @@ set output 'images/velocity_of_oil_production_m.png'
 #set logscale y
 set format y "%10.1e"
 set key right top
-plot	'termo_on/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "термогазовое вытеснение", \
-		'termo_off/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
+plot	'result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 notitle
 #		'termo_chem_off/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
 #		'termo_off/result/velocity_of_oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 #set title "Объём вытесненной нефти на метр мощности пласта"
@@ -64,8 +63,7 @@ set output 'images/oil_production_m.png'
 #unset logscale y
 set key right bottom
 unset format y
-plot	'termo_on/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "термогазовое вытеснение", \
-		'termo_off/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
+plot	'result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 notitle
 #		'termo_chem_off/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
 #	'termo_off/result/oil_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 #set title "Объём вытесненного флюида на метр мощности пласта             "
@@ -73,8 +71,7 @@ set notitle
 set output 'images/fluid_production_m.png'
 #set output 'images/fluid_production_m.eps'
 #set key width -52 left top at 10, 250 Left samplen 2
-plot	'termo_on/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 title "термогазовое вытеснение", \
-		'termo_off/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
+plot	'result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 1 notitle
 #		'termo_chem_off/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 2 title "температурное вытеснение", \
 #	'termo_off/result/fluid_production_m.dat' using ($1/86400.0):($2/10.0) with lines ls 3 title "простое вытеснение"
 
