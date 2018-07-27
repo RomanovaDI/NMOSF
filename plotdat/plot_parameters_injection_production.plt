@@ -27,6 +27,12 @@ set style line 34 lc rgb "#4040ff" lt 1 dt 1 lw 6
 set style line 33 lc rgb "#6060ff" lt 1 dt 1 lw 8
 set style line 32 lc rgb "#8080ff" lt 1 dt 1 lw 10
 set style line 31 lc rgb "#a0a0ff" lt 1 dt 1 lw 12
+set style line 46 lc rgb "#000000" lt 1 dt 1 pt 7 lw 2
+set style line 45 lc rgb "#202020" lt 1 dt 1 pt 7 lw 4
+set style line 44 lc rgb "#404040" lt 1 dt 1 pt 7 lw 6
+set style line 43 lc rgb "#606060" lt 1 dt 1 pt 7 lw 8
+set style line 42 lc rgb "#808080" lt 1 dt 1 pt 7 lw 10
+set style line 41 lc rgb "#a0a0a0" lt 1 dt 1 pt 7 lw 12
 set xlabel "Расстояние, м"
 #set title "Распределение температуры флюида от нагнетающей скважины до добывающей"
 #set ylabel "Температура, К"
@@ -185,11 +191,11 @@ set bmargin at screen 0.644
 set tmargin at screen 0.95
 set yrange [0:0.79]
 set label "Вода" at 130, 0.65
-plot	'result/p5s0.dat' using ($1):($2) smooth csplines with lines ls 11 title "0 день", \
-		'result/p5s1.dat' using ($1):($2) smooth csplines with lines ls 12 title "73 день", \
-		'result/p5s2.dat' using ($1):($2) smooth csplines with lines ls 13 title "146 день", \
-		'result/p5s3.dat' using ($1):($2) smooth csplines with lines ls 14 title "219 день", \
-		'result/p5s4.dat' using ($1):($2) smooth csplines with lines ls 15 title "292 день", \
+plot	'result/p5s0.dat' using ($1):($2) smooth csplines with lines ls 11 title "0 день",\
+		'result/p5s1.dat' using ($1):($2) smooth csplines with lines ls 12 title "73 день",\
+		'result/p5s2.dat' using ($1):($2) smooth csplines with lines ls 13 title "146 день",\
+		'result/p5s3.dat' using ($1):($2) smooth csplines with lines ls 14 title "219 день",\
+		'result/p5s4.dat' using ($1):($2) smooth csplines with lines ls 15 title "292 день",\
 		'result/p5s5.dat' using ($1):($2) smooth csplines with lines ls 16 title "365 день"
 #set bmargin at screen 0.244
 #set tmargin at screen 0.612
@@ -240,12 +246,18 @@ set tmargin at screen 0.99
 set yrange [0.2:0.75]
 unset label
 set label "Вода" at 150, 0.65
-plot	'result/p5s0.dat' using ($1):($2) smooth csplines with lines ls 1 title "0 день", \
-		'result/p5s1.dat' using ($1):($2) smooth csplines with lines ls 2 title "73 день", \
-		'result/p5s2.dat' using ($1):($2) smooth csplines with lines ls 3 title "146 день", \
-		'result/p5s3.dat' using ($1):($2) smooth csplines with lines ls 4 title "219 день", \
-		'result/p5s4.dat' using ($1):($2) smooth csplines with lines ls 5 title "292 день", \
-		'result/p5s5.dat' using ($1):($2) smooth csplines with lines ls 6 title "365 день"
+plot	'result/p5s0.dat' using ($1):($2) smooth csplines with lines ls 1 title "0 день",\
+		'result/p5s1.dat' using ($1):($2) smooth csplines with lines ls 2 title "73 день",\
+		'result/p5s2.dat' using ($1):($2) smooth csplines with lines ls 3 title "146 день",\
+		'result/p5s3.dat' using ($1):($2) smooth csplines with lines ls 4 title "219 день",\
+		'result/p5s4.dat' using ($1):($2) smooth csplines with lines ls 5 title "292 день",\
+		'result/p5s5.dat' using ($1):($2) smooth csplines with lines ls 6 title "365 день",\
+		'result/parameter5_step0.dat' using ($1):($2) with points ls 41 notitle,\
+		'result/parameter5_step1.dat' using ($1):($2) with points ls 42 notitle,\
+		'result/parameter5_step2.dat' using ($1):($2) with points ls 43 notitle,\
+		'result/parameter5_step3.dat' using ($1):($2) with points ls 44 notitle,\
+		'result/parameter5_step4.dat' using ($1):($2) with points ls 45 notitle,\
+		'result/parameter5_step5.dat' using ($1):($2) with points ls 46 notitle
 #set bmargin at screen 0.244
 #set tmargin at screen 0.612
 set bmargin at screen 0.278
@@ -253,12 +265,18 @@ set tmargin at screen 0.664
 unset label
 set yrange [0.2:0.85]
 set label "Нефть" at 150, 0.75
-plot	'result/p6s0.dat' using ($1):($2) smooth csplines with lines ls 1 notitle, \
-		'result/p6s1.dat' using ($1):($2) smooth csplines with lines ls 2 notitle, \
-		'result/p6s2.dat' using ($1):($2) smooth csplines with lines ls 3 notitle, \
-		'result/p6s3.dat' using ($1):($2) smooth csplines with lines ls 4 notitle, \
-		'result/p6s4.dat' using ($1):($2) smooth csplines with lines ls 5 notitle, \
-		'result/p6s5.dat' using ($1):($2) smooth csplines with lines ls 6 notitle
+plot	'result/p6s0.dat' using ($1):($2) smooth csplines with lines ls 1 notitle,\
+		'result/p6s1.dat' using ($1):($2) smooth csplines with lines ls 2 notitle,\
+		'result/p6s2.dat' using ($1):($2) smooth csplines with lines ls 3 notitle,\
+		'result/p6s3.dat' using ($1):($2) smooth csplines with lines ls 4 notitle,\
+		'result/p6s4.dat' using ($1):($2) smooth csplines with lines ls 5 notitle,\
+		'result/p6s5.dat' using ($1):($2) smooth csplines with lines ls 6 notitle,\
+		'result/parameter6_step0.dat' using ($1):($2) with points ls 41 notitle,\
+		'result/parameter6_step1.dat' using ($1):($2) with points ls 42 notitle,\
+		'result/parameter6_step2.dat' using ($1):($2) with points ls 43 notitle,\
+		'result/parameter6_step3.dat' using ($1):($2) with points ls 44 notitle,\
+		'result/parameter6_step4.dat' using ($1):($2) with points ls 45 notitle,\
+		'result/parameter6_step5.dat' using ($1):($2) with points ls 46 notitle
 #set bmargin at screen 0.1
 #set tmargin at screen 0.244
 set bmargin at screen 0.1
@@ -270,12 +288,18 @@ set yrange [0:0.29]
 set label "Газ" at 150, 0.25
 set label "Расстояние, м" at 130, -0.13
 set key outside right top width -5 height -2
-plot	'result/p7s0.dat' using ($1):($2) smooth csplines with lines ls 1 notitle, \
-		'result/p7s1.dat' using ($1):($2) smooth csplines with lines ls 2 notitle, \
-		'result/p7s2.dat' using ($1):($2) smooth csplines with lines ls 3 notitle, \
-		'result/p7s3.dat' using ($1):($2) smooth csplines with lines ls 4 notitle, \
-		'result/p7s4.dat' using ($1):($2) smooth csplines with lines ls 5 notitle, \
-		'result/p7s5.dat' using ($1):($2) smooth csplines with lines ls 6 notitle 
+plot	'result/p7s0.dat' using ($1):($2) smooth csplines with lines ls 1 notitle,\
+		'result/p7s1.dat' using ($1):($2) smooth csplines with lines ls 2 notitle,\
+		'result/p7s2.dat' using ($1):($2) smooth csplines with lines ls 3 notitle,\
+		'result/p7s3.dat' using ($1):($2) smooth csplines with lines ls 4 notitle,\
+		'result/p7s4.dat' using ($1):($2) smooth csplines with lines ls 5 notitle,\
+		'result/p7s5.dat' using ($1):($2) smooth csplines with lines ls 6 notitle,\
+		'result/parameter7_step0.dat' using ($1):($2) with points ls 41 notitle,\
+		'result/parameter7_step1.dat' using ($1):($2) with points ls 42 notitle,\
+		'result/parameter7_step2.dat' using ($1):($2) with points ls 43 notitle,\
+		'result/parameter7_step3.dat' using ($1):($2) with points ls 44 notitle,\
+		'result/parameter7_step4.dat' using ($1):($2) with points ls 45 notitle,\
+		'result/parameter7_step5.dat' using ($1):($2) with points ls 46 notitle
 unset multiplot
 
 set term pngcairo size 	1000, 600 enhanced dashed font 'Helvetica,20'
