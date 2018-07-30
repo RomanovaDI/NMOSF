@@ -573,23 +573,38 @@ int SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out_consistent(in *I)
 	printf("Set the boundary condition in termogas case for all values with no boundaries condition, 4 injection well and 1 production well.\n");
 #endif
 	int i, j, k, p, l, m, fl_tmp;
-	for (k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
-		for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
-			for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
-				if (boundary_cell(I, i, j, k)) {
-					for (p = 0; p < I->num_parameters; p++) {
-						if (k < 0)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, j, 0)];
-						else if (k >= I->nz)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, j, I->nz - 1)];
-						else if (i < 0)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, 0, j, k)];
-						else if (i >= I->nx)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, I->nx - 1, j, k)];
-						else if (j < 0)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, 0, k)];
+	for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
+		for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
+			if (boundary_cell(I, i, j, k)) {
+				for (p = 0; p < I->num_parameters; p++) {
+					if (i < 0) {
+						if (j < 0)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, 0, 0, 0)];
 						else if (j >= I->ny)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, I->ny - 1, k)];
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, 0, I->ny - 1, 0)];
+						else
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, 0, j, 0)];
+					} else if (i >= I->nx) {
+						if (j < 0)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, I->nx - 1, 0, 0)];
+						else if (j >= I->ny)
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, I->nx - 1, I->ny - 1, 0)];
+						else
+							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, I->nx - 1, j, 0)];
+					} else if (j < 0)
+						I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, i, 0, 0)];
+					else if (j >= I->ny)
+						I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, i, I->ny - 1, 0)];
+				}
+			}
+		}
+	}
+	for (k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
+		if (k != 0) {
+			for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
+				for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
+					for (p = 0; p < I->num_parameters; p++) {
+						I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, p, i, j, 0)];
 					}
 				}
 			}

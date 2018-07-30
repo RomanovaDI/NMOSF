@@ -123,7 +123,7 @@ int set_parameters_termogas(in *I)
 	I->stoichiometric_coef_after[4] = 4.5;//water
 	I->stoichiometric_coef_after[5] = 0;//oil
 	I->threshold_temperature = 401;
-	I->frequency_factor = 500000;
+	I->frequency_factor = 50000;
 	I->activation_temperature = 402;//I->initial_temperature;//400;
 	I->stoichiometric_coef_activ = 1;
 	I->pressure_activ = I->initial_pressure;
@@ -175,7 +175,7 @@ int set_parameters_termogas(in *I)
 	}
 	I->time = 0;
 	I->dependent_variables = 69;
-	I->write_interval = 100;
+	I->write_interval = 1000;
 #endif
 	return 0;
 }
