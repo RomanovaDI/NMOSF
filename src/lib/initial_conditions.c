@@ -154,7 +154,10 @@ int SET_initial_CONDITION_termogas_fixed_value(in *I)
 		for (int i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
 			for (int j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
 				if (internal_cell(I, i, j, k)) {
-					I->porousness[POR_IND(I, i, j, k)] = ((double) rand() / (RAND_MAX+1.0)) * 0.1 + 0.15;
+					if (well(I, i, j, k))
+						I->porousness[POR_IND(I, i, j, k)] = I->porousness_value;
+					else
+						I->porousness[POR_IND(I, i, j, k)] = ((double) rand() / (RAND_MAX+1.0)) * 0.1 + I->porousness_value - 0.05;
 					I->B_prev[B_IND(I, 0, i, j, k)] = 0;
 					I->B_prev[B_IND(I, 1, i, j, k)] = 0;
 					I->B_prev[B_IND(I, 2, i, j, k)] = 0;

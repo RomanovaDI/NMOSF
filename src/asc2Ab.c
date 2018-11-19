@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 		}
 		if ((I->nproc > 1) && (reconstruct_src(I))) return 1;
 		if (set_array_of_parameters_termogas(I)) return 1;
-		if (check_convection_speed(I)) return 1;
+		//if (check_convection_speed(I)) return 1;
 		if (I->nan_flag) {
 			printf("There are NANs\n");
 			goto error;
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 		if ((I->my_rank == 0) && (I->nproc > 1) && (print_gl_B(I, 4))) return 1;
 #endif
 		time(&time1);
-		if ((I->marker_of_step % 2) || (I->flag_first_time_step)) {
+		if ((!(I->marker_of_step % 2)) || (I->flag_first_time_step)) {
 			if (print_vtk(I)) {
 				printf("Error printing vtk file\n");
 				goto error;
@@ -238,7 +238,6 @@ int main(int argc, char **argv)
 #if TERMOGAS
 		//if (!I->flag_first_time_step)
 		//	calculate_disparity_pressure(I);
-		I->courant_number = 0.7;
 		I->avarage_velocity_global_value = avarage_velocity_global(I) / I->courant_number;
 		I->dt = I->dx[0] / I->avarage_velocity_global_value;
 		printf("avarage_velocity_global = %lf\tdt = %lf\n", I->avarage_velocity_global_value, I->dt);

@@ -89,6 +89,7 @@ typedef struct init_parameters_termogas {
 	int *ind_boundary_cells, n_boundary_cells;
 	double mass_quantity;
 	double *porousness;
+	double porousness_value;
 	double density_0[2];
 	double pressure_0;
 	double density_coef_beta[2];

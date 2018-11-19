@@ -61,7 +61,7 @@ int set_parameters_termogas(in *I)
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
 	I->dt = 1;//100.0;//10;//we need to set dt!!!
-	//I->porousness = 0.2; //0.3;
+	I->porousness_value = 0.2;
 	I->initial_pressure = 20000000;
 	I->initial_temperature = 400;//298;
 	I->density_0[0] = 998; // water
@@ -123,7 +123,7 @@ int set_parameters_termogas(in *I)
 	I->stoichiometric_coef_after[4] = 4.5;//water
 	I->stoichiometric_coef_after[5] = 0;//oil
 	I->threshold_temperature = 401;
-	I->frequency_factor = 50000;
+	I->frequency_factor = 1000;
 	I->activation_temperature = 402;//I->initial_temperature;//400;
 	I->stoichiometric_coef_activ = 1;
 	I->pressure_activ = I->initial_pressure;
@@ -187,6 +187,7 @@ int set_parameters_termogas(in *I)
 	I->units_for_write_interval = DAY; // {TIME_STEP, SECOND, MINUTE, HOUR, DAY, MONTH, YEAR}
 	I->write_interval = 1;
 	I->written_step = -1;
+	I->courant_number = 2;
 #endif
 	return 0;
 }

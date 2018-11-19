@@ -229,7 +229,7 @@ int set_temperature_flow_equation(in *I, int p, int i, int j, int k, int flag_cr
 		if (SCAL(p, i, j, k, chemical_reaction_heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
 	} else {
 		//if (I->equation_num == 2) {
-		if ((1) && (I->marker_of_step % 2 == 0)) {
+		if ((1) && (I->marker_of_step % 2 == 1)) {
 			if (production_well(I, i, j, k)) {
 				//if (DDT(p, i, j, k, identity, second, separated, FDM, termogas)) return 1;
 				if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 1;
@@ -258,7 +258,7 @@ int set_temperature_environment_equation(in *I, int p, int i, int j, int k, int 
 		if (SCAL(p, i, j, k, minus_heat_flow, backward_euler, second, separated, FDM, termogas)) return 1;
 	} else {
 		//if (I->equation_num == 3) {
-		if ((1) && (I->marker_of_step % 2 == 0)) {
+		if ((1) && (I->marker_of_step % 2 == 1)) {
 			if (production_well(I, i, j, k)) {
 				if (DDT(p, i, j, k, arithmetic_mean_of_neighboring_cells, second, separated, FDM, termogas)) return 1;
 			} else if (injection_well(I, i, j, k)) {
