@@ -16,7 +16,7 @@ int DDT_concentration_density_saturation_porousness_second_combined_FDM_termogas
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
-	A_value = density_t(I, p, i, j, k) * saturation(I, 2, i, j, k) * I->porousness / I->dt;
+	A_value = density_t(I, p, i, j, k) * saturation(I, 2, i, j, k) * I->porousness[POR_IND(I, i, j ,k)] / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
 	I->B[A_IND(I, p, i, j, k)] += A_value * (
 		concentration(I, p, i + 1, j, k) +
@@ -45,7 +45,7 @@ int DDT_density_saturation_porousness_second_combined_FDM_termogas(in *I, int p,
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
-	A_value = density_t(I, p - 4, i, j, k) * I->porousness / I->dt;
+	A_value = density_t(I, p - 4, i, j, k) * I->porousness[POR_IND(I, i, j, k)] / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
 	I->B[A_IND(I, p, i, j, k)] += A_value * (
 		saturation(I, p - 4, i + 1, j, k) + saturation(I, p - 4, i - 1, j, k) +
@@ -60,9 +60,9 @@ int DDT_porousness_density_energy_flow_second_combined_FDM_termogas(in *I, int p
 	double A_value = 0;
 	int pp;
 	for (pp = 0; pp < 2; pp++)
-		A_value += I->porousness * density_t(I, pp, i, j, k) * saturation(I, pp, i, j, k) * I->specific_heat[pp];
+		A_value += I->porousness[POR_IND(I, i, j, k)] * density_t(I, pp, i, j, k) * saturation(I, pp, i, j, k) * I->specific_heat[pp];
 	for (pp = 0; pp < 4; pp++)
-		A_value += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k);
+		A_value += I->porousness[POR_IND(I, i, j, k)] * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k);
 	WRITE_TO_A(p, i, j, k, -1);
 	I->B[A_IND(I, p, i, j, k)] += A_value * (
 		temperature_flow(I, i + 1, j, k) + temperature_flow(I, i - 1, j, k) +
@@ -75,7 +75,7 @@ int DDT_porousness_density_energy_environment_second_combined_FDM_termogas(in *I
 {
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value;
-	A_value = (1 - I->porousness) * I->density_environment * I->specific_heat[6];
+	A_value = (1 - I->porousness[POR_IND(I, i, j, k)]) * I->density_environment * I->specific_heat[6];
 	WRITE_TO_A(p, i, j, k, -1);
 	I->B[A_IND(I, p, i, j, k)] += A_value * (
 		temperature_environment(I, i + 1, j, k) + temperature_environment(I, i - 1, j, k) +

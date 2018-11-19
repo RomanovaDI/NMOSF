@@ -34,13 +34,24 @@ int DDT_arithmetic_mean_of_neighboring_cells_second_separated_FDM_termogas(in *I
 	if (check_for_corrupt_cell(I, i, j, k)) return 1;
 	double A_value = 1;
 	WRITE_TO_A(p, i, j, k, -1);
-	A_value = - (1. / 6.);
-	WRITE_TO_A(p, i + 1, j, k, -1);
-	WRITE_TO_A(p, i - 1, j, k, -1);
-	WRITE_TO_A(p, i, j + 1, k, -1);
-	WRITE_TO_A(p, i, j - 1, k, -1);
-	WRITE_TO_A(p, i, j, k + 1, -1);
-	WRITE_TO_A(p, i, j, k - 1, -1);
+	A_value = - (6. / 13.);
+	if (internal_cell(I, i + 1, j, k))
+		WRITE_TO_A(p, i + 1, j, k, -1);
+	if (internal_cell(I, i - 1, j, k))
+		WRITE_TO_A(p, i - 1, j, k, -1);
+	if (internal_cell(I, i, j + 1, k))
+		WRITE_TO_A(p, i, j + 1, k, -1);
+	if (internal_cell(I, i, j - 1, k))
+		WRITE_TO_A(p, i, j - 1, k, -1);
+	A_value = - (1. / 13.);
+	if (internal_cell(I, i + 1, j + 1, k))
+		WRITE_TO_A(p, i + 1, j + 1, k, -1);
+	if (internal_cell(I, i + 1, j - 1, k))
+		WRITE_TO_A(p, i + 1, j - 1, k, -1);
+	if (internal_cell(I, i - 1, j + 1, k))
+		WRITE_TO_A(p, i - 1, j + 1, k, -1);
+	if (internal_cell(I, i - 1, j - 1, k))
+		WRITE_TO_A(p, i - 1, j - 1, k, -1);
 	return 0;
 }
 
@@ -62,10 +73,23 @@ int DDT_density_saturation_porousness_second_separated_FDM_termogas(in *I, int p
 		return 1;
 	}
 	double A_value;
-	//A_value = density_t(I, p - 5, i, j, k) * I->porousness / I->dt;
+	A_value = density_t(I, p - 5, i, j, k) * I->porousness[POR_IND(I, i, j, k)] / I->dt;
+	WRITE_TO_A(p, i, j, k, -1);
+	I->B[A_IND(I, p, i, j, k)] += A_value * (saturation(I, p - 5, i, j, k) - I->residual_saturation[p - 5]);
+	return 0;
+}
+
+int DDT_saturation_second_separated_FDM_termogas(in *I, int p, int i, int j, int k)
+{
+	if (check_for_corrupt_cell(I, i, j, k)) return 1;
+	if ((p != 5) && (p != 6) && (p != 7)) {
+		printf("Incorrect index of DDT_density_saturation_porousness\n");
+		return 1;
+	}
+	double A_value;
 	A_value = 1.0 / I->dt;
 	WRITE_TO_A(p, i, j, k, -1);
-	I->B[A_IND(I, p, i, j, k)] += A_value * saturation(I, p - 5, i, j, k);
+	I->B[A_IND(I, p, i, j, k)] += A_value * (saturation(I, p - 5, i, j, k) - I->residual_saturation[p - 5]);
 	return 0;
 }
 

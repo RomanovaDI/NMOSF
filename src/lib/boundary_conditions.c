@@ -573,28 +573,50 @@ int SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out_consistent(in *I)
 	printf("Set the boundary condition in termogas case for all values with no boundaries condition, 4 injection well and 1 production well.\n");
 #endif
 	int i, j, k, p, l, m, fl_tmp;
+	for (i = 0; i < I->nx; i++) {
+		for (j = 0; j < I->ny; j++) {
+			if (injection_well(I, i, j, 0))
+				set_injection_well(I, i, j, 0);
+			if (production_well(I, i, j, 0))
+				set_production_well(I, i, j, 0);
+		}
+	}
+	for (k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
+		for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
+			for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
+				if (boundary_cell(I, i, j, k)) {
+					for (p = 0; p < I->num_parameters; p++) {
+						//printf("B_IND = %d, B_prev = %lf; INT_NEI_IND = %d, B_prev = %lf\n", B_IND(I, p, i, j, k), I->B_prev[B_IND(I, p, i, j, k)], INT_NEI_IND(I, p, i, j, k), I->B_prev[INT_NEI_IND(I, p, i, j, k)]);
+						I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[INT_NEI_IND(I, p, i, j, k)];
+					}
+				}
+			}
+		}
+	}
+	/*
 	for (i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
 		for (j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
-			if (boundary_cell(I, i, j, k)) {
+			if (boundary_cell(I, i, j, 0)) {
 				for (p = 0; p < I->num_parameters; p++) {
 					if (i < 0) {
 						if (j < 0)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, 0, 0, 0)];
+							I->B_prev[B_IND(I, p, i, j, 0)] = I->B_prev[B_IND(I, p, 0, 0, 0)];
 						else if (j >= I->ny)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, 0, I->ny - 1, 0)];
+							I->B_prev[B_IND(I, p, i, j, 0)] = I->B_prev[B_IND(I, p, 0, I->ny - 1, 0)];
 						else
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, 0, j, 0)];
+							I->B_prev[B_IND(I, p, i, j, 0)] = I->B_prev[B_IND(I, p, 0, j, 0)];
 					} else if (i >= I->nx) {
 						if (j < 0)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, I->nx - 1, 0, 0)];
+							I->B_prev[B_IND(I, p, i, j, 0)] = I->B_prev[B_IND(I, p, I->nx - 1, 0, 0)];
 						else if (j >= I->ny)
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, I->nx - 1, I->ny - 1, 0)];
+							I->B_prev[B_IND(I, p, i, j, 0)] = I->B_prev[B_IND(I, p, I->nx - 1, I->ny - 1, 0)];
 						else
-							I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, I->nx - 1, j, 0)];
+							I->B_prev[B_IND(I, p, i, j, 0)] = I->B_prev[B_IND(I, p, I->nx - 1, j, 0)];
 					} else if (j < 0)
-						I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, i, 0, 0)];
+						I->B_prev[B_IND(I, p, i, j, 0)] = I->B_prev[B_IND(I, p, i, 0, 0)];
 					else if (j >= I->ny)
-						I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[B_IND(I, 0, i, I->ny - 1, 0)];
+						I->B_prev[B_IND(I, p, i, j, 0)] = I->B_prev[B_IND(I, p, i, I->ny - 1, 0)];
+					I->B_prev[B_IND(I, p, i, j, k)] = I->B_prev[INT_NEI_IND(I, p, i, j, k)];
 				}
 			}
 		}
@@ -610,16 +632,7 @@ int SET_boundary_CONDITION_termogas_no_boundaries_4_in_1_out_consistent(in *I)
 			}
 		}
 	}
-	for (k = 0; k < I->nz; k++) {
-		for (i = 0; i < I->nx; i++) {
-			for (j = 0; j < I->ny; j++) {
-				if (injection_well(I, i, j, k))
-					set_injection_well(I, i, j, k);
-				if (production_well(I, i, j, k))
-					set_production_well(I, i, j, k);
-			}
-		}
-	}
+	*/
 	return 0;
 }
 
@@ -641,14 +654,16 @@ int set_injection_well(in *I, int i, int j, int k)
 		}
 	}
 	*/
-	I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
-	I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon;
-	I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
+	I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 / 4.55;
+	//I->B_prev[B_IND(I, 0, i, j, k)] = 3.55 * (1 - 2 * I->epsilon) / 4.55;
+	I->B_prev[B_IND(I, 1, i, j, k)] = 1 / 4.55;
+	//I->B_prev[B_IND(I, 1, i, j, k)] = (1 - 2 * I->epsilon) / 4.55;
+	I->B_prev[B_IND(I, 2, i, j, k)] = 0;
+	I->B_prev[B_IND(I, 3, i, j, k)] = 0;
 	I->B_prev[B_IND(I, 4, i, j, k)] = I->injection_well_pressure;
-	I->B_prev[B_IND(I, 5, i, j, k)] = 0.7 - (I->residual_saturation[1] + I->epsilon) / 2;
-	I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon;
-	I->B_prev[B_IND(I, 7, i, j, k)] = 0.3 - (I->residual_saturation[1] + I->epsilon) / 2;
+	I->B_prev[B_IND(I, 5, i, j, k)] = 0.7 - I->residual_saturation[1] / 2 - I->residual_saturation[0] - 0.05;
+	I->B_prev[B_IND(I, 6, i, j, k)] = 0.05;
+	I->B_prev[B_IND(I, 7, i, j, k)] = 0.3 - I->residual_saturation[1] / 2 - I->residual_saturation[2];
 	//I->B_prev[B_IND(I, 7, i, j, k)] = I->residual_saturation[2] + I->epsilon;//0.3 - (I->residual_saturation[1] + I->epsilon) / 2;
 	I->B_prev[B_IND(I, 8, i, j, k)] = I->injection_well_temperature - I->initial_temperature;
 	return 0;

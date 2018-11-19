@@ -88,7 +88,7 @@ typedef struct init_parameters_termogas {
 	int stencil_size;
 	int *ind_boundary_cells, n_boundary_cells;
 	double mass_quantity;
-	double porousness;
+	double *porousness;
 	double density_0[2];
 	double pressure_0;
 	double density_coef_beta[2];
@@ -149,7 +149,15 @@ typedef struct init_parameters_termogas {
 	double time;
 	int dependent_variables;
 	double *array_of_parameters;
+	double avarage_velocity_global_value;
+	int nan_flag;
+	int negative_num_flag;
 	int write_interval;
+	int units_for_write_interval;
+	int written_step;
+	double courant_number;
+	int courant_flag;
+	int marker_of_step;
 } in_termogas;
 
 //typedef in_avalanche in;

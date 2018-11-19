@@ -24,6 +24,8 @@ int free_massives(in *I)
 	free(I->Aiptr_csr);
 	free(I->B_prev);
 	free(I->ind_boundary_cells);
+	free(I->ind_proc);
+	free(I->gl_B);
 	if (I->my_rank == 0) {
 		free(I->ind_multipl);
 		if (free_initial_arrays(I)) return 1;
@@ -33,14 +35,13 @@ int free_massives(in *I)
 	}
 	free(I->ind_start_region_proc);
 	free(I->array_of_parameters);
+	free(I->porousness);
 	return 0;
 }
 
 int free_parallel_arrays(in *I)
 {
 	free(I->gl_ind_cell_multipl);
-	free(I->ind_proc);
-	free(I->gl_B);
 	return 0;
 }
 
@@ -209,9 +210,9 @@ int set_array_of_parameters_termogas(in *I)
 		printf("Memory error\n");
 		return 1;
 	}
-	for (int k = - I->stencil_size + 1; k < I->gl_nz + I->stencil_size - 1; k++) {
-		for (int i = - I->stencil_size + 1; i < I->gl_nx + I->stencil_size - 1; i++) {
-			for (int j = - I-> stencil_size + 1; j < I->gl_ny + I->stencil_size - 1; j++) {
+	for (int k = - I->stencil_size; k < I->gl_nz + I->stencil_size; k++) {
+		for (int i = - I->stencil_size; i < I->gl_nx + I->stencil_size; i++) {
+			for (int j = - I-> stencil_size; j < I->gl_ny + I->stencil_size; j++) {
 				I->array_of_parameters[PARAM_IND(I, 0, i, j, k)] = density_t_func(I, 0, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 1, i, j, k)] = density_t_func(I, 1, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 2, i, j, k)] = density_t_func(I, 2, i, j, k);
@@ -224,10 +225,10 @@ int set_array_of_parameters_termogas(in *I)
 				I->array_of_parameters[PARAM_IND(I, 9, i, j, k)] = relative_permeability_func(I, 0, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 10, i, j, k)] = relative_permeability_func(I, 1, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 11, i, j, k)] = relative_permeability_func(I, 2, i, j, k);
-				I->array_of_parameters[PARAM_IND(I, 12, i, j, k)] = viscosity_gas_func(I, 0, i, j, k);
-				I->array_of_parameters[PARAM_IND(I, 13, i, j, k)] = viscosity_gas_func(I, 1, i, j, k);
-				I->array_of_parameters[PARAM_IND(I, 14, i, j, k)] = viscosity_gas_func(I, 2, i, j, k);
-				I->array_of_parameters[PARAM_IND(I, 15, i, j, k)] = viscosity_gas_func(I, 3, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 12, i, j, k)] = viscosity_gas_component_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 13, i, j, k)] = viscosity_gas_component_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 14, i, j, k)] = viscosity_gas_component_func(I, 2, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 15, i, j, k)] = viscosity_gas_component_func(I, 3, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 16, i, j, k)] = molar_fraction_func(I, 0, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 17, i, j, k)] = molar_fraction_func(I, 1, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 18, i, j, k)] = molar_fraction_func(I, 2, i, j, k);
@@ -280,8 +281,38 @@ int set_array_of_parameters_termogas(in *I)
 				I->array_of_parameters[PARAM_IND(I, 65, i, j, k)] = chemical_reaction_heat_flow_func(I, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 66, i, j, k)] = Darsi_A_coef_func(I, i, j, k);
 				I->array_of_parameters[PARAM_IND(I, 67, i, j, k)] = thermal_conductivity_func(I, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 68, i, j, k)] = convection_speed_func(I, 0, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 69, i, j, k)] = convection_speed_func(I, 1, i, j, k);
+				I->array_of_parameters[PARAM_IND(I, 70, i, j, k)] = convection_speed_func(I, 2, i, j, k);
 			}
 		}
+	}
+	for (int k = - I->stencil_size; k < I->gl_nz + I->stencil_size; k++) {
+		int i, j;
+		i = I->gl_nx / 2;
+		j = I->gl_ny / 2;
+		I->array_of_parameters[PARAM_IND(I, 50, i, j, k)] = avarage_velocity_func(I, 1, 0, i + 1, j, k);
+		I->array_of_parameters[PARAM_IND(I, 51, i, j, k)] = avarage_velocity_func(I, 1, 1, i, j + 1, k);
+		I->array_of_parameters[PARAM_IND(I, 68, i, j, k)] = convection_speed_func(I, 0, i + 1, j, k);
+		I->array_of_parameters[PARAM_IND(I, 69, i, j, k)] = convection_speed_func(I, 1, i, j + 1, k);
+		i = I->gl_nx / 2 - 1;
+		j = I->gl_ny / 2;
+		I->array_of_parameters[PARAM_IND(I, 50, i, j, k)] = avarage_velocity_func(I, 1, 0, i - 1, j, k);
+		I->array_of_parameters[PARAM_IND(I, 51, i, j, k)] = avarage_velocity_func(I, 1, 1, i, j + 1, k);
+		I->array_of_parameters[PARAM_IND(I, 68, i, j, k)] = convection_speed_func(I, 0, i - 1, j, k);
+		I->array_of_parameters[PARAM_IND(I, 69, i, j, k)] = convection_speed_func(I, 1, i, j + 1, k);
+		i = I->gl_nx / 2;
+		j = I->gl_ny / 2 - 1;
+		I->array_of_parameters[PARAM_IND(I, 50, i, j, k)] = avarage_velocity_func(I, 1, 0, i + 1, j, k);
+		I->array_of_parameters[PARAM_IND(I, 51, i, j, k)] = avarage_velocity_func(I, 1, 1, i, j - 1, k);
+		I->array_of_parameters[PARAM_IND(I, 68, i, j, k)] = convection_speed_func(I, 0, i + 1, j, k);
+		I->array_of_parameters[PARAM_IND(I, 69, i, j, k)] = convection_speed_func(I, 1, i, j - 1, k);
+		i = I->gl_nx / 2 - 1;
+		j = I->gl_ny / 2 - 1;
+		I->array_of_parameters[PARAM_IND(I, 50, i, j, k)] = avarage_velocity_func(I, 1, 0, i - 1, j, k);
+		I->array_of_parameters[PARAM_IND(I, 51, i, j, k)] = avarage_velocity_func(I, 1, 1, i, j - 1, k);
+		I->array_of_parameters[PARAM_IND(I, 68, i, j, k)] = convection_speed_func(I, 0, i - 1, j, k);
+		I->array_of_parameters[PARAM_IND(I, 69, i, j, k)] = convection_speed_func(I, 1, i, j - 1, k);
 	}
 	return 0;
 }

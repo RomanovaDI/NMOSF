@@ -9,7 +9,7 @@
 
 int A_IND(in *I, int p, int i, int j, int k)
 {
-	return (I->num_parameters * (k * I->n_cells_multipl + I->ind_cell_multipl[i * I->ny + j]) + p);
+	return (I->num_parameters * (k * I->n_cells_multipl + I->ind_cell_multipl[i * I->ny + j]) + p); // index in vector of parameters without boundaries
 }
 
 int GL_A_IND(in *I, int p, int i, int j, int k)
@@ -23,7 +23,7 @@ int GL_A_IND(in *I, int p, int i, int j, int k)
 	return (I->num_parameters * (k * I->gl_n_cells_multipl + I->gl_ind_cell_multipl[i * I->gl_ny + j]) + p);
 }
 
-int B_IND(in *I, int p, int i, int j, int k)
+int B_IND(in *I, int p, int i, int j, int k) // index in vector of parameters with boundaries
 {
 	return (I->num_parameters * ((k + I->stencil_size) * I->n_boundary_cells + I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size]) + p);
 }
@@ -31,6 +31,519 @@ int B_IND(in *I, int p, int i, int j, int k)
 int PARAM_IND(in *I, int p, int i, int j, int k)
 {
 	return (I->dependent_variables * ((k + I->stencil_size) * I->n_boundary_cells + I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size]) + p);
+}
+
+int POR_IND(in *I, int i, int j, int k) // porousness index
+{
+	return (k + I->stencil_size) * I->n_boundary_cells + I->ind_boundary_cells[(i + I->stencil_size) * (I->ny + 2 * I->stencil_size) + j + I->stencil_size];
+}
+
+int INT_NEI_IND(in *I, int p, int i, int j, int k) // interior neighbor cell index
+{
+	if (internal_cell(I, i, j, k))
+		return B_IND(I, p, i, j, k);
+	else if (internal_cell(I, i + 1, j, k))
+		return B_IND(I, p, i + 1, j, k);
+	else if (internal_cell(I, i - 1, j, k))
+		return B_IND(I, p, i - 1, j, k);
+	else if (internal_cell(I, i, j + 1, k))
+		return B_IND(I, p, i, j + 1, k);
+	else if (internal_cell(I, i, j - 1, k))
+		return B_IND(I, p, i, j - 1, k);
+	else if (internal_cell(I, i, j, k + 1))
+		return B_IND(I, p, i, j, k + 1);
+	else if (internal_cell(I, i, j, k - 1))
+		return B_IND(I, p, i, j, k - 1);
+	else if (internal_cell(I, i + 1, j + 1, k))
+		return B_IND(I, p, i + 1, j + 1, k);
+	else if (internal_cell(I, i - 1, j + 1, k))
+		return B_IND(I, p, i - 1, j + 1, k);
+	else if (internal_cell(I, i + 1, j - 1, k))
+		return B_IND(I, p, i + 1, j - 1, k);
+	else if (internal_cell(I, i - 1, j - 1, k))
+		return B_IND(I, p, i - 1, j - 1, k);
+	else if (internal_cell(I, i + 1, j, k + 1))
+		return B_IND(I, p, i + 1, j, k + 1);
+	else if (internal_cell(I, i - 1, j, k + 1))
+		return B_IND(I, p, i - 1, j, k + 1);
+	else if (internal_cell(I, i + 1, j, k - 1))
+		return B_IND(I, p, i + 1, j, k - 1);
+	else if (internal_cell(I, i - 1, j, k - 1))
+		return B_IND(I, p, i - 1, j, k - 1);
+	else if (internal_cell(I, i, j + 1, k + 1))
+		return B_IND(I, p, i, j + 1, k + 1);
+	else if (internal_cell(I, i, j - 1, k + 1))
+		return B_IND(I, p, i, j - 1, k + 1);
+	else if (internal_cell(I, i, j + 1, k - 1))
+		return B_IND(I, p, i, j + 1, k - 1);
+	else if (internal_cell(I, i, j - 1, k - 1))
+		return B_IND(I, p, i, j - 1, k - 1);
+	else if (internal_cell(I, i + 1, j + 1, k + 1))
+		return B_IND(I, p, i + 1, j + 1, k + 1);
+	else if (internal_cell(I, i - 1, j + 1, k + 1))
+		return B_IND(I, p, i - 1, j + 1, k + 1);
+	else if (internal_cell(I, i + 1, j - 1, k + 1))
+		return B_IND(I, p, i + 1, j - 1, k + 1);
+	else if (internal_cell(I, i + 1, j + 1, k - 1))
+		return B_IND(I, p, i + 1, j + 1, k - 1);
+	else if (internal_cell(I, i - 1, j - 1, k + 1))
+		return B_IND(I, p, i - 1, j - 1, k + 1);
+	else if (internal_cell(I, i - 1, j + 1, k - 1))
+		return B_IND(I, p, i - 1, j + 1, k - 1);
+	else if (internal_cell(I, i + 1, j - 1, k - 1))
+		return B_IND(I, p, i + 1, j - 1, k - 1);
+	else if (internal_cell(I, i - 1, j - 1, k - 1))
+		return B_IND(I, p, i - 1, j - 1, k - 1);
+	else if (internal_cell(I, i + 2, j, k))
+		return B_IND(I, p, i + 2, j, k);
+	else if (internal_cell(I, i - 2, j, k))
+		return B_IND(I, p, i - 2, j, k);
+	else if (internal_cell(I, i, j + 2, k))
+		return B_IND(I, p, i, j + 2, k);
+	else if (internal_cell(I, i, j - 2, k))
+		return B_IND(I, p, i, j - 2, k);
+	else if (internal_cell(I, i, j, k + 2))
+		return B_IND(I, p, i, j, k + 2);
+	else if (internal_cell(I, i, j, k - 2))
+		return B_IND(I, p, i, j, k - 2);
+	else if (internal_cell(I, i + 2, j + 1, k))
+		return B_IND(I, p, i + 2, j + 1, k);
+	else if (internal_cell(I, i + 2, j, k + 1))
+		return B_IND(I, p, i + 2, j, k + 1);
+	else if (internal_cell(I, i + 1, j + 2, k))
+		return B_IND(I, p, i + 1, j + 2, k);
+	else if (internal_cell(I, i, j + 2, k + 1))
+		return B_IND(I, p, i, j + 2, k + 1);
+	else if (internal_cell(I, i + 1, j, k + 2))
+		return B_IND(I, p, i + 1, j, k + 2);
+	else if (internal_cell(I, i, j + 1, k + 2))
+		return B_IND(I, p, i, j + 1, k + 2);
+	else if (internal_cell(I, i - 2, j + 1, k))
+		return B_IND(I, p, i - 2, j + 1, k);
+	else if (internal_cell(I, i - 2, j, k + 1))
+		return B_IND(I, p, i - 2, j, k + 1);
+	else if (internal_cell(I, i + 1, j - 2, k))
+		return B_IND(I, p, i + 1, j - 2, k);
+	else if (internal_cell(I, i, j - 2, k + 1))
+		return B_IND(I, p, i, j - 2, k + 1);
+	else if (internal_cell(I, i + 1, j, k - 2))
+		return B_IND(I, p, i + 1, j, k - 2);
+	else if (internal_cell(I, i, j + 1, k - 2))
+		return B_IND(I, p, i, j + 1, k - 2);
+	else if (internal_cell(I, i + 2, j - 1, k))
+		return B_IND(I, p, i + 2, j - 1, k);
+	else if (internal_cell(I, i + 2, j, k - 1))
+		return B_IND(I, p, i + 2, j, k - 1);
+	else if (internal_cell(I, i - 1, j + 2, k))
+		return B_IND(I, p, i - 1, j + 2, k);
+	else if (internal_cell(I, i, j + 2, k - 1))
+		return B_IND(I, p, i, j + 2, k - 1);
+	else if (internal_cell(I, i - 1, j, k + 2))
+		return B_IND(I, p, i - 1, j, k + 2);
+	else if (internal_cell(I, i, j - 1, k + 2))
+		return B_IND(I, p, i, j - 1, k + 2);
+	else if (internal_cell(I, i - 2, j - 1, k))
+		return B_IND(I, p, i - 2, j - 1, k);
+	else if (internal_cell(I, i - 2, j, k - 1))
+		return B_IND(I, p, i - 2, j, k - 1);
+	else if (internal_cell(I, i - 1, j - 2, k))
+		return B_IND(I, p, i - 1, j - 2, k);
+	else if (internal_cell(I, i, j - 2, k - 1))
+		return B_IND(I, p, i, j - 2, k - 1);
+	else if (internal_cell(I, i - 1, j, k - 2))
+		return B_IND(I, p, i - 1, j, k - 2);
+	else if (internal_cell(I, i, j - 1, k - 2))
+		return B_IND(I, p, i, j - 1, k - 2);
+	else if (internal_cell(I, i + 2, j + 2, k))
+		return B_IND(I, p, i + 2, j + 2, k);
+	else if (internal_cell(I, i - 2, j + 2, k))
+		return B_IND(I, p, i - 2, j + 2, k);
+	else if (internal_cell(I, i + 2, j - 2, k))
+		return B_IND(I, p, i + 2, j - 2, k);
+	else if (internal_cell(I, i - 2, j - 2, k))
+		return B_IND(I, p, i - 2, j - 2, k);
+	else if (internal_cell(I, i + 2, j, k + 2))
+		return B_IND(I, p, i + 2, j, k + 2);
+	else if (internal_cell(I, i - 2, j, k + 2))
+		return B_IND(I, p, i - 2, j, k + 2);
+	else if (internal_cell(I, i + 2, j, k - 2))
+		return B_IND(I, p, i + 2, j, k - 2);
+	else if (internal_cell(I, i - 2, j, k - 2))
+		return B_IND(I, p, i - 2, j, k - 2);
+	else if (internal_cell(I, i, j + 2, k + 2))
+		return B_IND(I, p, i, j + 2, k + 2);
+	else if (internal_cell(I, i, j - 2, k + 2))
+		return B_IND(I, p, i, j - 2, k + 2);
+	else if (internal_cell(I, i, j + 2, k - 2))
+		return B_IND(I, p, i, j + 2, k - 2);
+	else if (internal_cell(I, i, j - 2, k - 2))
+		return B_IND(I, p, i, j - 2, k - 2);
+	else if (internal_cell(I, i + 1, j + 1, k + 2))
+		return B_IND(I, p, i + 1, j + 1, k + 2);
+	else if (internal_cell(I, i + 1, j + 2, k + 1))
+		return B_IND(I, p, i + 1, j + 2, k + 1);
+	else if (internal_cell(I, i + 2, j + 1, k + 1))
+		return B_IND(I, p, i + 2, j + 1, k + 1);
+	else if (internal_cell(I, i - 2, j + 1, k + 1))
+		return B_IND(I, p, i - 2, j + 1, k + 1);
+	else if (internal_cell(I, i + 1, j - 2, k + 1))
+		return B_IND(I, p, i + 1, j - 2, k + 1);
+	else if (internal_cell(I, i + 1, j + 1, k - 2))
+		return B_IND(I, p, i + 1, j + 1, k - 2);
+	else if (internal_cell(I, i + 2, j - 1, k + 1))
+		return B_IND(I, p, i + 2, j - 1, k + 1);
+	else if (internal_cell(I, i + 2, j + 1, k - 1))
+		return B_IND(I, p, i + 2, j + 1, k - 1);
+	else if (internal_cell(I, i - 1, j + 2, k + 1))
+		return B_IND(I, p, i - 1, j + 2, k + 1);
+	else if (internal_cell(I, i + 1, j + 2, k - 1))
+		return B_IND(I, p, i + 1, j + 2, k - 1);
+	else if (internal_cell(I, i - 1, j + 1, k + 2))
+		return B_IND(I, p, i - 1, j + 1, k + 2);
+	else if (internal_cell(I, i + 1, j - 1, k + 2))
+		return B_IND(I, p, i + 1, j - 1, k + 2);
+	else if (internal_cell(I, i - 2, j - 1, k + 1))
+		return B_IND(I, p, i - 2, j - 1, k + 1);
+	else if (internal_cell(I, i - 2, j + 1, k - 1))
+		return B_IND(I, p, i - 2, j + 1, k - 1);
+	else if (internal_cell(I, i - 1, j - 2, k + 1))
+		return B_IND(I, p, i - 1, j - 2, k + 1);
+	else if (internal_cell(I, i + 1, j - 2, k - 1))
+		return B_IND(I, p, i + 1, j - 2, k - 1);
+	else if (internal_cell(I, i - 1, j + 1, k - 2))
+		return B_IND(I, p, i - 1, j + 1, k - 2);
+	else if (internal_cell(I, i + 1, j - 1, k - 2))
+		return B_IND(I, p, i + 1, j - 1, k - 2);
+	else if (internal_cell(I, i + 2, j - 1, k - 1))
+		return B_IND(I, p, i + 2, j - 1, k - 1);
+	else if (internal_cell(I, i - 1, j + 2, k - 1))
+		return B_IND(I, p, i - 1, j + 2, k - 1);
+	else if (internal_cell(I, i - 1, j - 1, k + 2))
+		return B_IND(I, p, i - 1, j - 1, k + 2);
+	else if (internal_cell(I, i - 2, j - 1, k - 1))
+		return B_IND(I, p, i - 2, j - 1, k - 1);
+	else if (internal_cell(I, i - 1, j - 2, k - 1))
+		return B_IND(I, p, i - 1, j - 2, k - 1);
+	else if (internal_cell(I, i - 1, j - 1, k - 2))
+		return B_IND(I, p, i - 1, j - 1, k - 2);
+	else if (internal_cell(I, i + 1, j + 2, k + 2))
+		return B_IND(I, p, i + 1, j + 2, k + 2);
+	else if (internal_cell(I, i + 2, j + 1, k + 2))
+		return B_IND(I, p, i + 2, j + 1, k + 2);
+	else if (internal_cell(I, i + 2, j + 2, k + 1))
+		return B_IND(I, p, i + 2, j + 2, k + 1);
+	else if (internal_cell(I, i - 1, j + 2, k + 2))
+		return B_IND(I, p, i - 1, j + 2, k + 2);
+	else if (internal_cell(I, i + 2, j - 1, k + 2))
+		return B_IND(I, p, i + 2, j - 1, k + 2);
+	else if (internal_cell(I, i + 2, j + 2, k - 1))
+		return B_IND(I, p, i + 2, j + 2, k - 1);
+	else if (internal_cell(I, i + 1, j - 2, k + 2))
+		return B_IND(I, p, i + 1, j - 2, k + 2);
+	else if (internal_cell(I, i + 1, j + 2, k - 2))
+		return B_IND(I, p, i + 1, j + 2, k - 2);
+	else if (internal_cell(I, i - 2, j + 1, k + 2))
+		return B_IND(I, p, i - 2, j + 1, k + 2);
+	else if (internal_cell(I, i + 2, j + 1, k - 2))
+		return B_IND(I, p, i + 2, j + 1, k - 2);
+	else if (internal_cell(I, i - 2, j + 2, k + 1))
+		return B_IND(I, p, i - 2, j + 2, k + 1);
+	else if (internal_cell(I, i + 2, j - 2, k + 1))
+		return B_IND(I, p, i + 2, j - 2, k + 1);
+	else if (internal_cell(I, i - 1, j - 2, k + 2))
+		return B_IND(I, p, i - 1, j - 2, k + 2);
+	else if (internal_cell(I, i - 1, j + 2, k - 2))
+		return B_IND(I, p, i - 1, j + 2, k - 2);
+	else if (internal_cell(I, i - 2, j - 1, k + 2))
+		return B_IND(I, p, i - 2, j - 1, k + 2);
+	else if (internal_cell(I, i + 2, j - 1, k - 2))
+		return B_IND(I, p, i + 2, j - 1, k - 2);
+	else if (internal_cell(I, i - 2, j + 2, k - 1))
+		return B_IND(I, p, i - 2, j + 2, k - 1);
+	else if (internal_cell(I, i + 2, j - 2, k - 1))
+		return B_IND(I, p, i + 2, j - 2, k - 1);
+	else if (internal_cell(I, i + 1, j - 2, k - 2))
+		return B_IND(I, p, i + 1, j - 2, k - 2);
+	else if (internal_cell(I, i - 2, j + 1, k - 2))
+		return B_IND(I, p, i - 2, j + 1, k - 2);
+	else if (internal_cell(I, i - 2, j - 2, k + 1))
+		return B_IND(I, p, i - 2, j - 2, k + 1);
+	else if (internal_cell(I, i - 1, j - 2, k - 2))
+		return B_IND(I, p, i - 1, j - 2, k - 2);
+	else if (internal_cell(I, i - 2, j - 1, k - 2))
+		return B_IND(I, p, i - 2, j - 1, k - 2);
+	else if (internal_cell(I, i - 2, j - 2, k - 1))
+		return B_IND(I, p, i - 2, j - 2, k - 1);
+	else if (internal_cell(I, i + 2, j + 2, k + 2))
+		return B_IND(I, p, i + 2, j + 2, k + 2);
+	else if (internal_cell(I, i - 2, j + 2, k + 2))
+		return B_IND(I, p, i - 2, j + 2, k + 2);
+	else if (internal_cell(I, i + 2, j - 2, k + 2))
+		return B_IND(I, p, i + 2, j - 2, k + 2);
+	else if (internal_cell(I, i + 2, j + 2, k - 2))
+		return B_IND(I, p, i + 2, j + 2, k - 2);
+	else if (internal_cell(I, i - 2, j - 2, k + 2))
+		return B_IND(I, p, i - 2, j - 2, k + 2);
+	else if (internal_cell(I, i - 2, j + 2, k - 2))
+		return B_IND(I, p, i - 2, j + 2, k - 2);
+	else if (internal_cell(I, i + 2, j - 2, k - 2))
+		return B_IND(I, p, i + 2, j - 2, k - 2);
+	else if (internal_cell(I, i - 2, j - 2, k - 2))
+		return B_IND(I, p, i - 2, j - 2, k - 2);
+}
+
+int POR_INT_NEI_IND(in *I, int i, int j, int k) // porousness interior neighbor cell index
+{
+	if (internal_cell(I, i, j, k))
+		return POR_IND(I, i, j, k);
+	else if (internal_cell(I, i + 1, j, k))
+		return POR_IND(I, i + 1, j, k);
+	else if (internal_cell(I, i - 1, j, k))
+		return POR_IND(I, i - 1, j, k);
+	else if (internal_cell(I, i, j + 1, k))
+		return POR_IND(I, i, j + 1, k);
+	else if (internal_cell(I, i, j - 1, k))
+		return POR_IND(I, i, j - 1, k);
+	else if (internal_cell(I, i, j, k + 1))
+		return POR_IND(I, i, j, k + 1);
+	else if (internal_cell(I, i, j, k - 1))
+		return POR_IND(I, i, j, k - 1);
+	else if (internal_cell(I, i + 1, j + 1, k))
+		return POR_IND(I, i + 1, j + 1, k);
+	else if (internal_cell(I, i - 1, j + 1, k))
+		return POR_IND(I, i - 1, j + 1, k);
+	else if (internal_cell(I, i + 1, j - 1, k))
+		return POR_IND(I, i + 1, j - 1, k);
+	else if (internal_cell(I, i - 1, j - 1, k))
+		return POR_IND(I, i - 1, j - 1, k);
+	else if (internal_cell(I, i + 1, j, k + 1))
+		return POR_IND(I, i + 1, j, k + 1);
+	else if (internal_cell(I, i - 1, j, k + 1))
+		return POR_IND(I, i - 1, j, k + 1);
+	else if (internal_cell(I, i + 1, j, k - 1))
+		return POR_IND(I, i + 1, j, k - 1);
+	else if (internal_cell(I, i - 1, j, k - 1))
+		return POR_IND(I, i - 1, j, k - 1);
+	else if (internal_cell(I, i, j + 1, k + 1))
+		return POR_IND(I, i, j + 1, k + 1);
+	else if (internal_cell(I, i, j - 1, k + 1))
+		return POR_IND(I, i, j - 1, k + 1);
+	else if (internal_cell(I, i, j + 1, k - 1))
+		return POR_IND(I, i, j + 1, k - 1);
+	else if (internal_cell(I, i, j - 1, k - 1))
+		return POR_IND(I, i, j - 1, k - 1);
+	else if (internal_cell(I, i + 1, j + 1, k + 1))
+		return POR_IND(I, i + 1, j + 1, k + 1);
+	else if (internal_cell(I, i - 1, j + 1, k + 1))
+		return POR_IND(I, i - 1, j + 1, k + 1);
+	else if (internal_cell(I, i + 1, j - 1, k + 1))
+		return POR_IND(I, i + 1, j - 1, k + 1);
+	else if (internal_cell(I, i + 1, j + 1, k - 1))
+		return POR_IND(I, i + 1, j + 1, k - 1);
+	else if (internal_cell(I, i - 1, j - 1, k + 1))
+		return POR_IND(I, i - 1, j - 1, k + 1);
+	else if (internal_cell(I, i - 1, j + 1, k - 1))
+		return POR_IND(I, i - 1, j + 1, k - 1);
+	else if (internal_cell(I, i + 1, j - 1, k - 1))
+		return POR_IND(I, i + 1, j - 1, k - 1);
+	else if (internal_cell(I, i - 1, j - 1, k - 1))
+		return POR_IND(I, i - 1, j - 1, k - 1);
+	else if (internal_cell(I, i + 2, j, k))
+		return POR_IND(I, i + 2, j, k);
+	else if (internal_cell(I, i - 2, j, k))
+		return POR_IND(I, i - 2, j, k);
+	else if (internal_cell(I, i, j + 2, k))
+		return POR_IND(I, i, j + 2, k);
+	else if (internal_cell(I, i, j - 2, k))
+		return POR_IND(I, i, j - 2, k);
+	else if (internal_cell(I, i, j, k + 2))
+		return POR_IND(I, i, j, k + 2);
+	else if (internal_cell(I, i, j, k - 2))
+		return POR_IND(I, i, j, k - 2);
+	else if (internal_cell(I, i + 2, j + 1, k))
+		return POR_IND(I, i + 2, j + 1, k);
+	else if (internal_cell(I, i + 2, j, k + 1))
+		return POR_IND(I, i + 2, j, k + 1);
+	else if (internal_cell(I, i + 1, j + 2, k))
+		return POR_IND(I, i + 1, j + 2, k);
+	else if (internal_cell(I, i, j + 2, k + 1))
+		return POR_IND(I, i, j + 2, k + 1);
+	else if (internal_cell(I, i + 1, j, k + 2))
+		return POR_IND(I, i + 1, j, k + 2);
+	else if (internal_cell(I, i, j + 1, k + 2))
+		return POR_IND(I, i, j + 1, k + 2);
+	else if (internal_cell(I, i - 2, j + 1, k))
+		return POR_IND(I, i - 2, j + 1, k);
+	else if (internal_cell(I, i - 2, j, k + 1))
+		return POR_IND(I, i - 2, j, k + 1);
+	else if (internal_cell(I, i + 1, j - 2, k))
+		return POR_IND(I, i + 1, j - 2, k);
+	else if (internal_cell(I, i, j - 2, k + 1))
+		return POR_IND(I, i, j - 2, k + 1);
+	else if (internal_cell(I, i + 1, j, k - 2))
+		return POR_IND(I, i + 1, j, k - 2);
+	else if (internal_cell(I, i, j + 1, k - 2))
+		return POR_IND(I, i, j + 1, k - 2);
+	else if (internal_cell(I, i + 2, j - 1, k))
+		return POR_IND(I, i + 2, j - 1, k);
+	else if (internal_cell(I, i + 2, j, k - 1))
+		return POR_IND(I, i + 2, j, k - 1);
+	else if (internal_cell(I, i - 1, j + 2, k))
+		return POR_IND(I, i - 1, j + 2, k);
+	else if (internal_cell(I, i, j + 2, k - 1))
+		return POR_IND(I, i, j + 2, k - 1);
+	else if (internal_cell(I, i - 1, j, k + 2))
+		return POR_IND(I, i - 1, j, k + 2);
+	else if (internal_cell(I, i, j - 1, k + 2))
+		return POR_IND(I, i, j - 1, k + 2);
+	else if (internal_cell(I, i - 2, j - 1, k))
+		return POR_IND(I, i - 2, j - 1, k);
+	else if (internal_cell(I, i - 2, j, k - 1))
+		return POR_IND(I, i - 2, j, k - 1);
+	else if (internal_cell(I, i - 1, j - 2, k))
+		return POR_IND(I, i - 1, j - 2, k);
+	else if (internal_cell(I, i, j - 2, k - 1))
+		return POR_IND(I, i, j - 2, k - 1);
+	else if (internal_cell(I, i - 1, j, k - 2))
+		return POR_IND(I, i - 1, j, k - 2);
+	else if (internal_cell(I, i, j - 1, k - 2))
+		return POR_IND(I, i, j - 1, k - 2);
+	else if (internal_cell(I, i + 2, j + 2, k))
+		return POR_IND(I, i + 2, j + 2, k);
+	else if (internal_cell(I, i - 2, j + 2, k))
+		return POR_IND(I, i - 2, j + 2, k);
+	else if (internal_cell(I, i + 2, j - 2, k))
+		return POR_IND(I, i + 2, j - 2, k);
+	else if (internal_cell(I, i - 2, j - 2, k))
+		return POR_IND(I, i - 2, j - 2, k);
+	else if (internal_cell(I, i + 2, j, k + 2))
+		return POR_IND(I, i + 2, j, k + 2);
+	else if (internal_cell(I, i - 2, j, k + 2))
+		return POR_IND(I, i - 2, j, k + 2);
+	else if (internal_cell(I, i + 2, j, k - 2))
+		return POR_IND(I, i + 2, j, k - 2);
+	else if (internal_cell(I, i - 2, j, k - 2))
+		return POR_IND(I, i - 2, j, k - 2);
+	else if (internal_cell(I, i, j + 2, k + 2))
+		return POR_IND(I, i, j + 2, k + 2);
+	else if (internal_cell(I, i, j - 2, k + 2))
+		return POR_IND(I, i, j - 2, k + 2);
+	else if (internal_cell(I, i, j + 2, k - 2))
+		return POR_IND(I, i, j + 2, k - 2);
+	else if (internal_cell(I, i, j - 2, k - 2))
+		return POR_IND(I, i, j - 2, k - 2);
+	else if (internal_cell(I, i + 1, j + 1, k + 2))
+		return POR_IND(I, i + 1, j + 1, k + 2);
+	else if (internal_cell(I, i + 1, j + 2, k + 1))
+		return POR_IND(I, i + 1, j + 2, k + 1);
+	else if (internal_cell(I, i + 2, j + 1, k + 1))
+		return POR_IND(I, i + 2, j + 1, k + 1);
+	else if (internal_cell(I, i - 2, j + 1, k + 1))
+		return POR_IND(I, i - 2, j + 1, k + 1);
+	else if (internal_cell(I, i + 1, j - 2, k + 1))
+		return POR_IND(I, i + 1, j - 2, k + 1);
+	else if (internal_cell(I, i + 1, j + 1, k - 2))
+		return POR_IND(I, i + 1, j + 1, k - 2);
+	else if (internal_cell(I, i + 2, j - 1, k + 1))
+		return POR_IND(I, i + 2, j - 1, k + 1);
+	else if (internal_cell(I, i + 2, j + 1, k - 1))
+		return POR_IND(I, i + 2, j + 1, k - 1);
+	else if (internal_cell(I, i - 1, j + 2, k + 1))
+		return POR_IND(I, i - 1, j + 2, k + 1);
+	else if (internal_cell(I, i + 1, j + 2, k - 1))
+		return POR_IND(I, i + 1, j + 2, k - 1);
+	else if (internal_cell(I, i - 1, j + 1, k + 2))
+		return POR_IND(I, i - 1, j + 1, k + 2);
+	else if (internal_cell(I, i + 1, j - 1, k + 2))
+		return POR_IND(I, i + 1, j - 1, k + 2);
+	else if (internal_cell(I, i - 2, j - 1, k + 1))
+		return POR_IND(I, i - 2, j - 1, k + 1);
+	else if (internal_cell(I, i - 2, j + 1, k - 1))
+		return POR_IND(I, i - 2, j + 1, k - 1);
+	else if (internal_cell(I, i - 1, j - 2, k + 1))
+		return POR_IND(I, i - 1, j - 2, k + 1);
+	else if (internal_cell(I, i + 1, j - 2, k - 1))
+		return POR_IND(I, i + 1, j - 2, k - 1);
+	else if (internal_cell(I, i - 1, j + 1, k - 2))
+		return POR_IND(I, i - 1, j + 1, k - 2);
+	else if (internal_cell(I, i + 1, j - 1, k - 2))
+		return POR_IND(I, i + 1, j - 1, k - 2);
+	else if (internal_cell(I, i + 2, j - 1, k - 1))
+		return POR_IND(I, i + 2, j - 1, k - 1);
+	else if (internal_cell(I, i - 1, j + 2, k - 1))
+		return POR_IND(I, i - 1, j + 2, k - 1);
+	else if (internal_cell(I, i - 1, j - 1, k + 2))
+		return POR_IND(I, i - 1, j - 1, k + 2);
+	else if (internal_cell(I, i - 2, j - 1, k - 1))
+		return POR_IND(I, i - 2, j - 1, k - 1);
+	else if (internal_cell(I, i - 1, j - 2, k - 1))
+		return POR_IND(I, i - 1, j - 2, k - 1);
+	else if (internal_cell(I, i - 1, j - 1, k - 2))
+		return POR_IND(I, i - 1, j - 1, k - 2);
+	else if (internal_cell(I, i + 1, j + 2, k + 2))
+		return POR_IND(I, i + 1, j + 2, k + 2);
+	else if (internal_cell(I, i + 2, j + 1, k + 2))
+		return POR_IND(I, i + 2, j + 1, k + 2);
+	else if (internal_cell(I, i + 2, j + 2, k + 1))
+		return POR_IND(I, i + 2, j + 2, k + 1);
+	else if (internal_cell(I, i - 1, j + 2, k + 2))
+		return POR_IND(I, i - 1, j + 2, k + 2);
+	else if (internal_cell(I, i + 2, j - 1, k + 2))
+		return POR_IND(I, i + 2, j - 1, k + 2);
+	else if (internal_cell(I, i + 2, j + 2, k - 1))
+		return POR_IND(I, i + 2, j + 2, k - 1);
+	else if (internal_cell(I, i + 1, j - 2, k + 2))
+		return POR_IND(I, i + 1, j - 2, k + 2);
+	else if (internal_cell(I, i + 1, j + 2, k - 2))
+		return POR_IND(I, i + 1, j + 2, k - 2);
+	else if (internal_cell(I, i - 2, j + 1, k + 2))
+		return POR_IND(I, i - 2, j + 1, k + 2);
+	else if (internal_cell(I, i + 2, j + 1, k - 2))
+		return POR_IND(I, i + 2, j + 1, k - 2);
+	else if (internal_cell(I, i - 2, j + 2, k + 1))
+		return POR_IND(I, i - 2, j + 2, k + 1);
+	else if (internal_cell(I, i + 2, j - 2, k + 1))
+		return POR_IND(I, i + 2, j - 2, k + 1);
+	else if (internal_cell(I, i - 1, j - 2, k + 2))
+		return POR_IND(I, i - 1, j - 2, k + 2);
+	else if (internal_cell(I, i - 1, j + 2, k - 2))
+		return POR_IND(I, i - 1, j + 2, k - 2);
+	else if (internal_cell(I, i - 2, j - 1, k + 2))
+		return POR_IND(I, i - 2, j - 1, k + 2);
+	else if (internal_cell(I, i + 2, j - 1, k - 2))
+		return POR_IND(I, i + 2, j - 1, k - 2);
+	else if (internal_cell(I, i - 2, j + 2, k - 1))
+		return POR_IND(I, i - 2, j + 2, k - 1);
+	else if (internal_cell(I, i + 2, j - 2, k - 1))
+		return POR_IND(I, i + 2, j - 2, k - 1);
+	else if (internal_cell(I, i + 1, j - 2, k - 2))
+		return POR_IND(I, i + 1, j - 2, k - 2);
+	else if (internal_cell(I, i - 2, j + 1, k - 2))
+		return POR_IND(I, i - 2, j + 1, k - 2);
+	else if (internal_cell(I, i - 2, j - 2, k + 1))
+		return POR_IND(I, i - 2, j - 2, k + 1);
+	else if (internal_cell(I, i - 1, j - 2, k - 2))
+		return POR_IND(I, i - 1, j - 2, k - 2);
+	else if (internal_cell(I, i - 2, j - 1, k - 2))
+		return POR_IND(I, i - 2, j - 1, k - 2);
+	else if (internal_cell(I, i - 2, j - 2, k - 1))
+		return POR_IND(I, i - 2, j - 2, k - 1);
+	else if (internal_cell(I, i + 2, j + 2, k + 2))
+		return POR_IND(I, i + 2, j + 2, k + 2);
+	else if (internal_cell(I, i - 2, j + 2, k + 2))
+		return POR_IND(I, i - 2, j + 2, k + 2);
+	else if (internal_cell(I, i + 2, j - 2, k + 2))
+		return POR_IND(I, i + 2, j - 2, k + 2);
+	else if (internal_cell(I, i + 2, j + 2, k - 2))
+		return POR_IND(I, i + 2, j + 2, k - 2);
+	else if (internal_cell(I, i - 2, j - 2, k + 2))
+		return POR_IND(I, i - 2, j - 2, k + 2);
+	else if (internal_cell(I, i - 2, j + 2, k - 2))
+		return POR_IND(I, i - 2, j + 2, k - 2);
+	else if (internal_cell(I, i + 2, j - 2, k - 2))
+		return POR_IND(I, i + 2, j - 2, k - 2);
+	else if (internal_cell(I, i - 2, j - 2, k - 2))
+		return POR_IND(I, i - 2, j - 2, k - 2);
 }
 
 int AREA_IND(in *I, int i, int j, int k, int s)
@@ -84,12 +597,6 @@ int production_well(in *I, int i, int j, int k)
 
 int injection_well(in *I, int i, int j, int k)
 {
-#if DEBUG==4
-	printf("Process %d, PID %d: I->ind_start_region_proc[0] = %d\n", I->my_rank, getpid(), I->ind_start_region_proc[0]);
-	printf("Process %d, PID %d: I->ind_start_region_proc[1] = %d\n", I->my_rank, getpid(), I->ind_start_region_proc[1]);
-	printf("Process %d, PID %d: I->gl_nx = %d, I->nx = %d\n", I->my_rank, getpid(), I->gl_nx, I->nx);
-	printf("Process %d, PID %d: I->gl_ny = %d, I->ny = %d\n", I->my_rank, getpid(), I->gl_ny, I->ny);
-#endif
 	if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
 		return 1;
 	else if ((i + I->ind_start_region_proc[0] == I->gl_nx / 2 - 1) && (j + I->ind_start_region_proc[1] == I->gl_ny / 2))
@@ -104,6 +611,8 @@ int injection_well(in *I, int i, int j, int k)
 
 int write_to_A_csr(in *I, int p_eq, int i_eq, int j_eq, int k_eq, int p, int i, int j, int k, int s, double value)
 {
+	if (value != value)
+		printf("Writing %lf to matrix A in (%d, %d, %d, %d, %d, %d, %d, %d)\n", value, p_eq, i_eq, j_eq, k_eq, p, i, j, k);
 	if ((i >= 0) && (i < I->nx) && (j >= 0) && (j < I->ny) && (k >= 0) && (k < I->nz) && (I->ind_cell_multipl[i * I->ny + j] != -1) && (A_IND_S_SWITCH(I, i, j, k, s))) {
 		int l, m, column, row;
 		if (!((i_eq >= 0) && (i_eq < I->nx) && (j_eq >= 0) && (j_eq < I->ny) && (k_eq >= 0) && (k_eq < I->nz) && (I->ind_cell_multipl[i_eq * I->ny + j_eq] != -1)))
@@ -336,6 +845,36 @@ double min3(double a, double b, double c)
 		return b;
 	else
 		return c;
+}
+
+int nan_check(in *I, double value, int p, int pr, int i, int j, int k, const char func_name[100])
+{
+	if (isnan(value) || fabs(isinf(value))) {
+		I->nan_flag = 1;
+		printf("%s (", func_name);
+		if (p != -1)
+			printf("p = %d, ", p);
+		if (pr != -1)
+			printf("pr = %d, ", pr);
+		printf("i = %d, j = %d, k = %d) = %lf\n", i, j, k, value);
+		return 1;
+	} else
+		return 0;
+}
+
+int negative_or_zero_num_check(in *I, double value, int p, int pr, int i, int j, int k, const char func_name[100])
+{
+	if (value <= 0) {
+		I->negative_num_flag = 1;
+		printf("%s (", func_name);
+		if (p != -1)
+			printf("p = %d, ", p);
+		if (pr != -1)
+			printf("pr = %d, ", pr);
+		printf("i = %d, j = %d, k = %d) = %lf\n", i, j, k, value);
+		return 1;
+	} else
+		return 0;
 }
 
 #if AVALANCHE
@@ -593,7 +1132,7 @@ double saturation(in *I, int p, int i, int j, int k)
 		printf("Error saturation index\n");
 		return 0;
 	}
-	return I->B_prev[B_IND(I, p + 5, i, j, k)];
+	return I->B_prev[B_IND(I, p + 5, i, j, k)] + I->residual_saturation[p];
 }
 
 double concentration(in *I, int p, int i, int j, int k)
@@ -622,11 +1161,12 @@ double temperature_environment(in *I, int i, int j, int k)
 
 double density_t_func(in *I, int p, int i, int j, int k)
 {
+	double tmp;
 	if ((p == 0) || (p == 1))
-		return ((I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)) /
+		tmp = ((I->density_0[p] + pow(I->density_coef_a[p], -2) * (pressure(I, i, j, k) - I->pressure_0)) /
 			(1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0)));
 	else if (p == 2)
-		return (pressure(I, i, j, k) * (concentration(I, 0, i, j, k) * I->molar_weight[0] +
+		tmp = (pressure(I, i, j, k) * (concentration(I, 0, i, j, k) * I->molar_weight[0] +
 										concentration(I, 1, i, j, k) * I->molar_weight[1] +
 										concentration(I, 2, i, j, k) * I->molar_weight[2] +
 										concentration(I, 3, i, j, k) * I->molar_weight[3]) / (I->R * temperature_flow(I, i, j, k)));
@@ -634,6 +1174,9 @@ double density_t_func(in *I, int p, int i, int j, int k)
 		printf("Error density index\n");
 		return 0;
 	}
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
+	negative_or_zero_num_check(I, tmp, p, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double density_t(in *I, int p, int i, int j, int k)
@@ -648,34 +1191,36 @@ double density_t(in *I, int p, int i, int j, int k)
 
 double two_phase_relative_permeability_func(in *I, int p, int pr, int i, int j, int k)
 {
-	double S;
+	double S, tmp;
 	if ((p == 0) && (pr == 1)) {
-		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[2]);
-		return (pow(S, 4));
+		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]);// / (1 - I->residual_saturation[0] - I->residual_saturation[1] - I->residual_saturation[2]);
+		tmp = (pow(S, 4));
 	}
 	else if ((p == 1) && (pr == 0)) {
-		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[2]);
-		return ((1 - S) * (1 - S) * (1 - S * S));
+		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]);// / (1 - I->residual_saturation[0] - I->residual_saturation[1] - I->residual_saturation[2]);
+		tmp = ((1 - S) * (1 - S) * (1 - S * S));
 	}
 	else if ((p == 0) && (pr == 2)) {
-		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[1]);
-		return (pow(S, 4));
+		S = (saturation(I, 2, i, j, k) - I->residual_saturation[2]);// / (1 - I->residual_saturation[0] - I->residual_saturation[1] - I->residual_saturation[2]);
+		tmp = ((1 - S) * (1 - S) * (1 - S * S));
 	}
 	else if ((p == 2) && (pr == 0)) {
-		S = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) / (1 - I->residual_saturation[0] - I->residual_saturation[1]);
-		return ((1 - S) * (1 - S) * (1 - S * S));
+		S = (saturation(I, 2, i, j, k) - I->residual_saturation[2]);// / (1 - I->residual_saturation[0] - I->residual_saturation[1] - I->residual_saturation[2]);
+		tmp = (pow(S, 4));
 	}
 	else if ((p == 1) && (pr == 2)) {
-		S = (saturation(I, 1, i, j, k) - I->residual_saturation[1]) / (1 - I->residual_saturation[1] - I->residual_saturation[0]);
-		return (pow(S, 4));
+		S = (saturation(I, 1, i, j, k) - I->residual_saturation[1]);// / (1 - I->residual_saturation[0] - I->residual_saturation[1] - I->residual_saturation[2]);
+		tmp = (pow(S, 4));
 	}
 	else if ((p == 2) && (pr == 1)) {
-		S = (saturation(I, 1, i, j, k) - I->residual_saturation[1]) / (1 - I->residual_saturation[1] - I->residual_saturation[0]);
-		return ((1 - S) * (1 - S) * (1 - S * S));
+		S = (saturation(I, 1, i, j, k) - I->residual_saturation[1]);// / (1 - I->residual_saturation[0] - I->residual_saturation[1] - I->residual_saturation[2]);
+		tmp = ((1 - S) * (1 - S) * (1 - S * S));
 	} else {
 		printf("Error two phase relative permeability index\n");
 		return 0;
 	}
+	nan_check(I, tmp, p, pr, i, j, k, __func__);
+	return tmp;
 }
 
 double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k)
@@ -701,22 +1246,37 @@ double two_phase_relative_permeability(in *I, int p, int pr, int i, int j, int k
 
 double relative_permeability_func(in *I, int p, int i, int j, int k)
 {
-	if (p == 0)
-		return ((saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k) +
-				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k)) /
-				(saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
-	else if (p == 1)
-		return ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k) +
-				(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k)) /
-				(saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
-	else if (p == 2)
-		return ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
-				(saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) /
-				(saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 1, i, j, k) - I->residual_saturation[1]);
-	else {
+	double tmp;
+	if (p == 0) {
+		if (saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2] == 0)
+			tmp = 0;
+		else
+			tmp =  ((saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 0, 1, i, j, k) +
+					(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 0, 2, i, j, k)) /
+					(saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
+		//tmp =  ((saturation(I, 1, i, j, k) - I->residual_saturation[1] + I->epsilon) * pow(two_phase_relative_permeability(I, 0, 1, i, j, k), 0.25) +
+		//		(saturation(I, 2, i, j, k) - I->residual_saturation[2] + I->epsilon) * pow(two_phase_relative_permeability(I, 0, 2, i, j, k), 0.25)) /
+		//		(saturation(I, 1, i, j, k) - I->residual_saturation[1] + saturation(I, 2, i, j, k) - I->residual_saturation[2] + I->epsilon);
+	} else if (p == 1) {
+		if (saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 2, i, j, k) - I->residual_saturation[2] == 0)
+			tmp = 0;
+		else
+			tmp =  ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 1, 0, i, j, k) +
+					(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * two_phase_relative_permeability(I, 1, 2, i, j, k)) /
+					(saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 2, i, j, k) - I->residual_saturation[2]);
+	} else if (p == 2) {
+		if (saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 1, i, j, k) - I->residual_saturation[1] == 0)
+			tmp = 0;
+		else
+			tmp =  ((saturation(I, 0, i, j, k) - I->residual_saturation[0]) * two_phase_relative_permeability(I, 2, 0, i, j, k) +
+					(saturation(I, 1, i, j, k) - I->residual_saturation[1]) * two_phase_relative_permeability(I, 2, 1, i, j, k)) /
+					(saturation(I, 0, i, j, k) - I->residual_saturation[0] + saturation(I, 1, i, j, k) - I->residual_saturation[1]);
+	} else {
 		printf("Error relative permeability index\n");
 		return 0;
 	}
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double relative_permeability(in *I, int p, int i, int j, int k)
@@ -729,7 +1289,7 @@ double relative_permeability(in *I, int p, int i, int j, int k)
 	}
 }
 
-double viscosity_gas_func(in *I, int p, int i, int j, int k)
+double viscosity_gas_component_func(in *I, int p, int i, int j, int k)
 {
 	if (!((p == 0) || (p == 1) || (p == 2) || (p == 3))) {
 		printf("Error viscosity gas index\n");
@@ -739,12 +1299,12 @@ double viscosity_gas_func(in *I, int p, int i, int j, int k)
 		(I->temperature_0_gas[p] + I->viscosity_coef_C_gas[p]) *
 		pow(temperature_flow(I, i, j, k) / I->temperature_0_gas[p], 3 / 2) /
 		(temperature_flow(I, i, j, k) + I->viscosity_coef_C_gas[p]);
-	if (tmp < 0)
-		printf("Process %d, PID %d: p= %d, i = %d, j = %d, k = %d, viscosity_gas = %lf\n", I->my_rank, getpid(), p, i, j, k, tmp);
+	negative_or_zero_num_check(I, tmp, p, -1, i, j, k, __func__);
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
 	return tmp;
 }
 
-double viscosity_gas(in *I, int p, int i, int j, int k)
+double viscosity_gas_component(in *I, int p, int i, int j, int k)
 {
 	if ((p == 0) || (p == 1) || (p == 2) || (p == 3))
 		return I->array_of_parameters[PARAM_IND(I, 12 + p, i, j, k)];
@@ -764,7 +1324,9 @@ double molar_fraction_func(in *I, int p, int i, int j, int k)
 	int l;
 	for (l = 0; l < 4; l++)
 		x += concentration(I, l, i, j, k) / I->molar_weight[l];
-	return concentration(I, p, i, j, k) / (I->molar_weight[p] * x);
+	double tmp = concentration(I, p, i, j, k) / (I->molar_weight[p] * x);
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double molar_fraction(in *I, int p, int i, int j, int k)
@@ -781,8 +1343,9 @@ double viscosity_water(in *I, int i, int j, int k)
 {
 	double tmp;
 	tmp = 0.001 / (0.14 + (temperature_flow(I, i, j, k) - 273.15) / 30.0 + 0.000009 * (temperature_flow(I, i, j, k) - 273.15) * (temperature_flow(I, i, j, k) - 273.15));
-	if (tmp < 0)
-		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_water = %lf, temperature_flow = %lf\n", I->my_rank, getpid(), i, j, k, tmp, temperature_flow(I, i, j, k));
+	negative_or_zero_num_check(I, tmp, -1, -1, i, j, k, __func__);
+	if (temperature_flow(I, i, j, k) - 273.15 < 0)
+		printf("WTF?! Temperature flow is less then 273.15 K!!!\n");
 	return tmp;
 }
 
@@ -790,27 +1353,32 @@ double viscosity_oil(in *I, int i, int j, int k)
 {
 	double tmp;
 	tmp = density_t(I, 1, i, j, k) * 0.000001 * (pow((1000.0 + 0.6), pow((30.0 / (temperature_flow(I, i, j, k) - 273.15)), 4.0)) - 0.6);
-	if (tmp < 0)
-		printf("Process %d, PID %d: i = %d, j = %d, k = %d, viscosity_oil = %lf, temperature_flow = %lf\n", I->my_rank, getpid(), i, j, k, tmp, temperature_flow(I, i, j, k));
+	negative_or_zero_num_check(I, tmp, -1, -1, i, j, k, __func__);
+	return tmp;
+}
+
+double viscosity_gas(in *I, int i, int j, int k)
+{
+	double tmp = 0;
+	for (int p = 0; p < 4; p++)
+		tmp += viscosity_gas_component(I, p, i, j, k) * molar_fraction(I, p, i, j, k);
+	negative_or_zero_num_check(I, tmp, -1, -1, i, j, k, __func__);
 	return tmp;
 }
 
 double viscosity_func(in *I, int p, int i, int j, int k)
 {
-	if (p == 0) {
-		return viscosity_water(I, i, j, k);
-	} else if (p == 1) {
-		return viscosity_oil(I, i, j, k);
-	} else if (p == 2) {
-		double x = 1;
-		int l;
-		for (l = 0; l < 4; l++)
-			x *= pow(viscosity_gas(I, l, i, j, k), molar_fraction(I, l, i, j, k));
-		return x;
-	} else {
+	double tmp = 0;
+	if (p == 0)
+		tmp = viscosity_water(I, i, j, k);
+	else if (p == 1)
+		tmp = viscosity_oil(I, i, j, k);
+	else if (p == 2)
+		tmp = viscosity_gas(I, i, j, k);
+	else
 		printf("Error viscosity index\n");
-		return 0;
-	}
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double viscosity(in *I, int p, int i, int j, int k)
@@ -825,12 +1393,13 @@ double viscosity(in *I, int p, int i, int j, int k)
 
 double Darsi_M_coef_phases_func(in *I, int p, int i, int j, int k)
 {
+	double tmp = 0;
 	if ((p == 0) || (p == 1) || (p == 2))
-		return density_t(I, p, i, j, k) * I->permeability * relative_permeability(I, p, i, j, k) / viscosity(I, p, i, j, k);
-	else {
+		tmp = density_t(I, p, i, j, k) * I->permeability * relative_permeability(I, p, i, j, k) / viscosity(I, p, i, j, k);
+	else
 		printf("Error Darsi M coefficient phases index\n");
-		return 0;
-	}
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double Darsi_M_coef_phases(in *I, int p, int i, int j, int k)
@@ -845,11 +1414,17 @@ double Darsi_M_coef_phases(in *I, int p, int i, int j, int k)
 
 double Darsi_M_coef_func(in *I, int i, int j, int k)
 {
-	double x = 0;
-	int l;
-	for (l = 0; l < 3; l++)
-		x += Darsi_M_coef_phases(I, l, i, j, k);
-	return x;
+	double tmp = 0;
+	for (int p = 0; p < 3; p++)
+		tmp += Darsi_M_coef_phases(I, p, i, j, k);
+	if (relative_permeability(I, 0, i, j, k) + relative_permeability(I, 1, i, j, k) + relative_permeability(I, 2, i, j, k) == 0) {
+		printf("Relative permeability sum is equal to zero!!!\n");
+		printf("saturation(I, 0, %d, %d, %d) = %lf, saturation(I, 1, %d, %d, %d) = %lf, saturation(I, 2, %d, %d, %d) = %lf.\n",\
+			i, j, k, saturation(I, 0, i, j, k), i, j, k, saturation(I, 1, i, j, k), i, j, k, saturation(I, 2, i, j, k));
+	}
+	nan_check(I, tmp, -1, -1, i, j, k, __func__);
+	negative_or_zero_num_check(I, tmp, -1, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double Darsi_M_coef(in *I, int i, int j, int k)
@@ -867,6 +1442,7 @@ double capillary_pressure_derivative_by_saturation_func(in *I, int p, int i, int
 		pow(1 - I->residual_saturation_two_phase[p], I->capillary_pressure_coef) *
 		I->capillary_pressure_coef *
 		pow(saturation(I, p, i, j, k), - I->capillary_pressure_coef - 1);
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
 	return tmp;
 }
 
@@ -884,14 +1460,30 @@ double capillary_pressure_derivative_by_saturation(in *I, int p, int i, int j, i
 
 double grad_pressure_func(in *I, int pr, int i, int j, int k)
 {
+	if (!cell_of_computation_domain(I, i, j, k)) {
+		printf("%s: Operating with the non-existent cell (%d, %d, %d).\n", __func__, i, j, k);
+		return 0;
+	}
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
-	return (pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
+	double tmp = 0;
+	if (!cell_of_computation_domain(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
+		tmp = (pressure(I, i, j, k) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / I->dx[pr];
+	else if (!cell_of_computation_domain(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
+		tmp = (pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i, j, k)) / I->dx[pr];
+	else
+		tmp = (pressure(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - pressure(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
+	nan_check(I, tmp, -1, pr, i, j, k, __func__);
+	return tmp;
 }
 
 double grad_pressure(in *I, int pr, int i, int j, int k)
 {
+	if (!cell_of_computation_domain(I, i, j, k)) {
+		printf("%s: Operating with the non-existent cell (%d, %d, %d).\n", __func__, i, j, k);
+		return 0;
+	}
 	if ((pr == 0) || (pr == 1) || (pr == 2))
 		return I->array_of_parameters[PARAM_IND(I, 29 + pr, i, j, k)];
 	else {
@@ -902,14 +1494,30 @@ double grad_pressure(in *I, int pr, int i, int j, int k)
 
 double grad_saturation_func(in *I, int p, int pr, int i, int j, int k)
 {
+	if (!cell_of_computation_domain(I, i, j, k)) {
+		printf("%s: Operating with the non-existent cell (%d, %d, %d).\n", __func__, i, j, k);
+		return 0;
+	}
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
-	return (saturation(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
+	double tmp = 0;
+	if (!cell_of_computation_domain(I, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]))
+		tmp = (saturation(I, p, i, j, k) - saturation(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / I->dx[pr];
+	else if (!cell_of_computation_domain(I, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2]))
+		tmp = (saturation(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, p, i, j, k)) / I->dx[pr];
+	else
+		tmp = (saturation(I, p, i + ind_pr[0], j + ind_pr[1], k + ind_pr[2]) - saturation(I, p, i - ind_pr[0], j - ind_pr[1], k - ind_pr[2])) / (2 * I->dx[pr]);
+	nan_check(I, tmp, p, pr, i, j, k, __func__);
+	return tmp;
 }
 
 double grad_saturation(in *I, int p, int pr, int i, int j, int k)
 {
+	if (!cell_of_computation_domain(I, i, j, k)) {
+		printf("%s: Operating with the non-existent cell (%d, %d, %d).\n", __func__, i, j, k);
+		return 0;
+	}
 	if (((pr == 0) || (pr == 1) || (pr == 2)) && ((p == 0) || (p == 1) || (p == 2)))
 		return I->array_of_parameters[PARAM_IND(I, 32 + p * 3 + pr, i, j, k)];
 	else {
@@ -920,29 +1528,32 @@ double grad_saturation(in *I, int p, int pr, int i, int j, int k)
 
 double coef_grad_saturation_func(in *I, int p, int pr, int i, int j, int k)
 {
+	double tmp = 0;
 	if (p == 0) {
 		if (pr == 0)
-			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1;
-		if (pr == 2)
-			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k);
+			tmp = Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k) - 1;
+		else if (pr == 2)
+			tmp = Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k);
 		else
-			printf("Error coef_grad_saturation index.\n");
+			printf("Error coef_grad_saturation index: pr = %d.\n", pr);
 	} else if (p == 1) {
 		if (pr == 0)
-			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k);
-		if (pr == 2)
-			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k);
+			tmp = Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k);
+		else if (pr == 2)
+			tmp = Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k);
 		else
-			printf("Error coef_grad_saturation index.\n");
+			printf("Error coef_grad_saturation index: pr = %d.\n", pr);
 	} else if (p == 2) {
 		if (pr == 0)
-			return Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k);
-		if (pr == 2)
-			return Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1;
+			tmp = Darsi_M_coef_phases(I, 0, i, j, k) / Darsi_M_coef(I, i, j, k);
+		else if (pr == 2)
+			tmp = Darsi_M_coef_phases(I, 2, i, j, k) / Darsi_M_coef(I, i, j, k) - 1;
 		else
-			printf("Error coef_grad_saturation index.\n");
+			printf("Error coef_grad_saturation index: pr = %d.\n", pr);
 	} else
-		printf("Error coef_grad_saturation index.\n");
+		printf("Error coef_grad_saturation index: p = %d.\n", p);
+	nan_check(I, tmp, p, pr, i, j, k, __func__);
+	return tmp;
 }
 
 double coef_grad_saturation(in *I, int p, int pr, int i, int j, int k)
@@ -950,21 +1561,21 @@ double coef_grad_saturation(in *I, int p, int pr, int i, int j, int k)
 	if (p == 0) {
 		if (pr == 0)
 			return I->array_of_parameters[PARAM_IND(I, 41, i, j, k)];
-		if (pr == 2)
+		else if (pr == 2)
 			return I->array_of_parameters[PARAM_IND(I, 42, i, j, k)];
 		else
 			printf("Error coef_grad_saturation index.\n");
 	} else if (p == 1) {
 		if (pr == 0)
 			return I->array_of_parameters[PARAM_IND(I, 43, i, j, k)];
-		if (pr == 2)
+		else if (pr == 2)
 			return I->array_of_parameters[PARAM_IND(I, 44, i, j, k)];
 		else
 			printf("Error coef_grad_saturation index.\n");
 	} else if (p == 2) {
 		if (pr == 0)
 			return I->array_of_parameters[PARAM_IND(I, 45, i, j, k)];
-		if (pr == 2)
+		else if (pr == 2)
 			return I->array_of_parameters[PARAM_IND(I, 46, i, j, k)];
 		else
 			printf("Error coef_grad_saturation index.\n");
@@ -981,11 +1592,14 @@ double avarage_velocity_func(in *I, int p, int pr, int i, int j, int k) //p - oi
 	int ind_pr[3];
 	ind_pr[0] = ind_pr[1] = ind_pr[2] = 0;
 	ind_pr[pr] = 1;
-	return - I->permeability * relative_permeability(I, p, i, j, k) *(
-		grad_pressure(I, pr, i, j, k) +
-		coef_grad_saturation(I, p, 0, i, j, k) * capillary_pressure_derivative_by_saturation(I, 0, i, j, k) * grad_saturation(I, 0, pr, i, j, k) +
-		coef_grad_saturation(I, p, 2, i, j, k) * capillary_pressure_derivative_by_saturation(I, 2, i, j, k) * grad_saturation(I, 2, pr, i, j, k)
-		) / viscosity(I, p, i, j, k);
+	double tmp = - I->permeability * (relative_permeability(I, p, i, j, k) + I->epsilon) * grad_pressure(I, pr, i, j, k) / viscosity(I, p, i, j, k);
+//	double tmp = - I->permeability * relative_permeability(I, p, i, j, k) *(
+//		grad_pressure(I, pr, i, j, k) +
+//		coef_grad_saturation(I, p, 0, i, j, k) * capillary_pressure_derivative_by_saturation(I, 0, i, j, k) * grad_saturation(I, 0, pr, i, j, k) +
+//		coef_grad_saturation(I, p, 2, i, j, k) * capillary_pressure_derivative_by_saturation(I, 2, i, j, k) * grad_saturation(I, 2, pr, i, j, k)
+//		) / viscosity(I, p, i, j, k);
+	nan_check(I, tmp, p, pr, i, j, k, __func__);
+	return tmp;
 }
 
 double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, water, gas; pr - x1, x2, x3
@@ -1000,10 +1614,13 @@ double avarage_velocity(in *I, int p, int pr, int i, int j, int k) //p - oil, wa
 
 double rate_of_reaction_coef_func(in *I, int i, int j, int k)
 {
+	double tmp;
 	if (temperature_flow(I, i, j, k) < I->threshold_temperature)
-		return 0;
+		tmp = 0;
 	else
-		return I->frequency_factor * exp(- I->activation_temperature / temperature_flow(I, i, j, k));
+		tmp = I->frequency_factor * exp(- I->activation_temperature / temperature_flow(I, i, j, k));
+	nan_check(I, tmp, -1, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double rate_of_reaction_coef(in *I, int i, int j, int k)
@@ -1013,9 +1630,10 @@ double rate_of_reaction_coef(in *I, int i, int j, int k)
 
 double rate_of_reaction_func(in *I, int i, int j, int k)
 {
-	double tmp = I->porousness * rate_of_reaction_coef(I, i, j, k) * (saturation(I, 1, i, j, k) - I->residual_saturation[1]) *
+	double tmp = I->porousness[POR_IND(I, i, j, k)] * rate_of_reaction_coef(I, i, j, k) * (saturation(I, 1, i, j, k) - I->residual_saturation[1]) *
 		(saturation(I, 2, i, j, k) - I->residual_saturation[2]) * concentration(I, 1, i, j, k) *
 		pow(pressure(I, i, j, k) / I->pressure_activ, I->stoichiometric_coef_activ);
+	nan_check(I, tmp, -1, -1, i, j, k, __func__);
 	return tmp;
 }
 
@@ -1026,25 +1644,28 @@ double rate_of_reaction(in *I, int i, int j, int k)
 
 double mass_inflow_rate_func(in *I, int p, int i, int j, int k)
 {
+	double tmp;
 	if (p == 0) // N2
-		return 0;
+		tmp = 0;
 	else if (p == 1) // O2
-		return rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
+		tmp = rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
 	else if (p == 2) // CO2
-		return rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
+		tmp = rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
 	else if (p == 3) // H2O(g)
-		return rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
+		tmp = rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p] - I->stoichiometric_coef_before[p]) * I->molar_weight[p];
 	else if (p == 5) // water
-		return rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p - 1] - I->stoichiometric_coef_before[p - 1]) * I->molar_weight[3];
+		tmp = rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p - 1] - I->stoichiometric_coef_before[p - 1]) * I->molar_weight[3];
 	else if (p == 6) // oil
-		return rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p - 1] - I->stoichiometric_coef_before[p - 1]) * I->molar_weight[4];
+		tmp = rate_of_reaction(I, i, j, k) * (I->stoichiometric_coef_after[p - 1] - I->stoichiometric_coef_before[p - 1]) * I->molar_weight[4];
 	else if (p == 7) // gas
-		return mass_inflow_rate_func(I, 0, i, j, k) + mass_inflow_rate_func(I, 1, i, j, k) +
+		tmp = mass_inflow_rate_func(I, 0, i, j, k) + mass_inflow_rate_func(I, 1, i, j, k) +
 			mass_inflow_rate_func(I, 2, i, j, k) + mass_inflow_rate_func(I, 3, i, j, k);
 	else {
 		printf("Error mass inflow rate index\n");
 		return 0;
 	}
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double mass_inflow_rate(in *I, int p, int i, int j, int k)
@@ -1062,14 +1683,15 @@ double mass_inflow_rate(in *I, int p, int i, int j, int k)
 double chemical_reaction_heat_flow_func(in *I, int i, int j, int k)
 {
 	int p;
-	double x = 0;
+	double tmp = 0;
 	for (p = 0; p < 4; p++) {
-		x -= mass_inflow_rate(I, p, i, j, k) * I->initial_enthalpy[p + 2];
+		tmp -= mass_inflow_rate(I, p, i, j, k) * I->initial_enthalpy[p + 2];
 	}
 	for (p = 0; p < 2; p++) {
-		x -= mass_inflow_rate(I, p + 5, i, j, k) * I->initial_enthalpy[p];
+		tmp -= mass_inflow_rate(I, p + 5, i, j, k) * I->initial_enthalpy[p];
 	}
-	return x;
+	nan_check(I, tmp, -1, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double chemical_reaction_heat_flow(in *I, int i, int j, int k)
@@ -1079,10 +1701,11 @@ double chemical_reaction_heat_flow(in *I, int i, int j, int k)
 
 double density_derivative_by_pressure(in *I, int p, int i, int j, int k)
 {
+	double tmp;
 	if ((p == 0) || (p == 1))
-		return pow(I->density_coef_a[p], -2) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0));
+		tmp = pow(I->density_coef_a[p], -2) / (1 + I->density_coef_beta[p] * (temperature_flow(I, i, j, k) - I->temperature_0));
 	else if (p == 2)
-		return (concentration(I, 0, i, j, k) * I->molar_weight[0] +
+		tmp = (concentration(I, 0, i, j, k) * I->molar_weight[0] +
 				concentration(I, 1, i, j, k) * I->molar_weight[1] +
 				concentration(I, 2, i, j, k) * I->molar_weight[2] +
 				concentration(I, 3, i, j, k) * I->molar_weight[3]) / (I->R * temperature_flow(I, i, j, k));
@@ -1090,16 +1713,18 @@ double density_derivative_by_pressure(in *I, int p, int i, int j, int k)
 		printf("Error density derivative by pressure index\n");
 		return 0;
 	}
+	nan_check(I, tmp, p, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double Darsi_A_coef_func(in *I, int i, int j, int k)
 {
-	int l;
-	double x = 0;
-	for (l = 0; l < 3; l++) {
-		x += I->porousness * saturation(I, l, i, j, k) * density_derivative_by_pressure(I, l, i, j, k);
+	double tmp = 0;
+	for (int p = 0; p < 3; p++) {
+		tmp += I->porousness[POR_IND(I, i, j, k)] * saturation(I, p, i, j, k) * density_derivative_by_pressure(I, p, i, j, k);
 	}
-	return x;
+	nan_check(I, tmp, -1, -1, i, j, k, __func__);
+	return tmp;
 }
 
 double Darsi_A_coef(in *I, int i, int j, int k)
@@ -1112,6 +1737,7 @@ double thermal_conductivity_func(in *I, int i, int j, int k)
 	double tmp = 0;
 	for (int pp = 0; pp < 3; pp++)
 		tmp += I->thermal_conductivity_coef[pp] * saturation(I, pp, i, j, k);
+	nan_check(I, tmp, -1, -1, i, j, k, __func__);
 	return tmp;
 }
 
@@ -1120,55 +1746,248 @@ double thermal_conductivity(in *I, int i, int j, int k)
 	return I->array_of_parameters[PARAM_IND(I, 67, i, j, k)];
 }
 
+double convection_speed_func(in *I, int pr, int i, int j, int  k)
+{
+	if (!((pr == 0) || (pr == 1) || (pr == 2)))
+		printf("Error index of convection speed function\n");
+	double tmp = 0, tmp1 = 0;
+	for (int pp = 0; pp < 2; pp++)
+		tmp += density_t(I, pp, i, j, k) * I->specific_heat[pp] * I->adiabatic_exponent[pp] * avarage_velocity(I, pp, pr, i, j, k) / (2 * I->dx[pr]);
+	for (int pp = 0; pp < 4; pp++)
+		tmp += density_t(I, 2, i, j, k) * I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * concentration(I, pp, i, j, k) * avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
+	for (int pp = 0; pp < 2; pp++)
+		tmp1 += I->porousness[POR_IND(I, i, j, k)] * density_t(I, pp, i, j, k) * saturation(I, pp, i, j, k) * I->specific_heat[pp];
+	for (int pp = 0; pp < 4; pp++)
+		tmp1 += I->porousness[POR_IND(I, i, j, k)] * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k);
+	if (tmp1 == 0)
+		return 0;
+	else
+		return tmp/tmp1;
+}
+
+double convection_speed(in *I, int pr, int i, int j, int  k)
+{
+	if (!((pr == 0) || (pr == 1) || (pr == 2)))
+		printf("Error index of convection speed\n");
+	return I->array_of_parameters[PARAM_IND(I, 68 + pr, i, j, k)];
+}
+
 int check_sum(in *I)
 {
-	int i, j, k, p;
-	double C = 0;
-	for (p = 0; p < 3; p++)
-		C += I->residual_saturation[p] + I->epsilon;
-	double saturation_sum, concentration_sum;
+	int i, j, k, p, flag_too_small_saturation = 0, flag_too_big_saturation = 0, flag_bad_sum_saturation = 0;
+	int flag_too_small_concentration = 0, flag_too_big_concentration = 0, flag_bad_sum_concentration = 0;
+	int flag_too_small_temperature_flow = 0, flag_too_small_temperature_environment = 0;
+	double residual_saturations_sum = 0, saturation_sum, concentration_sum;
+	double disparity = 0;
+	int disp_cells = 0;
+	for (int p = 0; p < 3; p++)
+		residual_saturations_sum += I->residual_saturation[p];
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					saturation_sum = saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k);
+					disparity += fabs(1 - saturation_sum);
+					if (fabs(1 - saturation_sum) > I->epsilon)
+						disp_cells++;
 					for (p = 0; p < 3; p++) {
-						if (saturation(I, p, i, j, k) < I->residual_saturation[p] + I->epsilon) {
-							//printf("Too small saturation of %d phase at [%d, %d, %d]: %.20f\n", p, i, j, k, saturation(I, p, i, j, k));
-							I->B_prev[B_IND(I, p + 5, i, j, k)] = I->residual_saturation[p] + I->epsilon;
+						nan_check(I, saturation(I, p, i, j, k), p, -1, i, j, k, "saturation_before_normalization");
+						if (saturation(I, p, i, j, k) < I->residual_saturation[p]) {
+							I->B_prev[B_IND(I, p + 5, i, j, k)] = 0;
+							flag_too_small_saturation = 1;
 						}
+						//if (saturation(I, p, i, j, k) > 1 - residual_saturations_sum + I->residual_saturation[p]) {
+						//	I->B_prev[B_IND(I, p + 5, i, j, k)] = 1 - residual_saturations_sum;
+						//	flag_too_big_saturation = 1;
+						//}
 					}
-					saturation_sum = 0;
+					saturation_sum = saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k);
+					if (saturation_sum > 1) {
+						I->B_prev[B_IND(I, 5, i, j, k)] = (saturation(I, 0, i, j, k) - I->residual_saturation[0]) *
+							(1 - saturation(I, 1, i, j, k) - I->residual_saturation[0] - I->residual_saturation[2]) /
+							(saturation_sum - saturation(I, 1, i, j, k) - I->residual_saturation[0] - I->residual_saturation[2]);
+						I->B_prev[B_IND(I, 7, i, j, k)] = (saturation(I, 2, i, j, k) - I->residual_saturation[2]) *
+							(1 - saturation(I, 1, i, j, k) - I->residual_saturation[0] - I->residual_saturation[2]) /
+							(saturation_sum - saturation(I, 1, i, j, k) - I->residual_saturation[0] - I->residual_saturation[2]);
+						saturation_sum = saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k);
+						if (saturation(I, 0, i, j, k) < I->residual_saturation[0])
+							I->B_prev[B_IND(I, 5, i, j, k)] = 0;
+						if (saturation(I, 2, i, j, k) < I->residual_saturation[2])
+							I->B_prev[B_IND(I, 7, i, j, k)] = 0;
+						saturation_sum = saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k);
+						if (saturation_sum > 1)
+							I->B_prev[B_IND(I, 6, i, j, k)] -= saturation_sum - 1;
+						/*
+						I->B_prev[B_IND(I, 6, i ,j, k)] -= saturation_sum - 1;
+						if (saturation(I, 1, i, j, k) < I->residual_saturation[1]) {
+							I->B_prev[B_IND(I, 6, i, j, k)] = 0;
+							saturation_sum = saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k);
+							I->B_prev[B_IND(I, 7, i, j, k)] -= saturation_sum - 1;
+							if (saturation(I, 2, i, j, k) < I->residual_saturation[2]) {
+								I->B_prev[B_IND(I, 7, i, j, k)] = 0;
+								saturation_sum = saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k);
+								I->B_prev[B_IND(I, 5, i, j, k)] -= saturation_sum - 1;
+							}
+						}
+						*/
+						flag_bad_sum_saturation = 1;
+					} else if (saturation_sum < 1) {
+						I->B_prev[B_IND(I, 6, i, j, k)] += 1 - saturation_sum;
+						flag_bad_sum_saturation = 1;
+					}
+					saturation_sum = saturation(I, 0, i, j, k) + saturation(I, 1, i, j, k) + saturation(I, 2, i, j, k);
+					if (fabs(saturation_sum - 1.0) > I->epsilon)
+						printf("Error saturation sum after normalisation! i = %d, j = %d, k = %d, saturation_sum = %e\n", i, j, k, saturation_sum);
 					for (p = 0; p < 3; p++)
-						saturation_sum += saturation(I, p, i, j, k);
-					if (saturation_sum != 1) {
-						//printf("Saturatins sum is not equal 1 at [%d, %d, %d]: %.20f\n", i, j, k, saturation_sum);
-						I->B_prev[B_IND(I, 5, i, j, k)] = I->residual_saturation[0] + I->epsilon + (saturation(I, 0, i, j, k) - I->residual_saturation[0] - I->epsilon) * (1 - C) / (saturation_sum - C);
-						I->B_prev[B_IND(I, 6, i, j, k)] = I->residual_saturation[1] + I->epsilon + (saturation(I, 1, i, j, k) - I->residual_saturation[1] - I->epsilon) * (1 - C) / (saturation_sum - C);
-						I->B_prev[B_IND(I, 7, i, j, k)] = I->residual_saturation[2] + I->epsilon + (saturation(I, 2, i, j, k) - I->residual_saturation[2] - I->epsilon) * (1 - C) / (saturation_sum - C);
-					}
-					for (p = 0; p < 4; p++) {
-						if (concentration(I, p, i, j, k) < I->epsilon) {
-							//printf("Too small concentration of %d component at [%d, %d, %d]: %.20f\n", p, i, j, k, concentration(I, p, i, j, k));
-							I->B_prev[B_IND(I, p, i, j, k)] = I->epsilon;
+						nan_check(I, saturation(I, p, i, j, k), p, -1, i, j, k, "saturation_after_normalization");
+					for (p = 0, concentration_sum = 0; p < 4; p++) {
+						nan_check(I, concentration(I, p, i, j, k), p, -1, i, j, k, "concentration_before_normalization");
+						if (concentration(I, p, i, j, k) < 0) {
+							I->B_prev[B_IND(I, p, i, j, k)] = 0;
+							flag_too_small_concentration = 1;
 						}
-					}
-					concentration_sum = 0;
-					for (p = 0; p < 4; p++)
+						//if (concentration(I, p, i, j, k) > 1) {
+						//	I->B_prev[B_IND(I, p, i, j, k)] = 1;
+						//	flag_too_big_concentration = 1;
+						//}
 						concentration_sum += concentration(I, p, i, j, k);
-					if (concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k) != 1) {
-						//printf("Concentration sum is not equal 1 at [%d, %d, %d]: %.20f\n", i, j, k, concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k));
-						I->B_prev[B_IND(I, 0, i, j, k)] = I->epsilon + (concentration(I, 0, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
-						I->B_prev[B_IND(I, 1, i, j, k)] = I->epsilon + (concentration(I, 1, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
-						I->B_prev[B_IND(I, 2, i, j, k)] = I->epsilon + (concentration(I, 2, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
-						I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon + (concentration(I, 3, i, j, k) - I->epsilon) * (1 - 4 * I->epsilon) / concentration_sum;
 					}
-					//if (temperature_flow(I, i, j, k) < I->initial_temperature)
-					//	I->B_prev[B_IND(I, 8, i, j, k)] = I->initial_temperature;
+					if (concentration_sum < I->epsilon) {
+						I->B_prev[B_IND(I, 3, i, j, k)] = I->epsilon;
+						concentration_sum = concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k);
+					}
+					if (concentration_sum != 1) {
+						I->B_prev[B_IND(I, 0, i, j, k)] = concentration(I, 0, i, j, k) / concentration_sum;
+						I->B_prev[B_IND(I, 1, i, j, k)] = concentration(I, 1, i, j, k) / concentration_sum;
+						I->B_prev[B_IND(I, 2, i, j, k)] = concentration(I, 2, i, j, k) / concentration_sum;
+						I->B_prev[B_IND(I, 3, i, j, k)] = concentration(I, 3, i, j, k) / concentration_sum;
+						flag_bad_sum_concentration = 1;
+					}
+					concentration_sum = concentration(I, 0, i, j, k) + concentration(I, 1, i, j, k) + concentration(I, 2, i, j, k) + concentration(I, 3, i, j, k);
+					if (fabs(concentration_sum - 1.0) > I->epsilon)
+						printf("Error concentration sum after normalisation! i = %d, j = %d, k = %d, concentration_sum = %e\n", i, j, k, concentration_sum);
+					for (p = 0; p < 4; p++)
+						nan_check(I, concentration(I, p, i, j, k), p, -1, i, j, k, "concentration_after_normalization");
+					if (temperature_flow(I, i, j, k) < 400) {
+						I->B_prev[B_IND(I, 8, i, j, k)] = 0;
+						flag_too_small_temperature_flow = 1;
+					}
+					if (temperature_environment(I, i, j, k) < 400) {
+						I->B_prev[B_IND(I, 9, i, j, k)] = 0;
+						flag_too_small_temperature_environment = 1;
+					}
+				}
+			}
+		}
+	}
+	if (disparity != 0)
+		printf("Disparity is %lf in %d cells\n", disparity, disp_cells);
+	if (flag_too_small_saturation)
+		printf("Check sum: There is too small saturation at time step %d\n", I->time_step);
+	if (flag_too_big_saturation)
+		printf("Check sum: There is too big saturation at time step %d\n", I->time_step);
+	if (flag_too_small_concentration)
+		printf("Check sum: There is too small concentration at time step %d\n", I->time_step);
+	if (flag_too_big_concentration)
+		printf("Check sum: There is too big concentration at time step %d\n", I->time_step);
+	if (flag_bad_sum_saturation)
+		printf("Check sum: There is bad saturations sum at time step %d\n", I->time_step);
+	if (flag_bad_sum_concentration)
+		printf("Check sum: There is bad concentrations sum at time step %d\n", I->time_step);
+	if (flag_too_small_temperature_flow)
+		printf("Check sum: There is too small temperature flow at time step %d\n", I->time_step);
+	if (flag_too_small_temperature_environment)
+		printf("Check sum: There is too small temperature environment at time step %d\n", I->time_step);
+	return 0;
+}
+
+int check_convection_speed(in *I)
+{
+	double max_conv_speed_magnitude = 0, conv_speed_magnitude, max_grad_pressure_magnitude = 0, grad_pressure_magnitude;
+	for (int k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
+		for (int i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
+			for (int j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
+				if (cell_of_computation_domain(I, i, j, k)) {
+					conv_speed_magnitude = sqrt(pow(convection_speed(I, 0, i, j, k) , 2) + pow(convection_speed(I, 1, i, j, k), 2));
+					if (conv_speed_magnitude > max_conv_speed_magnitude)
+						max_conv_speed_magnitude = conv_speed_magnitude;
+					grad_pressure_magnitude = sqrt(pow(grad_pressure(I, 0, i, j, k) , 2) + pow(grad_pressure(I, 1, i, j, k), 2));
+					if (grad_pressure_magnitude > max_grad_pressure_magnitude)
+						max_grad_pressure_magnitude = grad_pressure_magnitude;
+				}
+			}
+		}
+	}
+	if (max_conv_speed_magnitude > I->avarage_velocity_global_value) {
+		printf("Too big convection speed!\n");
+		max_conv_speed_magnitude = I->avarage_velocity_global_value;
+	}
+	for (int k = -I->stencil_size; k < I->nz + I->stencil_size; k++) {
+		for (int i = -I->stencil_size; i < I->nx + I->stencil_size; i++) {
+			for (int j = -I->stencil_size; j < I->ny + I->stencil_size; j++) {
+				if (cell_of_computation_domain(I, i, j, k)) {
+					I->array_of_parameters[PARAM_IND(I, 68, i, j, k)] = grad_pressure(I, 0, i, j, k) * max_conv_speed_magnitude / max_grad_pressure_magnitude;
+					I->array_of_parameters[PARAM_IND(I, 69, i, j, k)] = grad_pressure(I, 1, i, j, k) * max_conv_speed_magnitude / max_grad_pressure_magnitude;
+					I->array_of_parameters[PARAM_IND(I, 70, i, j, k)] = grad_pressure(I, 2, i, j, k) * max_conv_speed_magnitude / max_grad_pressure_magnitude;
 				}
 			}
 		}
 	}
 	return 0;
+}
+
+int check_values_in_B(in *I)
+{
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				for (int p = 0; p < I->num_parameters; p++) {
+					if (I->B[A_IND(I, p, i, j, k)] != I->B[A_IND(I, p, i, j, k)]) {
+						printf("Value %lf is written in B in (%d, %d, %d, %d)\n", I->B[A_IND(I, p, i, j, k)], p, i, j, k);
+						I->nan_flag = 1;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int check_values_in_B_prev(in *I)
+{
+	for (int k = - I->stencil_size; k < I->nz + I->stencil_size; k++) {
+		for (int i = - I->stencil_size; i < I->nx + I->stencil_size; i++) {
+			for (int j = - I->stencil_size; j < I->ny + I->stencil_size; j++) {
+				for (int p = 0; p < I->num_parameters; p++) {
+					if (I->B_prev[B_IND(I, p, i, j, k)] != I->B_prev[B_IND(I, p, i, j, k)]) {
+						printf("Value %lf is written in B in (%d, %d, %d, %d)\n", I->B_prev[B_IND(I, p, i, j, k)], p, i, j, k);
+						I->nan_flag = 1;
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int check_for_symmetry(in *I)
+{
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx / 2; i++) {
+			for (int j = 0; j <= i; j++) {
+				for (int p = 0; p < I->num_parameters; p++) {
+					if ((fabs(I->B_prev[B_IND(I, p, i, j, k)] - I->B_prev[B_IND(I, p, I->nx - i, j, k)]) < 1e-10) ||
+						(fabs(I->B_prev[B_IND(I, p, i, j, k)] - I->B_prev[B_IND(I, p, i, I->ny - j, k)]) < 1e-10) ||
+						(fabs(I->B_prev[B_IND(I, p, i, j, k)] - I->B_prev[B_IND(I, p, I->nx - i, I->ny - j, k)]) < 1e-10) ||
+						(fabs(I->B_prev[B_IND(I, p, i, j, k)] - I->B_prev[B_IND(I, p, j, i, k)]) < 1e-10) ||
+						(fabs(I->B_prev[B_IND(I, p, i, j, k)] - I->B_prev[B_IND(I, p, I->ny - j, i, k)]) < 1e-10) ||
+						(fabs(I->B_prev[B_IND(I, p, i, j, k)] - I->B_prev[B_IND(I, p, j, I->nx - i, k)]) < 1e-10) ||
+						(fabs(I->B_prev[B_IND(I, p, i, j, k)] - I->B_prev[B_IND(I, p, I->ny - j, I->nx - i, k)]) < 1e-10))
+							printf("There is asymmetry in parameter %d in (%d,%d, %d)\n", p, i, j, k);
+				}
+			}
+		}
+	}
 }
 
 int print_oil_production(in *I)
@@ -1182,8 +2001,10 @@ int print_oil_production(in *I)
 	injection_well_coordinates[2] = 0;
 
 	double velocity_of_oil_production =
-		saturation(I, 1, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2]) * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
-		I->B[A_IND(I, 6, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
+		saturation(I, 1, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2]) *
+		I->porousness[POR_IND(I, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] * I->dx[0] * I->dx[1] * I->dx[2] -
+		I->B[A_IND(I, 6, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] *
+		I->porousness[POR_IND(I, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] * I->dx[0] * I->dx[1] * I->dx[2] -
 		avarage_velocity(I, 1, 0, production_well_coordinates[0] + 1, production_well_coordinates[1], production_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt -
 		avarage_velocity(I, 1, 1, production_well_coordinates[0], production_well_coordinates[1] + 1, production_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
 	if (I->time_step == 0) {
@@ -1191,7 +2012,8 @@ int print_oil_production(in *I)
 			printf("error openning file");
 			return 1;
 		}
-		fprintf(f, "#total oil volume %lf", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1));
+		fprintf(f, "#total oil volume %lf",\
+			I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness[POR_IND(I, 1, 1, 1)] * density_t(I, 1, 1, 1, 1));
 	} else {
 		if ((f = fopen("result/velocity_of_oil_production_m.dat","a")) == NULL) {
 			printf("error openning file");
@@ -1207,7 +2029,8 @@ int print_oil_production(in *I)
 			printf("error openning file");
 			return 1;
 		}
-		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
+		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n",\
+			I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness[POR_IND(I, 1, 1, 1)] * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
 	} else {
 		if ((f = fopen("result/oil_production_m.dat","a")) == NULL) {
 			printf("error openning file");
@@ -1223,7 +2046,8 @@ int print_oil_production(in *I)
 			printf("error openning file");
 			return 1;
 		}
-		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
+		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n",\
+			I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness[POR_IND(I, 1, 1, 1)] * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
 	} else {
 		if ((f = fopen("result/velocity_of_oil_production_kg.dat","a")) == NULL) {
 			printf("error openning file");
@@ -1239,7 +2063,8 @@ int print_oil_production(in *I)
 			printf("error openning file");
 			return 1;
 		}
-		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
+		fprintf(f, "#total oil volume %lf\n%lf\t%lf\n",\
+			I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * saturation(I, 1, 1, 1, 1) * I->porousness[POR_IND(I, 1, 1, 1)] * density_t(I, 1, 1, 1, 1), 0.0, 0.0);
 	} else {
 		if ((f = fopen("result/oil_production_kg.dat","a")) == NULL) {
 			printf("error openning file");
@@ -1252,8 +2077,10 @@ int print_oil_production(in *I)
 	double velocity_of_fluid_production = 0;
 	for (int p = 0; p < 3; p++) {
 		velocity_of_fluid_production +=
-			saturation(I, p, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2]) * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
-			I->B[A_IND(I, p + 5, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] * I->porousness * I->dx[0] * I->dx[1] * I->dx[2] -
+			saturation(I, p, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2]) *
+			I->porousness[POR_IND(I, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] * I->dx[0] * I->dx[1] * I->dx[2] -
+			I->B[A_IND(I, p + 5, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] *
+			I->porousness[POR_IND(I, production_well_coordinates[0], production_well_coordinates[1], production_well_coordinates[2])] * I->dx[0] * I->dx[1] * I->dx[2] -
 			avarage_velocity(I, p, 0, production_well_coordinates[0] + 1, production_well_coordinates[1], production_well_coordinates[2]) * I->dx[1] * I->dx[2] * I->dt -
 			avarage_velocity(I, p, 1, production_well_coordinates[0], production_well_coordinates[1] + 1, production_well_coordinates[2]) * I->dx[0] * I->dx[2] * I->dt;
 	}
@@ -1262,7 +2089,8 @@ int print_oil_production(in *I)
 			printf("error openning file");
 			return 1;
 		}
-		fprintf(f, "#total fluid volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * I->porousness, 0.0, 0.0);
+		fprintf(f, "#total fluid volume %lf\n%lf\t%lf\n",\
+			I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * I->porousness[POR_IND(I, 1, 1, 1)], 0.0, 0.0);
 	} else {
 		if ((f = fopen("result/velocity_of_fluid_production_m.dat","a")) == NULL) {
 			printf("error openning file");
@@ -1278,7 +2106,7 @@ int print_oil_production(in *I)
 			printf("error openning file");
 			return 1;
 		}
-		fprintf(f, "#total fluid volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * I->porousness, 0.0, 0.0);
+		fprintf(f, "#total fluid volume %lf\n%lf\t%lf\n", I->nx * I->dx[0] * I->ny * I->dx[1] * I->nz * I->dx[2] * I->porousness[POR_IND(I, 1, 1, 1)], 0.0, 0.0);
 	} else {
 		if ((f = fopen("result/fluid_production_m.dat","a")) == NULL) {
 			printf("error openning file");
@@ -1328,33 +2156,55 @@ int print_oil_production(in *I)
 double avarage_velocity_global(in *I)
 {
 	int i, j, k, p, pr;
-	double x = 0, y = 0, tmp;
+	double y[4], tmp, min_saturation_gas = 1, max_abs_avarage_velocity_gas = 0;
+	//printf("avaraje velocity global p = 0 pr = 0 i = 23 j = 24 %lf\n", avarage_velocity(I, 0, 0, 23, 24, 0) / (saturation(I, 2, 23, 24, 0) * I->porousness));
+	//printf("avaraje velocity global p = 0 pr = 1 i = 23 j = 24 %lf\n", avarage_velocity(I, 0, 1, 23, 24, 0) / (saturation(I, 2, 23, 24, 0) * I->porousness));
+	//printf("avaraje velocity global p = 1 pr = 0 i = 23 j = 24 %lf\n", avarage_velocity(I, 1, 0, 23, 24, 0) / (saturation(I, 2, 23, 24, 0) * I->porousness));
+	//printf("avaraje velocity global p = 1 pr = 1 i = 23 j = 24 %lf\n", avarage_velocity(I, 1, 1, 23, 24, 0) / (saturation(I, 2, 23, 24, 0) * I->porousness));
+	//printf("avaraje velocity global p = 2 pr = 0 i = 23 j = 24 %lf\n", avarage_velocity(I, 2, 0, 23, 24, 0) / (saturation(I, 2, 23, 24, 0) * I->porousness));
+	//printf("avaraje velocity global p = 2 pr = 1 i = 23 j = 24 %lf\n", avarage_velocity(I, 2, 1, 23, 24, 0) / (saturation(I, 2, 23, 24, 0) * I->porousness));
+	y[0] = y[1] = y[2] = y[3] = 0;
 	for (k = 0; k < I->nz; k++) {
 		for (i = 0; i < I->nx; i++) {
 			for (j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (p = 0; p < 3; p++) {
-						for (pr = 0, x = 0; pr < 3; pr++) {
-							tmp = avarage_velocity(I, p, pr, i, j, k) / (saturation(I, p, i, j, k) * I->porousness);
-							x += pow(tmp, 2);
-						}
-						x = sqrt(x);
-						if (y < x)
-							y = x;
+						tmp = 0;
+						tmp = sqrt(pow(avarage_velocity(I, p, 0, i, j, k) / (saturation(I, p, i, j, k) * I->porousness[POR_IND(I, i, j, k)]), 2) +
+							pow(avarage_velocity(I, p, 1, i ,j ,k) / (saturation(I, p, i, j, k) * I->porousness[POR_IND(I, i, j, k)]), 2));
+						//for (pr = 0; pr < 2; pr++) {
+						//	tmp += fabs(avarage_velocity(I, p, pr, i, j, k) / (saturation(I, p, i, j, k) * I->porousness[POR_IND(I, i, j, k)]));
+						//}
+						if (y[p] < tmp)
+							y[p] = tmp;
 					}
+					if (min_saturation_gas > saturation(I, 2, i, j, k))
+						min_saturation_gas = saturation(I, 2, i, j, k);
+					if (max_abs_avarage_velocity_gas < fabs(avarage_velocity(I, 2, 0, i, j, k)) + fabs(avarage_velocity(I, 2, 1, i, j, k)))
+						max_abs_avarage_velocity_gas = fabs(avarage_velocity(I, 2, 0, i, j, k)) + fabs(avarage_velocity(I, 2, 1, i, j, k));
 				}
 			}
 		}
 	}
+	for (p = 0; p < 3; p++) {
+		printf("Max_avarage_velocity%d = %lf\n", p, y[p]);
+		if (y[3] < y[p])
+			y[3] = y[p];
+	}
+	return y[3];
+	if (min_saturation_gas == 0)
+		min_saturation_gas = I->epsilon;
+	if (max_abs_avarage_velocity_gas / (min_saturation_gas * I->porousness[POR_IND(I, i, j, k)]) > y[3])
+		y[3] = max_abs_avarage_velocity_gas / (min_saturation_gas * I->porousness[POR_IND(I, i, j, k)]);
 //	x /= I->n_cells_multipl * 9;
-	return y;
+	return y[3];
 }
 
 int save_I_termogas(in *I)
 {
 	FILE *f = fopen("result/I", "w");
 	fprintf(f, "%s\n", I->map_name);
-	fprintf(f, "%s\n", I->region_map_name);
+	//fprintf(f, "%s\n", I->region_map_name);
 	fprintf(f, "%lf\n", I->hight);
 	fprintf(f, "%d %d %d\n", I->kx, I->ky, I->kz);
 	fprintf(f, "%d %d %d\n", I->nx, I->ny, I->nz);
@@ -1364,7 +2214,7 @@ int save_I_termogas(in *I)
 	fprintf(f, "%d %d\n", I->n_points, I->n_cells);
 	fprintf(f, "%d\n", I->n_points_multipl);
 	fprintf(f, "%d\n", I->n_cells_multipl);
-	fprintf(f, "%lf %lf\n", I->interpolation, I->interpolation_poli);
+	//fprintf(f, "%lf %lf\n", I->interpolation, I->interpolation_poli);
 	fprintf(f, "%lf\n", I->nodata_value);
 	fprintf(f, "%lf %lf %lf\n", I->dx[0], I->dx[1], I->dx[2]);
 	fprintf(f, "%d\n", I->num_parameters);
@@ -1374,7 +2224,7 @@ int save_I_termogas(in *I)
 	fprintf(f, "%d\n", I->stencil_size);
 	fprintf(f, "%d\n", I->n_boundary_cells);
 	fprintf(f, "%lf\n", I->mass_quantity);
-	fprintf(f, "%lf\n", I->porousness);
+	//fprintf(f, "%lf\n", I->porousness);
 	fprintf(f, "%lf %lf\n", I->density_0[0], I->density_0[1]);
 	fprintf(f, "%lf\n", I->pressure_0);
 	fprintf(f, "%lf %lf\n", I->density_coef_beta[0], I->density_coef_beta[1]);
@@ -1618,6 +2468,26 @@ int read_I_termogas(in *I)
 	sscanf(s, "%d\n", &I->gl_n_cells_multipl);
 	fclose(f);
 	return 0;
+}
+
+int calculate_disparity_pressure(in *I)
+{
+	int x = 0;
+	for(int i = 0; i < I->nx; i++) {
+		for (int j = 0; j < I->ny; j++) {
+			if (!well(I, i, j, 0)) {
+				double tmp = 0.5 * ((Darsi_M_coef(I, i + 1, j, 0) + Darsi_M_coef(I, i, j, 0)) * (pressure(I, i + 1, j, 0) - pressure(I, i, j, 0)) -
+					(Darsi_M_coef(I, i, j, 0) + Darsi_M_coef(I, i - 1, j, 0) * (pressure(I, i, j, 0) - pressure(I, i - 1, j, 0)))) / (I->dx[0] * I->dx[0]) +
+					0.5 * ((Darsi_M_coef(I, i, j + 1, 0) + Darsi_M_coef(I, i, j, 0)) * (pressure(I, i, j + 1, 0) - pressure(I, i, j, 0)) -
+					(Darsi_M_coef(I, i, j, 0) + Darsi_M_coef(I, i, j - 1, 0)) * (pressure(I, i, j, 0) - pressure(I, i, j - 1, 0))) / (I->dx[1] * I->dx[1]);
+				if (tmp > 1e-03) {
+					printf("Disparity of pressure in [%d, %d] = %e\n", i, j, tmp);
+					x = 1;
+				}
+			}
+		}
+	}
+	return x;
 }
 
 #endif

@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 		printf("Memory error in function %s.\n", __func__);
 		return 1;
 	}
-	int num_res = 268910;
+	int num_res = 315;
 	int num_plots = 5;
 	for (int i = 0; i <= num_res; i += num_res / num_plots) {
 		printf("%d\n", i);
@@ -186,8 +186,8 @@ int main(int argc, char **argv)
 		for (int j = 0; j < I->num_parameters; j++)
 			print_injection_production_param(j, i / (num_res / num_plots), I);
 		print_injection_production_rate_of_reaction(i / (num_res / num_plots), I);
-		if (print_symmetrical_case(i, I))
-			return 1;
+		//if (print_symmetrical_case(i, I))
+		//	return 1;
 	}
 	free(I->B);
 	free(I->B_prev);

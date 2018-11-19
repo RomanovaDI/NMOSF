@@ -45,23 +45,23 @@ int set_parameters_termogas(in *I)
 {
 #if TERMOGAS
 	//strcpy(I->map_name, "maps/map_termogas_test_big.asc");
-	strcpy(I->map_name, "maps/map_termogas.asc");
+	strcpy(I->map_name, "maps/map_termogas_big.asc");
 	//strcpy(I->map_name, "maps/map_termogas_small.asc");
 	//strcpy(I->map_name, "maps/map_termogas_1d.asc");
 	//strcpy(I->map_name, "maps/map_termogas_pattern.asc");
 	//strcpy(I->region_map_name, "maps/map_termogas_region.asc");
 	//strcpy(I->map_name, "maps/map_cavity.asc");
-	I->hight = 10;//30;
+	I->hight = 5;//30;
 	I->kx = 1;
 	I->ky = 1;
 	I->kz = 1;
-	I->epsilon = 1e-10;
+	I->epsilon = 1e-5;
 	I->end_time = 365 * 86400;//1000000;
-	I->stencil_size = 9;//2;
+	I->stencil_size = 2;
 	I->num_parameters = 10; // 3 phase saturation, 4 components of gas concentration, pressure, temperature of porous medium, temperature of mixed flow
 	I->mass_quantity = 0;
 	I->dt = 1;//100.0;//10;//we need to set dt!!!
-	I->porousness = 0.2; //0.3;
+	//I->porousness = 0.2; //0.3;
 	I->initial_pressure = 20000000;
 	I->initial_temperature = 400;//298;
 	I->density_0[0] = 998; // water
@@ -78,10 +78,10 @@ int set_parameters_termogas(in *I)
 	I->molar_weight[2] = 0.04401; //CO2
 	I->molar_weight[3] = 0.01802; //H2O(g)
 	I->molar_weight[4] = 0.11423; //C8H18
-	I->permeability = 0.00000000000001;
+	I->permeability = 1e-14;
 	I->residual_saturation[0] = 0.15; // water
 	I->residual_saturation[1] = 0.2; // oil
-	I->residual_saturation[2] = 0.001;//I->epsilon; // gas
+	I->residual_saturation[2] = 0.05;//I->epsilon; // gas
 	I->viscosity_coef_A[0] = 0.00000001556; // water
 	I->viscosity_coef_A[1] = 0.000000383; // oil
 	I->viscosity_coef_A_gas[0] = 0.00001781; // N2
@@ -150,7 +150,7 @@ int set_parameters_termogas(in *I)
 	I->density_environment = 2000;
 	//I->injection_well_pressure = 30000000;
 	I->injection_well_pressure = 30000000;
-	I->injection_well_temperature = 800;//I->initial_temperature;//600;
+	I->injection_well_temperature = 600;//I->initial_temperature;//600;
 	I->production_well_pressure = 10000000;
 	I->adiabatic_exponent[0] = 1; // water
 	I->adiabatic_exponent[1] = 1; // oil
@@ -174,8 +174,19 @@ int set_parameters_termogas(in *I)
 		return 1;
 	}
 	I->time = 0;
-	I->dependent_variables = 69;
-	I->write_interval = 1000;
+	I->dependent_variables = 71;
+	I->nan_flag = 0;
+	I->negative_num_flag = 0;
+#define TIME_STEP 0
+#define SECOND 1
+#define MINUTE 60
+#define HOUR 3600
+#define DAY 86400
+#define MONTH 2592000
+#define YEAR 31536000
+	I->units_for_write_interval = DAY; // {TIME_STEP, SECOND, MINUTE, HOUR, DAY, MONTH, YEAR}
+	I->write_interval = 1;
+	I->written_step = -1;
 #endif
 	return 0;
 }

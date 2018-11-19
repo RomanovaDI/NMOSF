@@ -107,9 +107,17 @@ int print_vtk_avalanche(in *I)
 int print_vtk_termogas(in *I)
 {
 	char file_name[14 + 20];
-	if (I->time_step % I->write_interval)
-		return 0;
-	sprintf(file_name, "result/map%d.vtk", I->time_step / I->write_interval);
+	int file_num;
+	if (I->units_for_write_interval == 0) {
+		if (I->time_step % I->write_interval)
+			return 0;
+		file_num = I->time_step / I->write_interval;
+	} else {
+		if (((int) I->time / I->units_for_write_interval) / I->write_interval == I->written_step)
+			return 0;
+		file_num = I->written_step = ((int) I->time / I->units_for_write_interval) / I->write_interval;
+	}
+	sprintf(file_name, "result/map%d.vtk", file_num);
 	FILE *f = fopen(file_name, "w");
 	fprintf(f, "# vtk DataFile Version 2.0\n");
 //	fprintf(f, "#time = %lf\n", I->time);
@@ -283,7 +291,7 @@ int print_vtk_termogas(in *I)
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					fprintf(f, "%20.20f\n", viscosity_gas(I, 0, i, j, k));
+					fprintf(f, "%20.20f\n", viscosity_gas_component(I, 0, i, j, k));
 				}
 			}
 		}
@@ -294,7 +302,7 @@ int print_vtk_termogas(in *I)
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					fprintf(f, "%20.20f\n", viscosity_gas(I, 1, i, j, k));
+					fprintf(f, "%20.20f\n", viscosity_gas_component(I, 1, i, j, k));
 				}
 			}
 		}
@@ -305,7 +313,7 @@ int print_vtk_termogas(in *I)
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					fprintf(f, "%20.20f\n", viscosity_gas(I, 2, i, j, k));
+					fprintf(f, "%20.20f\n", viscosity_gas_component(I, 2, i, j, k));
 				}
 			}
 		}
@@ -316,7 +324,98 @@ int print_vtk_termogas(in *I)
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					fprintf(f, "%20.20f\n", viscosity_gas(I, 3, i, j, k));
+					fprintf(f, "%20.20f\n", viscosity_gas_component(I, 3, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS saturation_water_inflow_rate double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n",\
+						mass_inflow_rate(I, 5, i, j, k) /\
+						(density_t(I, 0, i, j, k) * I->dx[0] * I->dx[1] * I->dx[2] * I->porousness[POR_IND(I, i, j, k)]));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS saturation_oil_inflow_rate double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n",\
+						mass_inflow_rate(I, 6, i, j, k) /\
+						(density_t(I, 1, i, j, k) * I->dx[0] * I->dx[1] * I->dx[2] * I->porousness[POR_IND(I, i, j, k)]));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS saturation_gas_inflow_rate double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n",\
+						mass_inflow_rate(I, 7, i, j, k) /\
+						(density_t(I, 2, i, j, k) * I->dx[0] * I->dx[1] * I->dx[2] * I->porousness[POR_IND(I, i, j, k)]));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS concentration_N2_inflow_rate double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n",\
+						mass_inflow_rate(I, 0, i, j, k) /\
+						(density_t(I, 2, i, j, k) * I->dx[0] * I->dx[1] * I->dx[2] * I->porousness[POR_IND(I, i, j, k)] * saturation(I, 2, i, j, k)));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS concentration_O2_inflow_rate double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n",\
+						mass_inflow_rate(I, 1, i, j, k) /\
+						(density_t(I, 2, i, j, k) * I->dx[0] * I->dx[1] * I->dx[2] * I->porousness[POR_IND(I, i, j, k)] * saturation(I, 2, i, j, k)));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS concentration_CO2_inflow_rate double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n",\
+						mass_inflow_rate(I, 2, i, j, k) /\
+						(density_t(I, 2, i, j, k) * I->dx[0] * I->dx[1] * I->dx[2] * I->porousness[POR_IND(I, i, j, k)] * saturation(I, 2, i, j, k)));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS concentration_H2O(g)_inflow_rate double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n",\
+						mass_inflow_rate(I, 3, i, j, k) /\
+						(density_t(I, 2, i, j, k) * I->dx[0] * I->dx[1] * I->dx[2] * I->porousness[POR_IND(I, i, j, k)] * saturation(I, 2, i, j, k)));
 				}
 			}
 		}
@@ -526,9 +625,9 @@ int print_vtk_termogas(in *I)
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					double tmp = 0;
 					for (int p = 0; p < 2; p++)
-						tmp += I->porousness * density_t(I, p, i, j, k) * saturation(I, p, i, j, k) * I->specific_heat[p];
+						tmp += I->porousness[POR_IND(I, i, j, k)] * density_t(I, p, i, j, k) * saturation(I, p, i, j, k) * I->specific_heat[p];
 					for (int p = 0; p < 4; p++)
-						tmp += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[p + 2] * concentration(I, p, i, j, k);
+						tmp += I->porousness[POR_IND(I, i, j, k)] * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[p + 2] * concentration(I, p, i, j, k);
 					fprintf(f, "%20.20f\n", chemical_reaction_heat_flow(I, i, j, k) / tmp);
 				}
 			}
@@ -621,6 +720,17 @@ int print_vtk_termogas(in *I)
 							saturation(I, 1, i, j, k) * mass_inflow_rate(I, 6, i, j, k) +
 							saturation(I, 2, i, j, k) * mass_inflow_rate(I, 7, i, j, k);
 					fprintf(f, "%20.20f\n", tmp);
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS porousness double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", I->porousness[POR_IND(I, i, j, k)]);
 				}
 			}
 		}
@@ -770,6 +880,72 @@ int print_vtk_termogas(in *I)
 			}
 		}
 	}
+	fprintf(f, "SCALARS two_phase_relative_permeability_0 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", two_phase_relative_permeability(I, 0, 1, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS two_phase_relative_permeability_1 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", two_phase_relative_permeability(I, 1, 0, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS two_phase_relative_permeability_2 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", two_phase_relative_permeability(I, 0, 2, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS two_phase_relative_permeability_3 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", two_phase_relative_permeability(I, 2, 0, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS two_phase_relative_permeability_4 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", two_phase_relative_permeability(I, 1, 2, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS two_phase_relative_permeability_5 double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					fprintf(f, "%20.20f\n", two_phase_relative_permeability(I, 2, 1, i, j, k));
+				}
+			}
+		}
+	}
 	fprintf(f, "SCALARS thermal_conductivity double 1\n");
 	fprintf(f, "LOOKUP_TABLE default\n");
 	for (int k = 0; k < I->nz; k++) {
@@ -787,7 +963,19 @@ int print_vtk_termogas(in *I)
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (int p = 0; p < 3; p++)
-						fprintf(f, "%20.20f\t", avarage_velocity(I, 0, p, i, j, k));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 0, p, i, j, k) / (I->porousness[POR_IND(I, i, j, k)] * saturation(I, 0, i, j, k)));
+					fprintf(f, "\n");
+				}
+			}
+		}
+	}
+	fprintf(f, "VECTORS filtration_rate_oil double\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
+					for (int p = 0; p < 3; p++)
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 1, p, i, j, k) / (I->porousness[POR_IND(I, i, j, k)] * saturation(I, 1, i, j, k)));
 					fprintf(f, "\n");
 				}
 			}
@@ -799,7 +987,7 @@ int print_vtk_termogas(in *I)
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (int p = 0; p < 3; p++)
-						fprintf(f, "%20.20f\t", avarage_velocity(I, 1, p, i, j, k));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 1, p, i, j, k) / (I->porousness[POR_IND(I, i, j, k)] * saturation(I, 1, i, j, k)));
 					fprintf(f, "\n");
 				}
 			}
@@ -811,7 +999,7 @@ int print_vtk_termogas(in *I)
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (int p = 0; p < 3; p++)
-						fprintf(f, "%20.20f\t", avarage_velocity(I, 2, p, i, j, k));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 2, p, i, j, k) / (I->porousness[POR_IND(I, i, j, k)] * saturation(I, 2, i, j, k)));
 					fprintf(f, "\n");
 				}
 			}
@@ -823,7 +1011,7 @@ int print_vtk_termogas(in *I)
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (int p = 0; p < 3; p++)
-						fprintf(f, "%20.20f\t", avarage_velocity(I, 0, p, i, j, k) / (saturation(I, 0, i, j, k) * I->porousness));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 0, p, i, j, k) / (saturation(I, 0, i, j, k) * I->porousness[POR_IND(I, i, j, k)]));
 					fprintf(f, "\n");
 				}
 			}
@@ -835,7 +1023,7 @@ int print_vtk_termogas(in *I)
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (int p = 0; p < 3; p++)
-						fprintf(f, "%20.20f\t", avarage_velocity(I, 1, p, i, j, k) / (saturation(I, 1, i, j, k) * I->porousness));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 1, p, i, j, k) / (saturation(I, 1, i, j, k) * I->porousness[POR_IND(I, i, j, k)]));
 					fprintf(f, "\n");
 				}
 			}
@@ -847,7 +1035,7 @@ int print_vtk_termogas(in *I)
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
 					for (int p = 0; p < 3; p++)
-						fprintf(f, "%20.20f\t", avarage_velocity(I, 2, p, i, j, k) / (saturation(I, 2, i, j, k) * I->porousness));
+						fprintf(f, "%20.20f\t", avarage_velocity(I, 2, p, i, j, k) / (saturation(I, 2, i, j, k) * I->porousness[POR_IND(I, i, j, k)]));
 					fprintf(f, "\n");
 				}
 			}
@@ -1010,20 +1198,8 @@ int print_vtk_termogas(in *I)
 		for (int i = 0; i < I->nx; i++) {
 			for (int j = 0; j < I->ny; j++) {
 				if (I->ind_cell_multipl[i * I->ny + j] != -1) {
-					for (int pr = 0; pr < 3; pr++) {
-						double tmp = 0;
-						for (int pp = 0; pp < 2; pp++)
-							tmp += density_t(I, pp, i, j, k) * I->specific_heat[pp] * I->adiabatic_exponent[pp] * avarage_velocity(I, pp, pr, i, j, k) / (2 * I->dx[pr]);
-						for (int pp = 0; pp < 4; pp++)
-							tmp += density_t(I, 2, i, j, k) * I->specific_heat[pp + 2] * I->adiabatic_exponent[pp + 2] * concentration(I, pp, i, j, k) *
-								avarage_velocity(I, 2, pr, i, j, k) / (2 * I->dx[pr]);
-						double tmp1 = 0;
-						for (int pp = 0; pp < 2; pp++)
-							tmp1 += I->porousness * density_t(I, pp, i, j, k) * saturation(I, pp, i, j, k) * I->specific_heat[pp];
-						for (int pp = 0; pp < 4; pp++)
-							tmp1 += I->porousness * density_t(I, 2, i, j, k) * saturation(I, 2, i, j, k) * I->specific_heat[pp + 2] * concentration(I, pp, i, j, k);
-						fprintf(f, "%20.20f\t", tmp / tmp1);
-					}
+					for (int pr = 0; pr < 3; pr++)
+						fprintf(f, "%20.20f\t", convection_speed(I, pr, i, j, k));
 					fprintf(f, "\n");
 				}
 			}

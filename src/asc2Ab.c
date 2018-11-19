@@ -185,23 +185,41 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	memset((void *) I->B_prev, 0, I->system_dimension_with_boundary * sizeof(double));
+	if ((I->porousness = (double *) malloc(I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * sizeof(double))) == NULL) {
+		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
+		return 1;
+	}
+	memset((void *) I->porousness, 0, I->n_boundary_cells * (I->nz + 2 * I->stencil_size) * sizeof(double));
 	SET_CONDITION(initial, termogas, fixed_value);
+	SET_CONDITION(boundary, termogas, no_boundaries_4_in_1_out);
 	I->flag_first_time_step = 1;
+	printf("Injection well: (%d, %d), (%d, %d), (%d, %d), (%d, %d).\n", I->nx / 2, I->ny / 2, I->nx / 2, I->ny / 2 - 1, I->nx / 2 - 1, I->ny / 2, I->nx / 2 - 1, I->ny / 2 - 1);
+	I->marker_of_step = 0;
 	while (I->time < I->end_time) {
 		if (I->my_rank == 0) {
 			printf("Time is %lf of %lf, time step %d\n", I->time, I->end_time, I->time_step);
 		}
 		if ((I->nproc > 1) && (reconstruct_src(I))) return 1;
-		SET_CONDITION(boundary, termogas, no_boundaries_4_in_1_out);
 		if (set_array_of_parameters_termogas(I)) return 1;
+		if (check_convection_speed(I)) return 1;
+		if (I->nan_flag) {
+			printf("There are NANs\n");
+			goto error;
+		}
+		if (I->negative_num_flag) {
+			printf("There are negative numbers in values from set of positive numbers\n");
+			goto error;
+		}
 		if ((I->flag_first_time_step) && (I->nproc > 1) && (reconstruct_src(I))) return 1;
 #if DEBUG
 		if ((I->my_rank == 0) && (I->nproc > 1) && (print_gl_B(I, 4))) return 1;
 #endif
 		time(&time1);
-		if (print_vtk(I)) {
-			printf("Error printing vtk file\n");
-			goto error;
+		if ((I->marker_of_step % 2) || (I->flag_first_time_step)) {
+			if (print_vtk(I)) {
+				printf("Error printing vtk file\n");
+				goto error;
+			}
 		}
 		time(&time2);
 		printf("Time of printing data is %lfsec.\n", difftime(time2, time1));
@@ -218,31 +236,67 @@ int main(int argc, char **argv)
 		if (create_Ab_avalanche(I) == 1) goto error;
 #endif
 #if TERMOGAS
-		I->dt = 0.7 * I->dx[0] / avarage_velocity_global(I);
-		printf("avarage_velocity_global = %lf\tdt = %lf\n", avarage_velocity_global(I), I->dt);
+		//if (!I->flag_first_time_step)
+		//	calculate_disparity_pressure(I);
+		I->courant_number = 0.7;
+		I->avarage_velocity_global_value = avarage_velocity_global(I) / I->courant_number;
+		I->dt = I->dx[0] / I->avarage_velocity_global_value;
+		printf("avarage_velocity_global = %lf\tdt = %lf\n", I->avarage_velocity_global_value, I->dt);
+		if (I->flag_first_time_step)
+			if (create_Ab_termogas(I)) goto error;
 		time(&time1);
-		if (create_Ab_termogas(I) == 1) goto error;
+		int tmp = 0;
+		do {
+			printf("Matrix creating iteration %d\n", tmp);
+			I->courant_flag = 0;
+			if (fill_Ab_termogas(I)) goto error;
+			if (I->courant_flag) {
+				I->avarage_velocity_global_value *= 2;
+				I->dt = I->dx[0] / I->avarage_velocity_global_value;
+			}
+			tmp++;
+		} while (I->courant_flag);
 		time(&time2);
 		printf("Time of matrix creating is %lfsec.\n", difftime(time2, time1));
 #endif
 		//print_A_csr(I);
+		//printf("1\n");
+		//check_values_in_B(I);
 		time(&time1);
 		if (solve_matrix(I)) goto error;
 		time(&time2);
+		//printf("2\n");
+		check_values_in_B(I);
 		printf("Time of matrix solving is %lfsec.\n", difftime(time2, time1));
 		if (I->my_rank == 0) {
 			if (print_oil_production(I)) goto error;
 		}
 		//if (write_B_to_B_prev(I)) goto error;
-		if (I->flag_first_time_step) {
-			if (write_pressure(I)) goto error;
+		if (I->marker_of_step % 2 == 0) {
+			if (write_pressure_and_temperature(I)) goto error;
+			I->marker_of_step++;
 		} else {
 			if (write_B_to_B_prev(I)) goto error;
+			I->time += I->dt;
+			I->time_step++;
+			I->marker_of_step++;
 		}
+		if (I->flag_first_time_step)
+			I->flag_first_time_step = 0;
+		//printf("3\n");
+		//check_values_in_B_prev(I);
+		//printf("1\n");
+		//check_for_symmetry(I);
 		if (check_sum(I)) goto error;
-		I->time += I->dt;
-		I->time_step++;
-		I->flag_first_time_step = 0;
+		if (I->nan_flag) {
+			printf("There are NANs\n");
+			goto error;
+		}
+		SET_CONDITION(boundary, termogas, no_boundaries_4_in_1_out);
+		//printf("2\n");
+		//check_for_symmetry(I);
+		//printf("4\n");
+		//check_values_in_B_prev(I);
 	}
 	time(&time1);
 	if (print_vtk(I)) {
