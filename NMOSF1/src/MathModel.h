@@ -7,7 +7,7 @@ private:
 	double *varVal;
 public:
 	variable(int);
-	int setName(char[50])
+	void setName(char[50]);
 	char* Name();
 	double Value(int, int, int);
 	double* Address(int, int, int);
