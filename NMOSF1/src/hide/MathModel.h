@@ -11,4 +11,4 @@ public:
 	char* Name();
 	double Value(int, int, int);
 	double* Address(int, int, int);
-}
+};

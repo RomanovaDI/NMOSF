@@ -9,12 +9,14 @@ private:
 	int *meshCellInd;
 	double meshCellSize;
 	int meshNumActiveCells;
+	int meshTmpInd;
 public:
-	mesh(int, int, int, double);
+	mesh(char[100]);
 	int Nx();
 	int Ny();
 	int Nz();
-	void setMeshCellInd(int, int, int, int);
+	void setMeshCellInd(int, int, int);
 	int getMeshCellInd(int, int, int);
 	void setMeshNumActiveCells(int);
-}
+	int readASCII(char[100]);
+};

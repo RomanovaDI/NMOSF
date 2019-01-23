@@ -3,10 +3,13 @@
 using namespace std;
 //#include "MathModel.h"
 #include "Error.h"
+#include "Mesh.h"
 
 int main(int argc, char* argv[])
 {
-	int a = 1, b = 2;
-	DebugCout(1, a << " " << b);
+	if (argc == 1)
+		DebugCout(0, INIT_DATA_ERR);
+	char initData[100] = "relief_22.asc";
+	mesh myMesh(initData);
     return 0;
 }
