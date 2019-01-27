@@ -1,4 +1,6 @@
 #Debug level:
 #0 - Run mode
 #1 - Full information mode
-DEBUG = 1;
+DEBUG 1
+MapName relief_22.asc
+RegionFileName region.asc
