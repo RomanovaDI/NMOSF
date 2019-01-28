@@ -1,6 +1,10 @@
 #pragma once
 
-class init
+#include "Singleton.h"
+
+//class error;
+
+class init : public Singleton<init>
 {
 private:
 	char InputFileName[100];
@@ -8,7 +12,11 @@ private:
 	char RegionFileName[100];
 	int valDebugLevel;
 public:
-	init(char [100]);
 	void ReadInputFile(char [100]);
+	void PrintInfo();
 	int DebugLevel();
+//	friend error;
+protected:
+	init();
+	friend class Singleton<init>;
 };

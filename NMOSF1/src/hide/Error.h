@@ -6,15 +6,16 @@
 #define FILE_ERR "Error file"
 #define FILE_DATA_ERR "Error data in file"
 
-#define DebugCout(level, args)\
-	if (level <= Init.DebugLevel()) {\
-		cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << ": " << args << endl;\
-		exit(0);}
+//#define DebugCout(level, args)\
+//	if (level <= Init.DebugLevel()) {\
+//		cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << ": " << args << endl;\
+//		exit(0);}
 
 class error
 {
 private:
 	int valDebugLevel;
 public:
-	error();
+	error(init);
+	DebugP(int, string);
 };
