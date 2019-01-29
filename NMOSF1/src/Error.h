@@ -5,17 +5,15 @@
 #define FILE_OPEN_ERR "No such file"
 #define FILE_ERR "Error file"
 #define FILE_DATA_ERR "Error data in file"
-
-//#define DebugCout(level, args)\
-//	if (level <= Init.DebugLevel()) {\
-//		cout << __FILE__ << ":" << __func__ << ":" << __LINE__ << ": " << args << endl;\
-//		exit(0);}
+#define INPUT_DATA_ERR "Error input data"
 
 class error
 {
-private:
+protected:
 	int valDebugLevel;
 public:
-	error(init);
-	DebugP(int, string);
+	error();
+	void SetDebugLevel(int);
+	int GetDebugLevel();
+	void DebugP(int, string);
 };

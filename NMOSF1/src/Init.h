@@ -1,22 +1,16 @@
 #pragma once
 
-#include "Singleton.h"
+class error;
 
-//class error;
-
-class init : public Singleton<init>
+class init : public error
 {
 private:
 	char InputFileName[100];
 	char MapName[100];
 	char RegionFileName[100];
-	int valDebugLevel;
 public:
-	void ReadInputFile(char [100]);
+	init() : error() {}
+	void ReadInputFile();
 	void PrintInfo();
-	int DebugLevel();
-//	friend error;
-protected:
-	init();
-	friend class Singleton<init>;
+	void SetMapName(char *);
 };
