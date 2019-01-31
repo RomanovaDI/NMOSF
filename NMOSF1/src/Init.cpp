@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <stdio.h>
 #include <string.h>
@@ -11,14 +12,20 @@ void init::ReadInputFile()
 {
 	FILE *InputFile = fopen(InputFileName, "r");
 	if (InputFile == NULL)
-		DebugP(0, FILE_OPEN_ERR + ": " + InputFileName);
+	//	DebugP(0, FILE_OPEN_ERR + ": " + InputFileName);
+		cout << FILE_OPEN_ERR;
 	char str[300];
 	char key[100];
 	while (fgets(str, 300, InputFile)) {
 		if (str[0] == '#')
 			continue;
 		else if (sscanf(str, "%s", key)) {
-			if (! strcmp(key, "RegionFileName")) {
+			if (! strcmp(key, "MapFileName")) {
+				char mapFileName[100];
+				if (! sscanf(str, "%s %s", key, mapFileName))
+					cout << "error regionFileName" << endl;//DebugCout(0, FILE_DATA_ERR + ": error RegionFileName in file " + InputFileName);
+				strcpy(MapFileName, mapFileName);
+			} else if (! strcmp(key, "RegionFileName")) {
 				char regionFileName[100];
 				if (! sscanf(str, "%s %s", key, regionFileName))
 					cout << "error regionFileName" << endl;//DebugCout(0, FILE_DATA_ERR + ": error RegionFileName in file " + InputFileName);
@@ -34,12 +41,12 @@ void init::ReadInputFile()
 void init::PrintInfo()
 {
 	cout << InputFileName << endl;
-	cout << MapName << endl;
+	cout << MapFileName << endl;
 	cout << RegionFileName << endl;
 	cout << valDebugLevel << endl;
 }
 
-void init::SetMapName(char *name)
+void init::SetInputFileName(char name[100])
 {
-	strcpy(name, MapName);
+	strcpy(InputFileName, name);
 }
