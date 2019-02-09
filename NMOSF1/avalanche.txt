@@ -1,2 +1,3 @@
 MapFileName relief_22.asc
 RegionFileName region.asc
+MeshCellSize 1.5

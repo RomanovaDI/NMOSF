@@ -7,22 +7,33 @@
 #define FILE_DATA_ERR "Error data in file :"
 #define INPUT_DATA_ERR "Error input data :"
 
-class error
+#define DEBUGLVL 10
+
+template<typename Arg>
+void do_print(Arg a)
 {
-protected:
-	int valDebugLevel;
-	template<typename Arg>
-	void do_print(Arg a);
-	template<typename Arg>
-	void do_print<Arg>(Arg a);
-	template<typename Arg>
-	void do_it(Arg a);
-	template<typename Arg, typename... Args>
-	void do_it(Arg arg, Args... args);
-public:
-	error();
-	void SetDebugLevel(int);
-	int GetDebugLevel();
-	template<typename... Args>
-	void DebugP(int, const string, Args... args);
-};
+ std::cout << a << " ";
+}
+
+template<typename Arg>
+void do_it(Arg a)
+{
+	do_print(a);
+}
+
+template<typename Arg, typename ... Args>
+void do_it(Arg arg, Args ... args)
+{
+	do_print(arg);
+	do_it(args ...);
+}
+
+template<typename ... Args>
+void DEBUGP(int level, Args ... args)
+{
+	if (level <= DEBUGLVL) {
+		do_it(args ...);
+		cout << endl;
+		exit(0);
+	}
+}
