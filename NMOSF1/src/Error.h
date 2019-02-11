@@ -6,6 +6,7 @@
 #define FILE_ERR "Error file :"
 #define FILE_DATA_ERR "Error data in file :"
 #define INPUT_DATA_ERR "Error input data :"
+#define MAP_FILE_ERR "Error file of map :"
 
 #define DEBUGLVL 10
 

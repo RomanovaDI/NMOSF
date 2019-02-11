@@ -1,5 +1,13 @@
 #pragma once
 
+struct map
+{
+	double *mass;
+	int ncols, nrows;
+	double cellSize;
+	double nodataValue;
+}
+
 class mesh
 {
 private:
@@ -11,9 +19,9 @@ private:
 	int meshNumActiveCells;
 	int meshTmpInd;
 	double cellSize;
-	void interpolate();
+	void interpolate(struct map *, struct map *);
 public:
-//	mesh(char[100]);
+	mesh(double);
 	int Nx();
 	int Ny();
 	int Nz();
