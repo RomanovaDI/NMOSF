@@ -27,23 +27,6 @@ int mesh::Nz()
 	return meshNz;
 }
 
-/*
-void mesh::setMeshCellInd(int i, int j, int k)
-{
-	meshCellInd[k * meshNx * meshNy + j * meshNx + i] = meshTmpInd++;
-}
-
-int mesh::getMeshCellInd(int i, int j, int k)
-{
-	return meshCellInd[k * meshNx * meshNy + j * meshNx + i];
-}
-
-void mesh::setMeshNumActiveCells(int n)
-{
-	meshNumActiveCells = n;
-}
-*/
-
 void mesh::readASCII(char mapName[100], char regionName[100])
 {
 	FILE *f = fopen(mapName,"r");
@@ -135,27 +118,9 @@ void mesh::readASCII(char mapName[100], char regionName[100])
 	if ((mass = (double *) malloc(ncols * nrows * sizeof(double))) == NULL)
 		DEBUGP(0, MEM_ERR);
 	memset((void *) mass, 0, ncols * nrows * sizeof(double));
-	/*
-	if ((I->ind = (int *) malloc(I->ncols * I->nrows * sizeof(int))) == NULL) {
-		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
-		return 1;
-	}
-	memset((void *) I->ind, 0, I->ncols * I->nrows * sizeof(int));
-	if ((I->bl_cond = (int *) malloc((I->ncols - 1) * (I->nrows - 1) * sizeof(int))) == NULL) {
-		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
-		return 1;
-	}
-	memset((void *) I->bl_cond, 0, (I->ncols - 1) * (I->nrows - 1) * sizeof(int));
-	*/
-	for (int i = 0; i < ncols * nrows; i++) {
+	for (int i = 0; i < ncols * nrows; i++)
 		if (fscanf(f, "%lf", &mass[i]) == EOF)
 			DEBUGP(0, FILE_DATA_ERR, mapName);
-		/*
-		I->ind[i] = -1;
-		if (i < (I->ncols - 1) * (I->nrows - 1))
-			I->bl_cond[i] = -1;
-		*/
-	}
 	fclose(f);
 	remove("map.txt");
 	double *mass_tmp;
@@ -215,30 +180,50 @@ void mesh::readASCII(char mapName[100], char regionName[100])
 		if (flag > 2)
 			DEBUGP(0, MAP_FILE_ERR, "holes in map in column", j);
 	}
-	struct map MapIn;
-	MapIn.mass = mass;
-	MapIn.ncols = ncols;
-	MapIn.nrows = nrows;
-	MapIn.cellSize = cellsize;
-	MapIn.nodataValue = nodata_value;
-	struct map MapOut;
-	MapOut.ncols = floor((double) Map.ncols * Map.cellSize / cellSize);
-	MapOut.nrows = floor((double) Map.nrows * Map.cellSize / cellSize);
-	double *mass_interpolation;
-	if ((mass_interpolation = (int *) malloc(MapOut.ncols * MapOut.nrows * sizeof(int))) == NULL)
-		DEBUGP(0, MEM_ERR);
-	MapOut.mass = mass_interpolation;
-	MapOut.cellSize = cellSize;
-	MapOut.nodataValue = nodata_value;
-	if (cellSize != cellsize)
-		interpolate(&MapIn, &MapOut);
-	else
-		MapOut = MapIn;
+	struct map Map;
+	Map.mass = mass;
+	Map.ncols = ncols;
+	Map.nrows = nrows;
+	Map.cellSize = cellsize;
+	Map.nodataValue = nodata_value;
+	if (meshCellSize != cellsize) {
+		struct map MapOut;
+		MapOut.ncols = floor((double) Map.ncols * Map.cellSize / meshCellSize);
+		MapOut.nrows = floor((double) Map.nrows * Map.cellSize / meshCellSize);
+		double *mass_interpolation;
+		if ((mass_interpolation = (int *) malloc(MapOut.ncols * MapOut.nrows * sizeof(int))) == NULL)
+			DEBUGP(0, MEM_ERR);
+		MapOut.mass = mass_interpolation;
+		MapOut.cellSize = meshCellSize;
+		MapOut.nodataValue = nodata_value;
+		interpolate(&Map, &MapOut);
+		Map = MapOut;
+		free(mass);
+	}
+	double max = 0, min = 0;
+	for (int i = 0; i < Map.nrows; i++)
+		for (int j = 0; j < Map.ncols; j++) {
+			if ((max == 0) && (min == 0) && (Map.mass[i * Map.ncols + j] != Map.nodataValue))
+				max = min = Map.mass[i * Map.ncols + j];
+			max = (max < Map.mass[i * Map.ncols + j]) ? Map.mass[i * Map.ncols + j] : max;
+			min = (min > Map.mass[i * Map.ncols + j]) ? Map.mass[i * Map.ncols + j] : min;
+		}
+	meshNx = Map.nrows;
+	meshNy = Map.ncols;
+	double hight = 20;
+	meshNz = ceil ((max - min + hight) / Map.cellSize);
+	if (meshCellInd = (int *) malloc(meshNx * meshNy * meshNz * sizeof(int)) == NULL)
+		DebugP(0, MEM_ERR);
+	for (int k = 0, meshNumActiveCells = 0; k < meshNz; k++)
+		for (int i = 0; i < meshNx; i++)
+			for (int j = 0; j < meshNy; j++)
+				meshCellInd[k * meshNx * meshNy + i * meshNy + j] =
+					((Map.mass[i * Map.ncols + j] != Map.nodataValue) && (k * meshCellSize >= Map.mass[i * Map.ncols + j]) && (k * meshCellSize < Map.mass[i * Map.ncols + j] + hight)) ?
+					meshNumActiveCells++ : -1;
 }
 
 void mesh::interpolate(struct map *MapIn, struct map *MapOut)
 {
-	double a, b, d;
 	int ncols = MapOut.ncols;
 	int nrows = MapIn.nrows;
 	double *mass;
@@ -279,174 +264,91 @@ void mesh::interpolate(struct map *MapIn, struct map *MapOut)
 			for (int j = ind_finish - 2; j > ind_start + 1; j--)
 				c[j] = e[j + 1] * c[j + 1] + f[j + 1];
 			for (int j = ind_start + 1; j < ind_finish; j++) {
-				a = MapIn.mass[i * MapIn.ncols + j];
-				d = (c[j] - c[j - 1]) / MapIn.cellsize;
-				b = (MapIn.mass[i * MapIn.ncols + j] - MapIn.mass[i * MapIn.ncols + j - 1]) / MapIn.cellsize + MapIn.cellsize * (2 * c[j] + c[j - 1]) / 6;
+				double a = MapIn.mass[i * MapIn.ncols + j];
+				double d = (c[j] - c[j - 1]) / MapIn.cellsize;
+				double b = (MapIn.mass[i * MapIn.ncols + j] - MapIn.mass[i * MapIn.ncols + j - 1]) / MapIn.cellsize + MapIn.cellsize * (2 * c[j] + c[j - 1]) / 6;
 				int ind = ceil((double) (j - 1) * MapIn.cellSize / MapOut.cellSize);
 				while (ind * MapOut.cellSize <= j * MapIn.cellSize) {
-					mass[i * ncols + ind] = a + b * (ind * MapOut.cellSize - j * MapIn.cellSize) + c[j] * pow(ind * MapOut.cellSize - j * MapIn.cellSize, 2) + d * pow(ind * MapOut.cellSize - j * MapIn.cellSize, 3);
+					mass[i * ncols + ind] = a + b * (ind * MapOut.cellSize - j * MapIn.cellSize) + c[j] *
+						pow(ind * MapOut.cellSize - j * MapIn.cellSize, 2) + d * pow(ind * MapOut.cellSize - j * MapIn.cellSize, 3);
 					ind++;
 				}
 			}
 		}
-	///////////////////////////////////////////////////////////////////////////////////
-	Map.mass = mass;
-	nrows = floor((double) Map.nrows * Map.cellSize / cellSize);
-	if ((c = (double *) realloc(c, I->nrows * sizeof(double))) == NULL)
+	nrows = MapOut.nrows;
+	double *mass1;
+	if ((mass1 = (double *) malloc(ncols * nrows * sizeof(double))) == NULL)
 		DEBUGP(0, MEM_ERR);
-	if ((e = (double *) realloc(e, I->nrows * sizeof(double))) == NULL)
+	for (i = 0; i < ncols * nrows; i++)
+		mass1[i] = MapOut.nodataValue;
+	if ((c = (double *) realloc(c, MapIn.nrows * sizeof(double))) == NULL)
 		DEBUGP(0, MEM_ERR);
-	if ((f = (double *) realloc(f, I->nrows * sizeof(double))) == NULL)
+	if ((e = (double *) realloc(e, MapIn.nrows * sizeof(double))) == NULL)
 		DEBUGP(0, MEM_ERR);
-	if (Map.nrows > 2)
-		for (int j = 0; j < Map.ncols; j++) {
+	if ((f = (double *) realloc(f, MapIn.nrows * sizeof(double))) == NULL)
+		DEBUGP(0, MEM_ERR);
+	if (MapIn.nrows > 2)
+		for (int j = 0; j < MapOut.ncols; j++) {
 			flag = 0;
 			ind_start = 0;
-			ind_finish = Map.nrows;
-			for (int i = 0; i < Map.nrows; i++) {
-				if ((Map.mass[i * Map.ncols + j] != Map.nodataValue) && (flag++ == 0))
+			ind_finish = MapIn.nrows;
+			for (int i = 0; i < MapIn.nrows; i++) {
+				if ((mass[i * MapOut.ncols + j] != MapIn.nodataValue) && (flag++ == 0))
 					ind_start = i;
-				if ((Map.mass[i * Map.ncols + j] == Map.nodataValue) && (flag++ == 1))
+				if ((mass[i * MapOut.ncols + j] == MapIn.nodataValue) && (flag++ == 1))
 					ind_finish = i;
 			}
-			memset(e, 0, Map.ncols * sizeof(double));
-			memset(f, 0, Map.ncols * sizeof(double));
+			memset(e, 0, MapIn.ncols * sizeof(double));
+			memset(f, 0, MapIn.ncols * sizeof(double));
 			for (int i = ind_start + 3; i < ind_finish - 1; i++) {
 				e[i] = - 1. / (4 + e[i - 1]);
-				f[i] = (3 * (Map.mass[(i + 1) * Map.ncols + j] - 2 * Map.mass[i * Map.ncols + j] + Map.mass[(i - 1) * Map.ncols + j]) / (Map.cellSize * Map.cellSize) - f[i - 1]) / (4 + e[i - 1]);
+				f[i] = (3 * (mass[(i + 1) * MapOut.ncols + j] - 2 * mass[i * MapOut.ncols + j] + mass[(i - 1) * MapOut.ncols + j]) / (MapIn.cellSize * MapIn.cellSize) - f[i - 1]) / (4 + e[i - 1]);
 			}
-			memset(c, 0, Map.nrows * sizeof(double));
+			memset(c, 0, MapIn.nrows * sizeof(double));
 			i = ind_finish - 1;
-			c[i] = (3 * (Map.mass[(i + 1) * Map.ncols + j] - 2 * Map.mass[i * Map.ncols + j] + Map.mass[(i - 1) * Map.ncols + j]) / (Map.cellSize * Map.cellSize) - f[i]) / (4 + e[i]);
+			c[i] = (3 * (mass[(i + 1) * MapOut.ncols + j] - 2 * mass[i * MapOut.ncols + j] + mass[(i - 1) * MapOut.ncols + j]) / (MapIn.cellSize * MapIn.cellSize) - f[i]) / (4 + e[i]);
 			for (int i = ind_finish - 2; i > ind_start + 1; i--)
 				c[i] = e[i + 1] * c[i + 1] + f[i + 1];
 			for (int i = ind_start + 1; i < ind_finish; i++) {
-				a = Map.mass[i * I->ncols + j];
-				d = (c[i] - c[i - 1]) / Map.cellsize;
-				b = (Map.mass[i * Map.ncols + j] - Map.mass[(i - 1) * Map.ncols + j]) / Map.cellsize + Map.cellsize * (2 * c[i] + c[i - 1]) / 6;
-				int ind = ceil((double) (i - 1) * Map.cellSize / cellSize);
-				while (ind * cellSize <= i * Map.cellSize) {
-					mass[ind * ncols + i] = a + b * (ind * cellSize - i * Map.cellSize) + c[i] * pow(ind * cellSize - i * Map.cellSize, 2) + d * pow(ind * cellSize - i * Map.cellSize, 3);
+				double a = mass[i * MapOut.ncols + j];
+				double d = (c[i] - c[i - 1]) / MapIn.cellsize;
+				double b = (mass[i * MapOut.ncols + j] - mass[(i - 1) * MapOut.ncols + j]) / MapIn.cellsize + MapIn.cellsize * (2 * c[i] + c[i - 1]) / 6;
+				int ind = ceil((double) (i - 1) * MapIn.cellSize / MapOut.cellSize);
+				while (ind * MapOut.cellSize <= i * MapIn.cellSize) {
+					mass1[ind * ncols + i] = a + b * (ind * MapOut.cellSize - i * MapIn.cellSize) + c[i] * pow(ind * MapOut.cellSize - i * MapIn.cellSize, 2) +
+						d * pow(ind * MapOut.cellSize - i * MapIn.cellSize, 3);
 					ind++;
 				}
 			}
 		}
-
-	if ((I->nrows > 2) && (I->kx > 1)) {
-		for (j = 0; j < I->ncols; j++) {
-			for (l = 0; l < I->ky; l++) {
-				flag = 0;
-				ind_start = 0;
-				ind_finish = I->nrows;
-				for (i = 0; i < I->nrows; i++) {
-					if (((I->ind[i * I->ncols + j] != -1) && (flag == 0) && (l == 0)) ||
-						(((I->ind[i * I->ncols + j] != -1) && ((j + 1 == I->ncols) || (I->ind[i * I->ncols + j + 1] != -1))) &&
-						 	(flag == 0) && (l != 0))) {
-								ind_start = i;
-								flag = 1;
-					}
-					if (((I->ind[i * I->ncols + j] == -1) && (flag == 1) && (l == 0)) ||
-						(((I->ind[i * I->ncols + j] == -1) || ((j + 1 == I->ncols) || (I->ind[i * I->ncols + j + 1] == -1))) &&
-						 	(flag == 1) && (l != 0))) {
-								ind_finish = i;
-								flag = 2;
-					}
-				}
-				e[ind_start + 2] = f[ind_start + 2] = 0;
-				for (i = ind_start + 3; i < ind_finish - 1; i++) {
-					e[i] = - 1. / (4 * e[i - 1] + 1);
-					f[i] = (6 * (I->mass1[(i + 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
-						2 * I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] +
-						I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l]) /
-						(I->cellsize * I->cellsize) - 4 * f[i - 1]) / (4 * e[i - 1] + 1);
-				}
-				i = ind_finish - 2;
-				c[i] = (6 * (I->mass1[(i + 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
-					2 * I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] +
-					I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l]) /
-					(I->cellsize * I->cellsize) - 4 * f[i]) / (1 + 4 * e[i]);
-				for (i = ind_finish - 3; i > ind_start + 1; i--) {
-					c[i] = e[i + 1] * c[i + 1] + f[i + 1];
-				}
-				c[ind_start + 1] = c[ind_finish - 1] = c[ind_start] = 0;
-				for (i = ind_start + 1; i < ind_finish; i++) {
-					a = I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l];
-					d = (c[i] - c[i - 1]) / I->cellsize;
-					b = (I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] -
-						I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l]) /
-						I->cellsize + I->cellsize * (2 * c[i] + c[i - 1]) / 6;
-					//printf("j = %d, l = %d, i = %d, a = %f, b = %f, c = %f, d = %f\n", j, l, i, a, b, c[i], d);
-					if ((I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] != I->nodata_value) &&
-						(I->mass1[i * ((I->ncols - 1) * I->ky + 1) * I->kx + j * I->ky + l] != I->nodata_value)) {
-							for (k = 0; k < I->kx; k++) {
-								I->mass1[(i - 1) * ((I->ncols - 1) * I->ky + 1) * I->kx + k * ((I->ncols - 1) * I->ky + 1) + j * I->ky + l] =
-									a + b * (k * I->cellsize / (double) I->kx - I->cellsize) +
-									c[i] * pow(k * I->cellsize / (double) I->kx - I->cellsize, 2) / 2 +
-									d * pow(k * I->cellsize / (double) I->kx - I->cellsize, 3) / 6;
-							}
-					}
-				}
-				memset((void *) c, 0, I->nrows * sizeof(double));
-				memset((void *) e, 0, I->nrows * sizeof(double));
-				memset((void *) f, 0, I->nrows * sizeof(double));
-				if (j == I->ncols - 1) break;
-			}
-		}
-#if DEBUG
-		printf("Interpolation along the x axes have been done in process %d\n", I->my_rank);
-#endif
-	}
-
+	for (int i = 0; i < MapOut.nrows; i++)
+		for (int j = 0; j < MapOut.ncols; j++)
+			MapOut.mass[i * MapOut.ncols + j] = mass1[i * MapOut.ncols + j];
 	free(c);
 	free(e);
 	free(f);
+	free(mass);
+	free(mass1);
+}
 
-	count_ind_multipl = 0;
-	for (i = 0; i < (I->nrows - 1) * I->kx + 1; i++) {
-		for (j = 0; j < (I->ncols - 1) * I->ky + 1; j++) {
-			if (I->mass1[i * ((I->ncols - 1) * I->ky + 1) + j] != I->nodata_value) {
-				I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j] = count_ind_multipl;
-				count_ind_multipl++;
-			} else {
-				I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j] = -1;
-			}
-		}
-	}
-
-	if ((I->ind_cell_multipl = (int *) malloc((I->nrows - 1) * I->kx * (I->ncols - 1) * I->ky * sizeof(int))) == NULL) {
-		printf("Memory error in function %s in process %d\n", __func__, I->my_rank);
-		return 1;
-	}
-//	memset((void *) I->ind_cell_multipl, 0, (I->nrows - 1) * I->kx * (I->ncols - 1) * I->ky * sizeof(int));
-
-	for (i = 0; i < (I->nrows - 1) * I->kx * (I->ncols - 1) * I->ky; i++) {
-		I->ind_cell_multipl[i] = -1;
-	}
-
-	I->n_cells_multipl = 0;
-	for (i = 1; i < (I->nrows - 1) * I->kx + 1; i++) {
-		for (j = 1; j < (I->ncols - 1) * I->ky + 1; j++) {
-			if ((I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j] != -1) &&
-				(I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j] != -1) &&
-				(I->ind_multipl[i * ((I->ncols - 1) * I->ky + 1) + j - 1] != -1) &&
-				(I->ind_multipl[(i - 1) * ((I->ncols - 1) * I->ky + 1) + j - 1] != -1)) {
-					I->ind_cell_multipl[(i - 1) * (I->ncols - 1) * I->ky + j - 1] = I->n_cells_multipl;
-					(I->n_cells_multipl)++;
-			}
-		}
-	}
-
-	I->dx[0] /= (double) I->kx;
-	I->dx[1] /= (double) I->ky;
-	I->dx[2] /= (double) I->kz;
+void mesh::printVTK()
+{
+	FILE *f = fopen("map.vtk", "w");
+	if (f == NULL)
+		DEBUGP(0, FILE_OPEN_ERR, "map.vtk");
+	fprintf(f, "# vtk DataFile Version 2.0\n");
+	fprintf(f, "Map of slope, -1 is unused cells\n");
+	fprintf(f, "ASCII\n");
+	fprintf(f, "DATASET STRUCTURED_POINTS\n");
+	fprintf(f, "DIMENSIONS %d %d %d\n", meshNx, meshNy, meshNz);
 }
 
 void mesh::setCellSize(double cellsize)
 {
-	cellSize = cellsize;
+	meshCellSize = cellsize;
 }
 
 double mesh::getCellSize()
 {
-	return cellSize;
+	return meshCellSize;
 }
