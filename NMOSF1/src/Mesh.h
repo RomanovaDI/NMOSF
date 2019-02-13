@@ -6,7 +6,7 @@ struct map
 	int ncols, nrows;
 	double cellSize;
 	double nodataValue;
-}
+};
 
 class mesh
 {
@@ -19,7 +19,7 @@ private:
 	int meshNumActiveCells;
 	void interpolate(struct map *, struct map *);
 public:
-	mesh(double);
+	mesh() {}
 	int Nx();
 	int Ny();
 	int Nz();

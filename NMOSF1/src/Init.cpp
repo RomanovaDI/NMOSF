@@ -9,48 +9,54 @@ using namespace std;
 #include "Mesh.h"
 #include "Init.h"
 
-void init::ReadInputFile()
+void init::readInputFile()
 {
-	FILE *InputFile = fopen(InputFileName, "r");
-	if (InputFile == NULL)
-		DEBUGP(0, FILE_OPEN_ERR, InputFileName);
+	FILE *inputFile = fopen(inputFileName, "r");
+	if (inputFile == NULL)
+		DEBUGP(0, FILE_OPEN_ERR, inputFileName);
 	char str[300];
 	char key[100];
-	while (fgets(str, 300, InputFile)) {
+	while (fgets(str, 300, inputFile)) {
 		if (str[0] == '#')
 			continue;
 		else if (sscanf(str, "%s", key)) {
 			if (! strcmp(key, "MapFileName")) {
-				char mapFileName[100];
 				if (! sscanf(str, "%s %s", key, mapFileName))
-					DEBUGP(0, FILE_DATA_ERR, "error MapFileName in file ", InputFileName);
-				strcpy(MapFileName, mapFileName);
+					DEBUGP(0, FILE_DATA_ERR, "error MapFileName in file ", inputFileName);
 			} else if (! strcmp(key, "RegionFileName")) {
-				char regionFileName[100];
 				if (! sscanf(str, "%s %s", key, regionFileName))
-					DEBUGP(0, FILE_DATA_ERR, "error RegionFileName in file ", InputFileName);
-				strcpy(RegionFileName, regionFileName);
+					DEBUGP(0, FILE_DATA_ERR, "error RegionFileName in file ", inputFileName);
 			} else if (! strcmp(key, "MeshCellSize")) {
 				double cellsize;
 				if (! sscanf(str, "%s %lf", key, &cellsize))
-					DEBUGP(0, FILE_DATA_ERR, "error MeshCellSize in file ", InputFileName);
+					DEBUGP(0, FILE_DATA_ERR, "error MeshCellSize in file ", inputFileName);
 				Mesh.setCellSize(cellsize);
 			} else
-				DEBUGP(0, FILE_DATA_ERR, "unknown tag", key , "in file", InputFileName);	
+				DEBUGP(0, FILE_DATA_ERR, "unknown tag", key , "in file", inputFileName);	
 		} else
-			DEBUGP(0, FILE_DATA_ERR, "in file", InputFileName, "in line :", str);
+			DEBUGP(0, FILE_DATA_ERR, "in file", inputFileName, "in line :", str);
 	}
-	fclose(InputFile);
+	fclose(inputFile);
 }
 
-void init::PrintInfo()
+void init::readMesh()
 {
-	cout << InputFileName << endl;
-	cout << MapFileName << endl;
-	cout << RegionFileName << endl;
+	Mesh.readASCII(mapFileName, regionFileName);
 }
 
-void init::SetInputFileName(char name[100])
+void init::printVTK()
 {
-	strcpy(InputFileName, name);
+	Mesh.printVTK();
+}
+
+void init::printInfo()
+{
+	cout << inputFileName << endl;
+	cout << mapFileName << endl;
+	cout << regionFileName << endl;
+}
+
+void init::setInputFileName(char name[100])
+{
+	strcpy(inputFileName, name);
 }

@@ -18,10 +18,12 @@ int main(int argc, char* argv[])
 	cout << "variables were created" << endl;
 	ReadArgs(argc, argv, I);
 	cout << "args were red" << endl;
-	I->ReadInputFile();
+	I->readInputFile();
 	cout << "input file was read" << endl;
 	int i = 4;
-	I->PrintInfo();
+	I->printInfo();
+	I->readMesh();
+	I->printVTK();
 	//mesh myMesh(initData);
     return 0;
 }

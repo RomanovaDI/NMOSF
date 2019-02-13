@@ -3,13 +3,15 @@
 class init
 {
 private:
-	char InputFileName[100];
-	char MapFileName[100];
-	char RegionFileName[100];
+	char inputFileName[100];
+	char mapFileName[100];
+	char regionFileName[100];
 public:
 	mesh Mesh;
 	init() {}
-	void ReadInputFile();
-	void PrintInfo();
-	void SetInputFileName(char [100]);
+	void readInputFile();
+	void readMesh();
+	void printVTK();
+	void printInfo();
+	void setInputFileName(char [100]);
 };
