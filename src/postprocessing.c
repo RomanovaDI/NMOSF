@@ -148,6 +148,77 @@ int print_symmetrical_case(int step_num, in *I)
 	return 0;
 }
 
+void print_structured_points(int step_num, in *I)
+{
+	char file_name[100];
+	sprintf(file_name, "result/str_map%d.vtk", step_num);
+	FILE *f = fopen(file_name, "w");
+	fprintf(f, "# vtk DataFile Version 2.0\n");
+	fprintf(f, "Day %d\n", step_num);
+	fprintf(f, "ASCII\n");
+	fprintf(f, "DATASET STRUCTURED_POINTS\n");
+	fprintf(f, "DIMENSIONS %d %d 1\n", I->gl_nx, I->gl_ny);
+	fprintf(f, "ORIGIN 0 0 0\n");
+	fprintf(f, "SPACING %lf %lf %lf\n", I->cellsize, I->cellsize, I->cellsize);
+	fprintf(f, "POINT_DATA %d\n", I->gl_nx * I->gl_ny);
+	for (int p = 0; p < 4; p++) {
+		fprintf(f, "SCALARS concentration_%d double 1\n", p);
+		fprintf(f, "LOOKUP_TABLE default\n");
+		for (int k = 0; k < I->nz; k++) {
+			for (int i = 0; i < I->nx; i++) {
+				for (int j = 0; j < I->ny; j++) {
+					if (I->ind_cell_multipl[i * I->ny + j] != -1)
+						fprintf(f, "%20.20f\n", concentration(I, p, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS pressure double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					fprintf(f, "%20.20f\n", pressure(I, i, j, k));
+			}
+		}
+	}
+	for (int p = 0; p < 3; p++) {
+		fprintf(f, "SCALARS saturation_%d double 1\n", p);
+		fprintf(f, "LOOKUP_TABLE default\n");
+		for (int k = 0; k < I->nz; k++) {
+			for (int i = 0; i < I->nx; i++) {
+				for (int j = 0; j < I->ny; j++) {
+					if (I->ind_cell_multipl[i * I->ny + j] != -1)
+						fprintf(f, "%20.20f\n", saturation(I, p, i, j, k));
+				}
+			}
+		}
+	}
+	fprintf(f, "SCALARS temperature_flow double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					fprintf(f, "%20.20f\n", temperature_flow(I, i, j, k));
+			}
+		}
+	}
+	fprintf(f, "SCALARS temperature_environment double 1\n");
+	fprintf(f, "LOOKUP_TABLE default\n");
+	for (int k = 0; k < I->nz; k++) {
+		for (int i = 0; i < I->nx; i++) {
+			for (int j = 0; j < I->ny; j++) {
+				if (I->ind_cell_multipl[i * I->ny + j] != -1)
+					fprintf(f, "%20.20f\n", temperature_environment(I, i, j, k));
+			}
+		}
+	}
+	fclose(f);
+	return;
+}
+
 int main(int argc, char **argv)
 {
 	in II;
@@ -174,18 +245,19 @@ int main(int argc, char **argv)
 		printf("Memory error in function %s.\n", __func__);
 		return 1;
 	}
-	int num_res = 315;
+	int num_res = 370;
 	int num_plots = 5;
 	for (int i = 0; i <= num_res; i += num_res / num_plots) {
 		printf("%d\n", i);
 		read_map(i, I);
-		if (set_array_of_parameters_termogas(I)) return 1;
+		//if (set_array_of_parameters_termogas(I)) return 1;
 		I->flag_first_time_step = 0;
 		if (write_B_to_B_prev(I)) return 1;
 		SET_CONDITION(boundary, termogas, no_boundaries_4_in_1_out);
 		for (int j = 0; j < I->num_parameters; j++)
 			print_injection_production_param(j, i / (num_res / num_plots), I);
-		print_injection_production_rate_of_reaction(i / (num_res / num_plots), I);
+		print_structured_points(i / (num_res / num_plots), I);
+		//print_injection_production_rate_of_reaction(i / (num_res / num_plots), I);
 		//if (print_symmetrical_case(i, I))
 		//	return 1;
 	}
