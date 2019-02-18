@@ -7,6 +7,7 @@
 using namespace std;
 #include "Error.h"
 #include "Mesh.h"
+#include "MathModel.h"
 #include "Init.h"
 #include "ReadingArguments.h"
 
@@ -20,10 +21,10 @@ int main(int argc, char* argv[])
 	cout << "args were red" << endl;
 	I->readInputFile();
 	cout << "input file was read" << endl;
-	int i = 4;
 	I->printInfo();
 	I->readMesh();
 	I->printVTK();
+	I->readMathModel();
 	//mesh myMesh(initData);
     return 0;
 }

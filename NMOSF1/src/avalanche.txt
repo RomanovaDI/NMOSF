@@ -4,3 +4,4 @@ RegionFileName region.asc
 #RegionFileName small_region.asc
 #MeshCellSize 5
 MeshCellSize 2.5
+MathModelFileName math_model.txt

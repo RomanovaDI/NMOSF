@@ -5,6 +5,7 @@
 using namespace std;
 #include "Error.h"
 #include "Mesh.h"
+#include "MathModel.h"
 #include "Init.h"
 #include "ReadingArguments.h"
 

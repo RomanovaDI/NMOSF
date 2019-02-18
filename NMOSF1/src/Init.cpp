@@ -7,6 +7,7 @@
 using namespace std;
 #include "Error.h"
 #include "Mesh.h"
+#include "MathModel.h"
 #include "Init.h"
 
 void init::readInputFile()
@@ -31,6 +32,9 @@ void init::readInputFile()
 				if (! sscanf(str, "%s %lf", key, &cellsize))
 					DEBUGP(0, FILE_DATA_ERR, "error MeshCellSize in file ", inputFileName);
 				Mesh.setCellSize(cellsize);
+			} else if (! strcmp(key, "MathModelFileName")) {
+				if (! sscanf(str, "%s %s", key, mathModelFileName))
+					DEBUGP(0, FILE_DATA_ERR, "error RegionFileName in file ", inputFileName);
 			} else
 				DEBUGP(0, FILE_DATA_ERR, "unknown tag", key , "in file", inputFileName);	
 		} else
@@ -59,4 +63,9 @@ void init::printInfo()
 void init::setInputFileName(char name[100])
 {
 	strcpy(inputFileName, name);
+}
+
+void init::readMathModel()
+{
+	MathModel.readMathModel(mathModelFileName);
 }
