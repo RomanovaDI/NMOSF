@@ -1,6 +1,7 @@
 MapFileName relief_22.asc
 #MapFileName small.asc
 RegionFileName region.asc
+Dimension 3
 #RegionFileName small_region.asc
 #MeshCellSize 5
 MeshCellSize 2.5

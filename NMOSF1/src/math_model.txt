@@ -1,8 +1,27 @@
 #Math model file
+#Variable name must not be longer then 50 simbols
+#Each line must not be longer then 500 simbols
+#Equations for variables must start from variable tag and ":"
 StartVarList
-vx
-vy
-vz
-#T
-p
+alpha
+v[]
 FinishVarList
+
+StartAuxilVarList
+rho
+q
+FinishAuxilVarList
+
+StartConstList
+rho1 = 30
+rho2 = 50
+FinishConstList
+
+StartVarEqn
+aplha: ddt(rho * alpha) = div(rho * aplha * v[]) + q
+v[]: ddt(v[]) = 0
+FinishVarEqn
+
+StartAuvilVarEqn
+rho = rho1 * alpha + rho2 * (1 - alpha)
+FinishAuvilVarEqn

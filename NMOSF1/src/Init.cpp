@@ -27,6 +27,11 @@ void init::readInputFile()
 			} else if (! strcmp(key, "RegionFileName")) {
 				if (! sscanf(str, "%s %s", key, regionFileName))
 					DEBUGP(0, FILE_DATA_ERR, "error RegionFileName in file ", inputFileName);
+			} else if (! strcmp(key, "Dimension")) {
+				if (! sscanf(str, "%s %d", key, &dimension))
+					DEBUGP(0, FILE_DATA_ERR, "error Dimension in file ", inputFileName);
+				if ((dimension < 1) || (dimension > 3))
+					DEBUGP(0, FILE_DATA_ERR, "error Dimension in file ", inputFileName);
 			} else if (! strcmp(key, "MeshCellSize")) {
 				double cellsize;
 				if (! sscanf(str, "%s %lf", key, &cellsize))

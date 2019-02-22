@@ -17,6 +17,8 @@ class mathModel
 private:
 	variable *varList;
 	int varListLen;
+	void readVarList(char[100]);
+	void readVarEqn(char[100]);
 public:
 	mathModel() {}
 	void readMathModel(char[100]);

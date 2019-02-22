@@ -7,6 +7,7 @@ private:
 	char mapFileName[100];
 	char regionFileName[100];
 	char mathModelFileName[100];
+	int dimension;
 public:
 	mesh Mesh;
 	mathModel MathModel;
