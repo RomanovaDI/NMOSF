@@ -22,6 +22,7 @@ void mathModel::readVarList(char fileName[100])
 		DEBUGP(0, FILE_OPEN_ERR, fileName);
 	char str[500];
 	char varList_tmp[100][50];
+	int vect[100];
 	varListLen = 0;
 	int flag = 0;
 	char key[50];
@@ -34,7 +35,11 @@ void mathModel::readVarList(char fileName[100])
 			else if (! strcmp(key, "FinishVarList"))
 				break;
 			else if (flag == 1) {
-				strcpy(varList_tmp[varListLen++], key);
+				strcpy(varList_tmp[varListLen], key);
+				if ((strlen(varList_tmp[listLen_tmp]) > 2) && (varList_tmp[listLen_tmp][strlen(varList_tmp[listLen_tmp]) - 2] == '[') && (varList_tmp[listLen_tmp][strlen(varList_tmp[listLen_tmp]) - 1] == ']'))
+					vect[listLen_tmp++] = 1;
+				else
+					vect[listLen_tmp++] = 0;
 				if (varListLen == 100)
 					DEBUGP(0, FILE_DATA_ERR, "Too many variables. Check \"FinishVarList\" tag.");
 			} else
@@ -55,7 +60,7 @@ void mathModel::readVarEqn(char fileName[100])
 	if (f == NULL)
 		DEBUGP(0, FILE_OPEN_ERR, fileName);
 	char str[500];
-	char varList_tmp[100][500];
+	char eqnList_tmp[100][500];
 	int listLen_tmp = 0;
 	int flag = 0;
 	char key[51];
@@ -68,7 +73,7 @@ void mathModel::readVarEqn(char fileName[100])
 			else if (! strcmp(key, "FinishVarEqn"))
 				break;
 			else if (flag == 1) {
-				strcpy(varList_tmp[listLen_tmp++], key);
+				strcpy(eqnList_tmp[listLen_tmp++], key);
 				if (varListLen == varListLen)
 					DEBUGP(0, FILE_DATA_ERR, "Too many variables. Check \"FinishVarList\" tag.");
 			} else

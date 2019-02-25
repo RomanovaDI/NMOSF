@@ -5,6 +5,7 @@ class variable
 private:
 	char varName[50];
 	double *varVal;
+	int vect;
 public:
 	variable() {}
 	~variable() {}

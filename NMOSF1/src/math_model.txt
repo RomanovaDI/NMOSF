@@ -2,6 +2,7 @@
 #Variable name must not be longer then 50 simbols
 #Each line must not be longer then 500 simbols
 #Equations for variables must start from variable tag and ":"
+#Each equation must be written on a single line
 StartVarList
 alpha
 v[]
