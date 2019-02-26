@@ -72,5 +72,5 @@ void init::setInputFileName(char name[100])
 
 void init::readMathModel()
 {
-	MathModel.readMathModel(mathModelFileName);
+	MathModel.readMathModel(mathModelFileName, dimension);
 }

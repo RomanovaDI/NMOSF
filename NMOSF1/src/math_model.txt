@@ -20,7 +20,9 @@ FinishConstList
 
 StartVarEqn
 aplha: ddt(rho * alpha) = div(rho * aplha * v[]) + q
-v[]: ddt(v[]) = 0
+v[0]: ddt(v[]) = 0
+v[1]: ddt(v[]) = 0
+v[2]: ddt(v[]) = 0
 FinishVarEqn
 
 StartAuvilVarEqn
