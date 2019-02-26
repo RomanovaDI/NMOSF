@@ -14,6 +14,16 @@ void variable::getName(char *name)
 	strncpy(name, varName, 50);
 }
 
+void variable::setVect(int vect)
+{
+	varVect = vect;
+}
+
+int variable::getVect()
+{
+	return varVect;
+}
+
 void mathModel::readVarList(char fileName[100])
 {
 	DEBUGP(1, FUNC_START);
@@ -48,8 +58,10 @@ void mathModel::readVarList(char fileName[100])
 			DEBUGP(0, FILE_DATA_ERR, "in file", fileName, "in line:", str);
 	}
 	varList = new variable[varListLen];
-	for (int i = 0; i < varListLen; i++)
+	for (int i = 0; i < varListLen; i++) {
 		varList[i].setName(varList_tmp[i]);
+		varList
+	}
 	DEBUGP(1, FUNC_FINISH);
 }
 

@@ -5,12 +5,14 @@ class variable
 private:
 	char varName[50];
 	double *varVal;
-	int vect;
+	int varVect;
 public:
 	variable() {}
 	~variable() {}
 	void setName(char[50]);
 	void getName(char *);
+	void setVect(int);
+	int getVect();
 };
 
 class mathModel
