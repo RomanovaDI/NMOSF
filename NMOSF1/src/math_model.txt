@@ -5,7 +5,7 @@
 #Each equation must be written on a single line
 StartVarList
 alpha
-v[]
+v []
 FinishVarList
 
 StartAuxilVarList
@@ -18,13 +18,13 @@ rho1 = 30
 rho2 = 50
 FinishConstList
 
-StartVarEqn
+StartVarEqnList
 aplha: ddt(rho * alpha) = div(rho * aplha * v[]) + q
 v[0]: ddt(v[]) = 0
 v[1]: ddt(v[]) = 0
 v[2]: ddt(v[]) = 0
-FinishVarEqn
+FinishVarEqnList
 
-StartAuvilVarEqn
+StartAuvilVarEqnList
 rho = rho1 * alpha + rho2 * (1 - alpha)
-FinishAuvilVarEqn
+FinishAuvilVarEqnList
