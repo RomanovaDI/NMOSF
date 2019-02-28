@@ -12,7 +12,7 @@ class variable
 private:
 	char varName[TAGLEN];
 	double *varVal;
-	int varVect = 0;
+	int varVect;
 public:
 	variable();
 	~variable() {}
@@ -26,7 +26,7 @@ class equation
 {
 private:
 	char eqnTag[TAGLEN];
-	int eqnTagComponent = 0;
+	int eqnTagComponent;
 	char eqnRecord[LINELEN];
 public:
 	equation() {}
@@ -43,18 +43,18 @@ class constant
 {
 private:
 	char constName[TAGLEN];
-	int constDimension = 0;
-	double constValue[3] = {0, 0, 0};
+	int constDimension;
+	double constValue[3];
 public:
-	constScalar() {}
-	~constScalar() {}
+	constant() {}
+	~constant() {}
 	void setName(char[TAGLEN]);
 	void getName(char*);
 	void setValue(double);
 	void setValue(int, double);
 	double getValue();
 	double getValue(int);
-}
+};
 
 class mathModel
 {
@@ -63,9 +63,9 @@ private:
 	variable *varList;
 	equation *eqnList;
 	constant *constList;
-	int varListLen = 0;
-	int eqnListLen = 0;
-	int constListLen = 0;
+	int varListLen;
+	int eqnListLen;
+	int constListLen;
 	void calcEqnListLen();
 	void readVarList(char*);
 	void readVarEqnList(char*);

@@ -117,19 +117,21 @@ void constant::setValue(double value)
 	constValue[0] = value;
 }
 
-void equation::getRecord(char *record)
+void constant::setValue(int comp, double value)
 {
-	strcpy(record, eqnRecord);
+	if (comp >= constDimension)
+		constDimension = comp + 1;
+	constValue[comp] = value;
 }
 
-void equation::setTagComponent(int comp)
+double constant::getValue()
 {
-	eqnTagComponent = comp;
+	return constValue[0];
 }
 
-int equation::getTagComponent()
+double constant::getValue(int comp)
 {
-	return eqnTagComponent;
+	return constValue[comp];
 }
 
 void mathModel::readVarList(char *fileName)
@@ -255,7 +257,7 @@ void mathModel::readVarEqnList(char *fileName)
 void mathModel::readConstList(char *fileName)
 {
 	DEBUGP(1, FUNC_START);
-	FILE *f = fopen(fileName, "r");
+	/*FILE *f = fopen(fileName, "r");
 	if (f == NULL)
 		DEBUGP(0, FILE_OPEN_ERR, fileName);
 	char str[LINELEN];
@@ -300,7 +302,7 @@ void mathModel::readConstList(char *fileName)
 		constList[i].setName(varList_tmp[i]);
 		constList[i].setVect(vect[i]);
 	}
-	calcVarListLenVect();
+	calcVarListLenVect();*/
 	DEBUGP(1, FUNC_FINISH);
 }
 
