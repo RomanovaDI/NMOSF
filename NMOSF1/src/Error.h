@@ -2,13 +2,15 @@
 
 #define FUNC_START "Function started"
 #define FUNC_FINISH "Function finished"
-#define MEM_ERR "Memory error :"
-#define INIT_DATA_ERR "Initial data error :"
-#define FILE_OPEN_ERR "No such file :"
-#define FILE_ERR "Error file :"
-#define FILE_DATA_ERR "Error data in file :"
-#define INPUT_DATA_ERR "Error input data :"
-#define MAP_FILE_ERR "Error file of map :"
+#define MEM_ERR "Memory error:"
+#define INIT_DATA_ERR "Initial data error:"
+#define FILE_OPEN_ERR "No such file:"
+#define FILE_ERR "Error file:"
+#define FILE_DATA_ERR "Error data in file:"
+#define INPUT_DATA_ERR "Error input data:"
+#define MAP_FILE_ERR "Error file of map:"
+#define VECT_COMP_ERR "Vector component error: No component"
+#define INVALID_CHAR_ERR "Invalid simbol"
 
 #define DEBUGLVL 10
 #define EXITLVL 0

@@ -43,8 +43,8 @@ class constant
 {
 private:
 	char constName[TAGLEN];
-	int constDimension;
-	double constValue[3];
+	int constDimension = 0;
+	double constValue[3] = {0, 0, 0};
 public:
 	constant() {}
 	~constant() {}

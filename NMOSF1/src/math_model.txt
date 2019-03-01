@@ -16,6 +16,8 @@ FinishAuxilVarList
 StartConstList
 rho1 = 30
 rho2 = 50
+v_inf[2] = 3
+v_inf[0] = 2
 FinishConstList
 
 StartVarEqnList
